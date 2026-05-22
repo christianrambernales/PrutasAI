@@ -1,0 +1,14 @@
+# Model files
+*.pt
+*.h5
+*.bin
+*.onnx
+
+# Cache & OS files
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]
+*$py.class
+node_modules/
+**/node_modules/
