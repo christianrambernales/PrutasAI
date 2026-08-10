@@ -1,0 +1,30 @@
+content_version: "2026.08.10"
+fruits:
+  - key: banana
+    name: { en: Banana, fil: Saging }
+    emoji: "🍌"
+    ml_class_index: 0
+    varieties:
+      - { key: lakatan,  name: { en: Lakatan,  fil: Lakatan  }, ml_class_index: 0, is_ml_class: true, sources: [pcaarrd_banana] }
+      - { key: latundan, name: { en: Latundan, fil: Latundan }, ml_class_index: 1, is_ml_class: true, sources: [pcaarrd_banana] }
+      - { key: saba,     name: { en: Saba,     fil: Saba     }, ml_class_index: 2, is_ml_class: true, sources: [pcaarrd_banana] }
+      - { key: cavendish,name: { en: Cavendish,fil: Cavendish}, ml_class_index: 3, is_ml_class: true, sources: [pcaarrd_banana] }
+  - key: mango
+    name: { en: Mango, fil: Mangga }
+    emoji: "🥭"
+    ml_class_index: 1
+    varieties:
+      - { key: carabao,    name: { en: Carabao,           fil: Carabao }, ml_class_index: 0, is_ml_class: true, sources: [pcaarrd_mango_isp] }
+      - { key: pico,       name: { en: Pico,              fil: Piko    }, ml_class_index: 1, is_ml_class: true, sources: [pcaarrd_mango_isp] }
+      - { key: katchamita, name: { en: Katchamita (Indian), fil: Indian }, ml_class_index: 2, is_ml_class: true, sources: [pcaarrd_mango_isp] }
+      - { key: mmsu_gold,  name: { en: MMSU Gold,   fil: MMSU Gold   }, is_ml_class: false, parent: carabao, sources: [da_mango_varieties] }
+      - { key: sweet_elena,name: { en: Sweet Elena, fil: Sweet Elena }, is_ml_class: false, parent: carabao, sources: [da_mango_varieties] }
+  - key: papaya
+    name: { en: Papaya, fil: Papaya }
+    emoji: "🫒"
+    ml_class_index: 2
+    varieties:
+      - { key: solo,           name: { en: Solo,           fil: Solo           }, ml_class_index: 0, is_ml_class: true, sources: [uplb_sinta] }
+      - { key: cavite_special, name: { en: Cavite Special, fil: Cavite Special }, ml_class_index: 1, is_ml_class: true, sources: [uplb_sinta] }
+      - { key: red_lady,       name: { en: Red Lady,       fil: Red Lady       }, ml_class_index: 2, is_ml_class: true, sources: [uplb_sinta] }
+      - { key: sinta,          name: { en: Sinta,          fil: Sinta          }, ml_class_index: 3, is_ml_class: true, sources: [uplb_sinta] }

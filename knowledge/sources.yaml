@@ -1,0 +1,17 @@
+sources:
+  - id: pcaarrd_banana
+    citation: "PCAARRD-DOST. Improved Lakatan and Cavendish varieties through S&T."
+    url: "https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/improved-lakatan-and-cavendish-varieties-through-s-t"
+    retrieved_at: "2026-08-10"
+  - id: pcaarrd_mango_isp
+    citation: "PCAARRD-DOST. Mango — Industry Strategic Science and Technology Plans."
+    url: "https://ispweb.pcaarrd.dost.gov.ph/isp-commodities/mango/"
+    retrieved_at: "2026-08-10"
+  - id: uplb_sinta
+    citation: "UPLB Institute of Plant Breeding. Sinta papaya, the super breed."
+    url: "https://horizon.uplb.edu.ph/horizon-magazine-2022/sinta-papaya-the-super-breed/"
+    retrieved_at: "2026-08-10"
+  - id: da_mango_varieties
+    citation: "Department of Agriculture. 9 new varieties that will strengthen the Philippine mango industry."
+    url: "https://www.da.gov.ph/from-manila-bulletin-9-new-varieties-that-will-strengthen-the-philippine-mango-industry/"
+    retrieved_at: "2026-08-10"
