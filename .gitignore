@@ -4,6 +4,11 @@
 *.bin
 *.onnx
 
+# Secrets & local config
+.env
+.env.local
+**/.claude/settings.local.json
+
 # Cache & OS files
 .DS_Store
 Thumbs.db
