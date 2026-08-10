@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { compileKnowledge, KnowledgeError } from './compile-knowledge.mjs';
 
@@ -90,9 +91,8 @@ test('escapes single quotes in emitted SQL', () => {
 });
 
 test('rejects sources.yaml missing top-level "sources:" key', () => {
-  const tmpDir = join('/c/Users/chris/.claude/jobs/e073c501/tmp', 'malformed-sources-' + Math.random().toString(36).slice(2));
+  const tmpDir = mkdtempSync(join(tmpdir(), 'prutasai-knowledge-test-'));
   try {
-    mkdirSync(tmpDir, { recursive: true });
     writeFileSync(join(tmpDir, 'sources.yaml'), 'invalid_key: []', 'utf8');
     writeFileSync(join(tmpDir, 'taxonomy.yaml'), 'fruits: []', 'utf8');
 
