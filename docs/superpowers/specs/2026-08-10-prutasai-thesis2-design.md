@@ -55,6 +55,8 @@ usable when it is never deployed.
 prutasai/
 ├── app/                          Expo React Native application
 │   ├── .env.example              Placeholders only; .env is untracked
+│   ├── eas.json                  Build profiles; `preview` emits .apk
+│   ├── assets/models/            Generated: synced from models/, gitignored
 │   └── src/
 │       ├── core/
 │       │   ├── db/               SQLite open, migrations, seeding, repositories
@@ -76,7 +78,8 @@ prutasai/
 │   ├── training/  export/  xai/  eval/
 ├── models/                       Trained weights land here
 │   └── manifest.json
-├── scripts/                      knowledge compiler, seed generator, checksum tool
+├── scripts/                      knowledge compiler, seed generator, checksum tool,
+│                                 sync-models (models/ → app/assets/models/)
 ├── server/                       Optional FastAPI service
 └── docs/
 ```
@@ -207,8 +210,36 @@ publishes a `ModelStatus` record per model (`ready`, `missing`, `checksum_mismat
 `load_failed`). A contract test asserts every `classes_ref` resolves against the compiled
 `ml/classes.json` and that class counts agree.
 
-Workflow to add a trained model: place the `.tflite` file in `models/`, update the manifest
-entry with its filename, checksum and version, restart the app. No code changes.
+### 5.3 Two model sources
+
+An installed Android APK is read-only, so "drop a file in a folder and restart" cannot work
+against a distributed build. The resolver therefore checks two sources in order:
+
+1. **Device storage** — `file://` under the app's document directory. Lets a model be added to an
+   already-installed app without rebuilding.
+2. **Bundled asset** — `require()`d from `app/assets/models/`, baked in at build time.
+
+Bundled assets are the reliable path: `react-native-fast-tflite` has open Android defects loading
+`file://` paths (issues #63, #80) and failing GPU delegates on local files (#84). Device storage
+is therefore an opt-in research affordance, and any failure to load from it falls back to the
+bundled asset rather than surfacing an error.
+
+`models/` at the repository root stays the single designated directory that trained weights are
+placed into. `scripts/sync-models.mjs` copies them into `app/assets/models/` and regenerates the
+`require()` map, and runs automatically from npm `prestart` and `prebuild` hooks — so placing a
+file in `models/` and starting the app is still the whole workflow, with the copy step invisible.
+
+This gives two workflows, both without code changes:
+
+- **Development, and producing a release build** — put the `.tflite` in `models/`, update its
+  manifest entry, start or rebuild. This is the supported path for shipping a model.
+- **Adding a model to an installed APK** — import the `.tflite` through the Model Status screen's
+  file picker, which copies it into the document directory and records its checksum. Useful for
+  swapping in a newly trained model on a device already in someone's hands, with the Android
+  caveats above.
+
+`ModelStatus` reports which source each loaded model came from, so a demo can never leave anyone
+guessing whether the bundled or the sideloaded weights are in use.
 
 ## 6. Severity
 
@@ -399,7 +430,39 @@ State: local component state for ephemeral UI, a small global store for `SystemS
 and current location. All persistent data reads go through repositories, never direct SQL from
 components.
 
-## 15. Configuration
+## 15. Android packaging and distribution
+
+The deliverable is a sideloadable `.apk` for Android. Because `react-native-fast-tflite`,
+`expo-sqlite`, `expo-location` and `expo-image-picker` include native code, the app cannot run in
+Expo Go and requires a prebuild. This is the normal path to an APK, not an obstacle.
+
+**Build.** `npx expo prebuild --platform android` generates the native project, then either:
+
+- **EAS Build** — `eas build -p android --profile preview`, with the `preview` profile setting
+  `"android": { "buildType": "apk" }`. EAS defaults to `.aab`, which is only needed for Play
+  Store submission, so the profile must set `apk` explicitly. Requires an Expo account and
+  internet; keystore is managed for you.
+- **Local Gradle** — `cd android && ./gradlew assembleRelease`. Requires the Android SDK and a
+  JDK, needs a keystore generated with `keytool`, and needs no Expo account or network. This is
+  the fallback if EAS quota or connectivity is a problem near the defence.
+
+Both are documented in the README. `eas.json` is committed; the keystore never is.
+
+**Permissions** declared in `app.json`: `CAMERA` (capture), `ACCESS_COARSE_LOCATION` (climate and
+suitability — fine location is deliberately not requested), and `INTERNET`. The prototype's
+`READ_EXTERNAL_STORAGE` is dropped in favour of the scoped photo picker.
+
+**ABI and size.** Target `arm64-v8a` for the release APK, which covers effectively all current
+Android devices; a universal APK is available if an older test device requires `armeabi-v7a`.
+Expected size is roughly 60–90 MB with all five INT8 models bundled, which is fine for
+sideloading and irrelevant for a thesis that is not shipping to the Play Store.
+
+**Building without model weights is supported and tested.** The APK builds and installs with an
+empty `models/` and a manifest listing no ready models; the app runs on the
+degradation ladder in §5.1. This is the state the project is in until training finishes, so it is
+a first-class case, not a fallback.
+
+## 16. Configuration
 
 | Variable | Where | Default | Purpose |
 |---|---|---|---|
@@ -413,7 +476,7 @@ components.
 No secret, credential or absolute machine path appears in tracked files. `.gitignore` covers
 `.env`, `*.tflite`, `*.pt`, and `models/*` except `manifest.json`.
 
-## 16. Failure states
+## 17. Failure states
 
 `SystemStatus` aggregates every dependency so one surface explains what is degraded.
 
@@ -429,7 +492,7 @@ No secret, credential or absolute machine path appears in tracked files. `.gitig
 Rule: a fallback may produce less information, or clearly-labelled older information. It may
 never produce fabricated information.
 
-## 17. Testing
+## 18. Testing
 
 Pure logic, where failures are silent:
 
@@ -449,10 +512,13 @@ Contract and integration:
 - Migrations from fresh install and from each prior `schema_version`
 - Content reseed on `content_version` change preserves all user tables
 - App starts, navigates and answers chat questions with zero model files present
+- `scripts/sync-models` produces an empty but valid require map when `models/` is empty, so a
+  release APK builds with no weights
+- Release APK builds and installs on a physical Android device, both with and without weights
 
 Manual: an airplane-mode script covering scan, climate display, chat and reconnect.
 
-## 18. Migration from the prototype
+## 19. Migration from the prototype
 
 `final` is restructured into the layout in §3. `prototype` is not modified.
 
@@ -466,7 +532,7 @@ prediction paths, the broken `seed` script, `orange` and `capsicum` throughout.
 The trained 5-class `fruit_classifier.pt` present locally is superseded by the 3-class Stage 1
 detector and is not carried forward.
 
-## 19. Risks
+## 20. Risks
 
 - **Datasets do not exist yet for 11 variety classes.** This is the critical path. The
   architecture is complete and testable without them, but no accuracy claim can be made until
@@ -477,11 +543,15 @@ detector and is not carried forward.
 - **YOLO TFLite latency on mid-range Android** is reported as a real concern in the
   `react-native-fast-tflite` issue tracker. Mitigations: INT8 quantisation, 640px input, NNAPI
   and GPU delegates. Needs measurement on the target device early.
+- **Loading models from device storage is unreliable on Android.** Open `react-native-fast-tflite`
+  defects (#63, #80, #84) affect `file://` paths and GPU delegates on local files. Mitigated by
+  treating bundled assets as the supported path and device storage as opt-in with fallback; a
+  model can always be shipped by rebuilding the APK.
 - **Remedy citations are missing.** Blocks the `unverified` flag being cleared; requires the
   project's agriculturist.
 - **The Groq key is extractable from the app package.** Accepted for the defence; rotate after.
 
-## 20. Out of scope
+## 21. Out of scope
 
 Cross-device real-time collaboration, cloud model serving, pest (as opposed to disease)
 identification, yield prediction, marketplace or pricing features, and languages beyond English
