@@ -7,7 +7,11 @@
     "sync:models": "node scripts/sync-models.mjs",
     "test:scripts": "node --test scripts/*.test.mjs",
     "test:app": "npm --prefix app test",
-    "test": "npm run test:scripts && npm run test:app"
+    "test": "npm run test:scripts && npm run test:app",
+    "prestart": "npm run compile:knowledge && npm run sync:models",
+    "start": "npm --prefix app start",
+    "prebuild:apk": "npm run compile:knowledge && npm run sync:models",
+    "build:apk": "cd app && npx expo prebuild --platform android --clean && ./android/gradlew -p android assembleRelease"
   },
   "devDependencies": {
     "yaml": "^2.6.0"
