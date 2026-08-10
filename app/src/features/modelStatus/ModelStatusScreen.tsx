@@ -1,25 +1,36 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
 import { describeDetectionCapability } from '../../core/status';
-import { resolveModels } from '../../core/ml/registry';
 import { bundledModels } from '../../core/ml/bundledModels';
 import manifest from '../../core/ml/manifest.json';
+import { pipelineDepth, resolveModels } from '../../core/ml/registry';
+import type { ModelRow } from '../viewModels';
+import { ModelStatusView } from './ModelStatusView';
 
-export function ModelStatusScreen() {
+/**
+ * Reads the real registry — never preview data. If no weights are installed
+ * this screen says so, which is the whole point of it existing.
+ */
+export function ModelStatusScreen({ onImportModel }: { onImportModel?: () => void }) {
   const statuses = resolveModels(manifest, bundledModels, {});
   const capability = describeDetectionCapability(statuses);
 
+  const models: ModelRow[] = statuses.map(s => ({
+    id: s.id,
+    stage: s.stage,
+    state: s.state,
+    source: s.source,
+    version: s.version,
+    verified: s.verified,
+  }));
+
   return (
-    <ScrollView contentContainerStyle={{ padding: 24, gap: 12 }}>
-      <Text style={{ fontSize: 22, fontWeight: '700' }}>{capability.headline}</Text>
-      <Text>{capability.detail}</Text>
-      <Text style={{ marginTop: 16, fontWeight: '600' }}>Models ({statuses.length})</Text>
-      {statuses.length === 0 && <Text>No models declared in manifest.json.</Text>}
-      {statuses.map(s => (
-        <View key={s.id}>
-          <Text>{`Stage ${s.stage} · ${s.id} · ${s.state}${s.source ? ` (${s.source})` : ''}`}</Text>
-        </View>
-      ))}
-    </ScrollView>
+    <ModelStatusView
+      headline={capability.headline}
+      detail={capability.detail}
+      depth={pipelineDepth(statuses)}
+      models={models}
+      manifestVersion={manifest.manifest_version}
+      onImportModel={onImportModel ?? (() => {})}
+    />
   );
 }

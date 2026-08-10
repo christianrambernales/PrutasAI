@@ -25,7 +25,7 @@ source of truth.
 
 ## Current State
 
-The foundation is complete; the product itself is not built yet.
+The foundation and the screen layer are complete; the data and inference layers behind them are not.
 
 **Built:**
 - Knowledge compiler (`npm run compile:knowledge`) — turns `knowledge/taxonomy.yaml` into seed
@@ -33,12 +33,20 @@ The foundation is complete; the product itself is not built yet.
 - SQLite schema, migrations, and seeding, plus content repositories over the seeded tables
 - A model registry that resolves which pipeline stage can run and steps down a degradation ladder
   when a stage's model is missing or under-confident
-- A bare Model Status screen exercising that registry end to end
+- Scale-invariant severity scoring (`app/src/core/severity`) — lesion area over the stage-1 fruit
+  box, reporting `undetermined` rather than measuring against the frame
+- All ten screens as presentational React Native components in `app/src/features`, over a token
+  component library in `app/src/ui` built from `theme.ts`. No UI dependencies are used: icons,
+  controls and navigation are built on core primitives
+- Model Status reads the real registry, so it reports "Detection model not installed" today
 
 **Not built yet:**
 - No trained model weights. `models/` is empty by design, and the app correctly reports
   "Detection model not installed" until training finishes
-- No product UI. Camera capture, results, history, and other screens land in later phases
+- No runtime data layer. `expo-sqlite`, `expo-camera` and `expo-location` are not installed, so
+  screens render from typed props supplied by `app/src/preview/previewContent.ts` — clearly
+  marked design-preview content that is never a prediction path. Wiring the repositories replaces
+  that module without changing a screen
 - The APK build is configured (see `docs/BUILDING.md`) but has deliberately not been run yet
 
 ## Architecture
@@ -56,15 +64,88 @@ models/  +  scripts/sync-models.mjs  -->  bundled into the Expo app at build/sta
 
 ## Running It
 
+Requires Node 20 or newer (developed on Node 24). Install once, from the repository root:
+
 ```bash
 npm install
 npm --prefix app install
-npm run compile:knowledge
-npm test        # 13 script tests + 29 app tests
+```
+
+Then start the app. `npm start` runs the knowledge compiler and the model sync first, so the
+generated seed SQL, class index and bundled-model map are always current:
+
+```bash
 npm start
 ```
 
-For an installable APK, see `docs/BUILDING.md`.
+Metro serves on `http://localhost:8081` and prints a QR code.
+
+**On a physical Android phone** — do **not** install Expo Go from the Play Store. The store build
+is capped at SDK 54 while this project is on SDK 57, so it fails with "Project is incompatible with
+this version of Expo Go". Sideload the matching client instead:
+
+1. Uninstall any existing Expo Go first — the store build is signed with a different key and a
+   direct install over it fails with "App not installed".
+2. On the phone, open this in Chrome and download it (199 MB):
+   <https://github.com/expo/expo-go-releases/releases/download/Expo-Go-57.0.3/Expo-Go-57.0.3.apk>
+3. Tap the download, allow Chrome to install unknown apps when prompted, and install.
+4. Put the phone on the same Wi-Fi as this machine and scan the QR code from `npm start`.
+
+The URL above is pinned to Expo Go 57.0.3, the client for SDK 57. If the SDK is ever bumped, look
+the matching client up at <https://expo.dev/go>.
+
+**On an Android emulator** — start the emulator from Android Studio first, then press `a` in the
+Metro terminal, or run `npm --prefix app run android`. Expo CLI installs the matching Expo Go
+build into the emulator automatically, so the SDK mismatch above does not apply.
+
+**On an iPhone** — the sideload trick above has no iOS equivalent; iOS only installs signed builds
+through the App Store or TestFlight. The App Store Expo Go is capped at SDK 54, so reaching SDK 57
+on a physical iPhone means building your own Expo Go and shipping it to your own TestFlight:
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest go --sdk-version 57
+```
+
+This runs fine from Windows (EAS builds on cloud macOS workers) but **requires a paid Apple
+Developer Program membership** for TestFlight access. Android is the target platform for this
+thesis, so prefer the browser or an Android device unless iOS is genuinely needed.
+
+**In a desktop browser** — press `w` in the Metro terminal, or:
+
+```bash
+npm --prefix app run web
+```
+
+Browser preview is for reviewing layout and copy quickly. Android is the target platform, so treat
+a phone or emulator as the source of truth.
+
+> Opening `http://localhost:8081/` directly in a browser returns a JSON manifest rather than the
+> app — that endpoint exists for Expo Go. Use `w` / `run web` instead, which serves on its own port.
+
+> The app runs in Expo Go *today* because it currently has no native modules — the screen layer is
+> built on core React Native primitives with no icon, SVG or navigation packages. `react-dom` and
+> `react-native-web` are present for browser preview only and add no native code. Once
+> `expo-camera`, `expo-sqlite`, `expo-location` and `react-native-fast-tflite` are added, Expo Go
+> stops being an option and a prebuild is required (design spec §15).
+
+What you will see: all ten screens, navigable. Detection, camera, climate fetching and the
+database are not wired yet, so the screens render from `app/src/preview/previewContent.ts`. The
+Model Status screen is the exception — it reads the real registry, so it correctly reports
+"Detection model not installed" while `models/` is empty.
+
+### Checks
+
+```bash
+npm test        # 13 script tests + 68 app tests
+npm run typecheck
+```
+
+For an installable APK, see `docs/BUILDING.md`, or from the root:
+
+```bash
+npm run build:apk               # needs the Android SDK and a JDK
+```
 
 ## Further Reading
 
