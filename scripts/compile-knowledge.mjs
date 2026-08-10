@@ -15,7 +15,11 @@ function assertContiguous(indices, label) {
 }
 
 export function compileKnowledge(knowledgeDir, opts = {}) {
-  const sources = parse(readFileSync(join(knowledgeDir, 'sources.yaml'), 'utf8')).sources;
+  const sourcesDoc = parse(readFileSync(join(knowledgeDir, 'sources.yaml'), 'utf8'));
+  if (!sourcesDoc || !Array.isArray(sourcesDoc.sources)) {
+    throw new KnowledgeError('sources.yaml must have a top-level "sources:" key with an array value');
+  }
+  const sources = sourcesDoc.sources;
   const taxonomy = opts.taxonomyOverride
     ?? parse(readFileSync(join(knowledgeDir, 'taxonomy.yaml'), 'utf8'));
 
@@ -28,6 +32,9 @@ export function compileKnowledge(knowledgeDir, opts = {}) {
   classMap.fruits = [...fruits].sort((a, b) => a.ml_class_index - b.ml_class_index).map(f => f.key);
 
   for (const fruit of fruits) {
+    if (!Array.isArray(fruit.varieties)) {
+      throw new KnowledgeError(`fruit '${fruit.key}' must have a "varieties" array`);
+    }
     const mlVarieties = fruit.varieties.filter(v => v.is_ml_class);
     assertContiguous(mlVarieties.map(v => v.ml_class_index), `${fruit.key} varieties`);
     classMap.varieties[fruit.key] = [...mlVarieties]

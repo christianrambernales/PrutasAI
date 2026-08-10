@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 import { compileKnowledge, KnowledgeError } from './compile-knowledge.mjs';
 
 const dir = fileURLToPath(new URL('../knowledge/', import.meta.url));
@@ -85,4 +87,36 @@ test('escapes single quotes in emitted SQL', () => {
     },
   });
   assert.ok(k.seedSql.includes("Farmer''s Banana"));
+});
+
+test('rejects sources.yaml missing top-level "sources:" key', () => {
+  const tmpDir = join('/c/Users/chris/.claude/jobs/e073c501/tmp', 'malformed-sources-' + Math.random().toString(36).slice(2));
+  try {
+    mkdirSync(tmpDir, { recursive: true });
+    writeFileSync(join(tmpDir, 'sources.yaml'), 'invalid_key: []', 'utf8');
+    writeFileSync(join(tmpDir, 'taxonomy.yaml'), 'fruits: []', 'utf8');
+
+    assert.throws(
+      () => compileKnowledge(tmpDir),
+      KnowledgeError,
+      'should reject malformed sources.yaml',
+    );
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('rejects fruit missing "varieties" array', () => {
+  assert.throws(
+    () => compileKnowledge(dir, {
+      taxonomyOverride: {
+        content_version: '1',
+        fruits: [{
+          key: 'banana', name: { en: 'Banana', fil: 'Saging' }, emoji: '🍌', ml_class_index: 0,
+        }],
+      },
+    }),
+    KnowledgeError,
+    'should reject fruit without varieties array',
+  );
 });
