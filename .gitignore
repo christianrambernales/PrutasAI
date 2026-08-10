@@ -1,5 +1,6 @@
 # Model files
 *.pt
+*.tflite
 *.h5
 *.bin
 *.onnx
@@ -17,3 +18,16 @@ __pycache__/
 *$py.class
 node_modules/
 **/node_modules/
+
+# Generated build artifacts
+app/assets/models/
+app/src/core/ml/bundledModels.ts
+app/src/core/db/seed.sql
+app/src/core/types/knowledge.ts
+ml/classes.json
+
+# Android build output
+app/android/
+app/ios/
+*.keystore
+*.jks

@@ -1,0 +1,15 @@
+{
+  "name": "prutasai",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile:knowledge": "node scripts/compile-knowledge.mjs",
+    "sync:models": "node scripts/sync-models.mjs",
+    "test:scripts": "node --test scripts/",
+    "test:app": "npm --prefix app test",
+    "test": "npm run test:scripts && npm run test:app"
+  },
+  "devDependencies": {
+    "yaml": "^2.6.0"
+  }
+}
