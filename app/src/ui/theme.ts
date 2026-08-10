@@ -5,7 +5,7 @@ export const COLORS = {
   primaryLight: '#2d6a4f',
   primaryDark: '#0d2818',
 
-  // Accent - vibrant tropical orange
+  // Accent - vibrant tropical hue
   accent: '#f77f00',
   accentLight: '#fcbf49',
   accentDark: '#d65f00',
