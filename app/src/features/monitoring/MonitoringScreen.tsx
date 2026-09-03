@@ -8,6 +8,8 @@ import type { MonitoringSession } from '../viewModels';
 
 export interface MonitoringScreenProps {
   session: MonitoringSession;
+  /** Day of the checkpoint currently opened; there is no separate detail screen. */
+  expandedCheckpointDay: number | null;
   onScanCheckpoint: () => void;
   onOpenCheckpoint: (day: number) => void;
 }
@@ -18,7 +20,12 @@ const PROGRESS_COLOR = {
   stable: COLORS.stable,
 } as const;
 
-export function MonitoringScreen({ session, onScanCheckpoint, onOpenCheckpoint }: MonitoringScreenProps) {
+export function MonitoringScreen({
+  session,
+  expandedCheckpointDay,
+  onScanCheckpoint,
+  onOpenCheckpoint,
+}: MonitoringScreenProps) {
   const maxPercent = Math.max(...session.checkpoints.map(c => c.percent ?? 0), 1);
 
   return (
@@ -92,8 +99,12 @@ export function MonitoringScreen({ session, onScanCheckpoint, onOpenCheckpoint }
                     {cp.status ? <StatusChip status={cp.status} /> : <Chip label={cp.note} tone="outline" />}
                   </Row>
                   {cp.done ? (
-                    <PressableRow onPress={() => onOpenCheckpoint(cp.day)}>
-                      <Card style={{ padding: SPACING.sm + 2 }}>
+                    <PressableRow
+                      accessibilityLabel={`Day ${cp.day} checkpoint`}
+                      selected={cp.day === expandedCheckpointDay}
+                      onPress={() => onOpenCheckpoint(cp.day)}
+                    >
+                      <Card style={{ padding: SPACING.sm + 2, gap: SPACING.sm }}>
                         <Row gap={SPACING.sm + 2}>
                           <EmojiBadge emoji={session.emoji} size={36} square />
                           <Col gap={2} style={{ flex: 1 }}>
@@ -105,8 +116,31 @@ export function MonitoringScreen({ session, onScanCheckpoint, onOpenCheckpoint }
                               {cp.note}
                             </AppText>
                           </Col>
-                          <Icon name="chevronRight" size={16} color={COLORS.textLight} />
+                          <Icon
+                            name={cp.day === expandedCheckpointDay ? 'chevronDown' : 'chevronRight'}
+                            size={16}
+                            color={COLORS.textLight}
+                          />
                         </Row>
+                        {cp.day === expandedCheckpointDay ? (
+                          <>
+                            <Divider />
+                            <Col gap={SPACING.xs + 2}>
+                              <Row justify="space-between">
+                                <AppText variant="xs" color={COLORS.textSecondary}>Recorded</AppText>
+                                <AppText variant="xsSemi">{cp.dateLabel}</AppText>
+                              </Row>
+                              <Row justify="space-between">
+                                <AppText variant="xs" color={COLORS.textSecondary}>Lesion ÷ fruit area</AppText>
+                                <AppText variant="xsSemi">{cp.percent}%</AppText>
+                              </Row>
+                              <AppText variant="xs" color={COLORS.textLight}>
+                                The checkpoint photo is not stored yet — the scan database is not
+                                wired, so only the measurement is kept.
+                              </AppText>
+                            </Col>
+                          </>
+                        ) : null}
                       </Card>
                     </PressableRow>
                   ) : (

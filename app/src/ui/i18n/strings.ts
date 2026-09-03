@@ -46,6 +46,10 @@ const EN = {
   startupFailedTitle: 'The app could not open its database',
   startupFailedBody:
     'Nothing has been lost — your saved scans are still on this device. Close the app and open it again. If this keeps happening, report the message below.',
+  unexpectedErrorTitle: 'The app hit an unexpected problem',
+  notIsolatedTitle: 'This page cannot open the local database',
+  notIsolatedBody:
+    'The browser only allows it on a cross-origin isolated page, which needs the COOP and COEP headers. In development, run "npm run start:web" and open the address it prints — not the Expo dev server’s own port, and not the "w" shortcut in its terminal.',
 
   // home
   tagline: 'Fruit · variety · disease — works offline',
@@ -117,6 +121,12 @@ const EN = {
   assistantUnreachable: 'Could not reach the assistant. Check your connection and try again.',
   assistantBusy: 'There are too many questions just now. Try again in a minute.',
   assistantUnavailable: 'The assistant is unavailable right now. Try again shortly.',
+  newConversation: 'New conversation',
+  conversationsTitle: 'Conversations',
+  noConversationsYet: 'No conversations yet',
+  rename: 'Rename',
+  delete: 'Delete',
+  moreOptions: 'More options',
 
   // history
   noScansYet: 'No scans yet',
@@ -187,6 +197,14 @@ const EN = {
   modelClassesAndStrains: (classes: number, strains: number) =>
     `${classes} model classes · ${strains} information-only strains`,
 
+  // welcome
+  welcomeTitle: 'Keep your scans on this phone, or across your devices',
+  welcomeOfflineTitle: 'Use offline',
+  welcomeOfflineBody: 'Everything stays on this phone. Nothing is uploaded.',
+  welcomeAccountTitle: 'Sign in or create an account',
+  welcomeAccountBody: 'Your scan history follows you to a new phone. You can do this later instead.',
+  welcomeChooseOffline: 'Use offline',
+
   // consent
   consentTitle: 'What PrutasAI sends',
   consentSent: 'Sent',
@@ -215,9 +233,24 @@ const EN = {
   signOut: 'Sign out',
   signedInAs: (email: string) => `Signed in as ${email}`,
   historyRestored: (n: number) => `${n} ${n === 1 ? 'scan' : 'scans'} restored`,
-  historyClaimed: 'Your earlier scans are now on this account.',
   historyRestoreFailed: 'Signed in, but your history could not be fetched. It will still be here next time you sign in.',
+  historyUploadIncomplete: 'Some scans have not been uploaded yet. They stay on this phone and go up next time.',
+  sessionExpired: 'Your session expired. Sign in again to keep your scans in sync — nothing has been lost.',
   photoNotOnThisDevice: 'The photo for this scan is on the phone that took it.',
+  forgotPassword: 'Forgot password?',
+  resetEmailSent: 'If an account exists for that email, a reset link has been sent.',
+  createAccountPrompt: 'New here? Create an account',
+  alreadyHaveAccount: 'Already have an account? Sign in',
+  titleSignUp: 'Create your account',
+
+  // trash
+  titleTrash: 'Trash',
+  trashRow: 'Trash',
+  trashEmpty: 'Trash is empty',
+  select: 'Select',
+  restore: 'Restore',
+  deleteForever: 'Delete permanently',
+  daysLeft: (n: number) => `${n} ${n === 1 ? 'day' : 'days'} left`,
 };
 
 type Dictionary = typeof EN;
@@ -249,6 +282,10 @@ const FIL: Dictionary = {
   startupFailedTitle: 'Hindi mabuksan ng app ang database nito',
   startupFailedBody:
     'Walang nawala — nasa device mo pa rin ang mga naitalang scan. Isara ang app at buksan ulit. Kung paulit-ulit itong nangyayari, iulat ang mensaheng nasa ibaba.',
+  unexpectedErrorTitle: 'May hindi inaasahang problema ang app',
+  notIsolatedTitle: 'Hindi mabuksan ng pahinang ito ang lokal na database',
+  notIsolatedBody:
+    'Pinapayagan lang ito ng browser sa isang cross-origin isolated na pahina, na nangangailangan ng COOP at COEP headers. Sa development, patakbuhin ang "npm run start:web" at buksan ang address na ipinapakita nito — hindi ang sariling port ng Expo dev server, at hindi ang "w" na shortcut sa terminal nito.',
 
   tagline: 'Prutas · uri · sakit — gumagana nang offline',
   scanHeadline: 'Mag-scan ng prutas',
@@ -316,6 +353,12 @@ const FIL: Dictionary = {
   assistantUnreachable: 'Hindi maabot ang katuwang. Suriin ang koneksyon at subukang muli.',
   assistantBusy: 'Sobrang dami ng tanong ngayon. Subukang muli sa isang minuto.',
   assistantUnavailable: 'Hindi magamit ang katuwang ngayon. Subukang muli mamaya.',
+  newConversation: 'Bagong usapan',
+  conversationsTitle: 'Mga Usapan',
+  noConversationsYet: 'Wala pang usapan',
+  rename: 'Palitan ang pangalan',
+  delete: 'Tanggalin',
+  moreOptions: 'Higit pang opsyon',
 
   noScansYet: 'Wala pang scan',
   noScansMatch: 'Walang tumugmang scan',
@@ -384,6 +427,14 @@ const FIL: Dictionary = {
   modelClassesAndStrains: (classes: number, strains: number) =>
     `${classes} klase ng modelo · ${strains} pang-impormasyong strain`,
 
+  // welcome
+  welcomeTitle: 'Itago ang mga scan sa teleponong ito, o sa lahat ng device mo',
+  welcomeOfflineTitle: 'Gamitin nang offline',
+  welcomeOfflineBody: 'Mananatili ang lahat sa teleponong ito. Walang ipapadala.',
+  welcomeAccountTitle: 'Mag-sign in o gumawa ng account',
+  welcomeAccountBody: 'Susunod ang kasaysayan ng scan mo sa bagong telepono. Puwede rin itong gawin mamaya.',
+  welcomeChooseOffline: 'Gamitin nang offline',
+
   // consent
   consentTitle: 'Ano ang ipinapadala ng PrutasAI',
   consentSent: 'Ipinapadala',
@@ -412,9 +463,24 @@ const FIL: Dictionary = {
   signOut: 'Mag-sign out',
   signedInAs: (email: string) => `Naka-sign in bilang ${email}`,
   historyRestored: (n: number) => `${n} ${n === 1 ? 'scan' : 'na scan'} ang naibalik`,
-  historyClaimed: 'Nasa akawnt mo na ang mga naunang scan mo.',
   historyRestoreFailed: 'Naka-sign in ka na, ngunit hindi nakuha ang kasaysayan mo. Nandiyan pa rin ito sa susunod mong pag-sign in.',
+  historyUploadIncomplete: 'May mga scan na hindi pa nai-upload. Nananatili sila sa teleponong ito at aakyat sa susunod.',
+  sessionExpired: 'Nag-expire ang session mo. Mag-sign in ulit para manatiling naka-sync ang mga scan mo — walang nawala.',
   photoNotOnThisDevice: 'Ang larawan ng scan na ito ay nasa teleponong kumuha nito.',
+  forgotPassword: 'Nakalimutan ang password?',
+  resetEmailSent: 'Kung may akawnt na nakarehistro sa email na iyan, may naipadala nang link para mag-reset.',
+  createAccountPrompt: 'Bago dito? Gumawa ng akawnt',
+  alreadyHaveAccount: 'May akawnt ka na? Mag-sign in',
+  titleSignUp: 'Gumawa ng iyong akawnt',
+
+  // trash
+  titleTrash: 'Basurahan',
+  trashRow: 'Basurahan',
+  trashEmpty: 'Walang laman ang basurahan',
+  select: 'Pumili',
+  restore: 'Ibalik',
+  deleteForever: 'Tanggalin nang permanente',
+  daysLeft: (n: number) => `${n} ${n === 1 ? 'araw' : 'araw'} na lang`,
 };
 
 const DICTIONARIES: Record<Language, Dictionary> = { EN, FIL };

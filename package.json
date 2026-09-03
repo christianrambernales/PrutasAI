@@ -12,6 +12,7 @@
     "test": "npm run test:scripts && npm run test:app && npm run test:api",
     "prestart": "npm run compile:knowledge && npm run sync:models",
     "start": "npm --prefix app start",
+    "start:web": "npm --prefix app run web",
     "prebuild:apk": "npm run compile:knowledge && npm run sync:models",
     "build:apk": "cd app && npx expo prebuild --platform android --clean && ./android/gradlew -p android assembleRelease"
   },

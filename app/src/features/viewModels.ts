@@ -123,6 +123,20 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  /**
+   * How the answer was produced, so the screen can label it honestly.
+   *
+   * `grounded` traces to a knowledge-base row. `general` is model-generated and
+   * carries a visible caveat. `refusal` is the app's own wording for an
+   * off-topic question — never the model's. `notice` reports a failure and
+   * never stands in for an answer.
+   */
+  kind?: 'grounded' | 'general' | 'refusal' | 'notice';
+  /**
+   * Attached when the answer computed a suitability verdict, so the evidence
+   * card renders under the message it belongs to rather than at a fixed index.
+   */
+  verdict?: Suitability | null;
 }
 
 export interface Source {

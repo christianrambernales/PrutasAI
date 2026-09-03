@@ -1,28 +1,64 @@
 import React from 'react';
-import { AppText, Chip, Col, COLORS, PressableRow, Row, Section, SPACING } from '../../ui';
+import { StyleSheet, TextInput, View } from 'react-native';
+import {
+  AppText, Chip, Col, COLORS, Icon, PressableRow, RADIUS, Row, Section, SPACING, useT,
+} from '../../ui';
 import type { ScanGroup } from '../viewModels';
 import { ScanRow } from '../components/ScanRow';
 
+export interface HistoryFilter {
+  /** Stable across languages; the label is what changes. */
+  key: string;
+  label: string;
+}
+
 export interface HistoryScreenProps {
   groups: ScanGroup[];
-  filters: string[];
-  activeFilter: string;
+  filters: HistoryFilter[];
+  activeFilterKey: string;
   totalLabel: string;
-  onFilter: (filter: string) => void;
+  /** null when the search field is closed. */
+  query: string | null;
+  onChangeQuery: (query: string) => void;
+  onFilter: (key: string) => void;
   onOpenScan: (id: string) => void;
 }
 
 export function HistoryScreen(props: HistoryScreenProps) {
-  const { groups, filters, activeFilter, totalLabel } = props;
+  const { groups, filters, activeFilterKey, totalLabel, query } = props;
+  const t = useT();
   const empty = groups.every(g => g.scans.length === 0);
+  const filtered = query !== null && query !== '' ? true : activeFilterKey !== filters[0]?.key;
 
   return (
     <>
+      {query !== null ? (
+        <Section>
+          <View style={styles.search}>
+            <Icon name="search" size={16} color={COLORS.textLight} />
+            <TextInput
+              style={styles.field}
+              value={query}
+              onChangeText={props.onChangeQuery}
+              placeholder={t.searchScans}
+              placeholderTextColor={COLORS.textLight}
+              accessibilityLabel={t.searchScans}
+              autoFocus
+            />
+          </View>
+        </Section>
+      ) : null}
+
       <Section>
         <Row gap={SPACING.xs + 2} wrap>
           {filters.map(f => (
-            <PressableRow key={f} onPress={() => props.onFilter(f)}>
-              <Chip label={f} tone={f === activeFilter ? 'selected' : 'outline'} />
+            <PressableRow
+              key={f.key}
+              accessibilityLabel={f.label}
+              selected={f.key === activeFilterKey}
+              onPress={() => props.onFilter(f.key)}
+            >
+              <Chip label={f.label} tone={f.key === activeFilterKey ? 'selected' : 'outline'} />
             </PressableRow>
           ))}
         </Row>
@@ -31,9 +67,11 @@ export function HistoryScreen(props: HistoryScreenProps) {
       {empty ? (
         <Section>
           <Col gap={SPACING.sm} align="center" style={{ paddingVertical: SPACING.xxl }}>
-            <AppText variant="mdSemi" color={COLORS.textSecondary}>No scans yet</AppText>
+            <AppText variant="mdSemi" color={COLORS.textSecondary}>
+              {filtered ? t.noScansMatch : t.noScansYet}
+            </AppText>
             <AppText variant="sm" color={COLORS.textLight} center>
-              Scans you take are stored on this device and never uploaded.
+              {filtered ? t.noScansMatchBlurb : t.noScansYetBlurb}
             </AppText>
           </Col>
         </Section>
@@ -45,7 +83,7 @@ export function HistoryScreen(props: HistoryScreenProps) {
               <Row justify="space-between" align="baseline">
                 <AppText variant="smSemi" color={COLORS.textSecondary}>{group.label}</AppText>
                 <AppText variant="xs" color={COLORS.textLight}>
-                  {group.scans.length} {group.scans.length === 1 ? 'scan' : 'scans'}
+                  {t.scanWord(group.scans.length)}
                 </AppText>
               </Row>
               <Col gap={SPACING.sm}>
@@ -65,3 +103,18 @@ export function HistoryScreen(props: HistoryScreenProps) {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.md - 4,
+    paddingVertical: 10,
+  },
+  field: { flex: 1, color: COLORS.text, fontSize: 14, padding: 0 },
+});

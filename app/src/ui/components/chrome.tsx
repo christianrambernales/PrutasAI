@@ -1,12 +1,18 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, View, ViewProps } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS, SHADOWS, SPACING } from '../tokens';
 import { Icon, IconName } from './Icon';
 import { AppText, Col, Row } from './primitives';
 
-/** Screen background. Children that should scroll go in <ScreenBody>. */
+/**
+ * Screen background, inset from the status bar. `SafeAreaView` from react-native
+ * is iOS-only — on Android, the target platform, it is a plain View — so the top
+ * inset is taken from react-native-safe-area-context instead.
+ */
 export function Screen({ style, ...rest }: ViewProps) {
-  return <View {...rest} style={[styles.screen, style]} />;
+  const insets = useSafeAreaInsets();
+  return <View {...rest} style={[styles.screen, { paddingTop: insets.top }, style]} />;
 }
 
 export function ScreenBody({ children }: { children: React.ReactNode }) {
@@ -26,18 +32,31 @@ export function AppBar({
   subtitle,
   onBack,
   action,
+  actionLabel,
   onAction,
+  menu,
+  onMenu,
   right,
 }: {
   title: string;
   subtitle?: string;
   onBack?: () => void;
   action?: IconName;
+  /** Names the action for assistive tech; an icon alone announces nothing. */
+  actionLabel?: string;
   onAction?: () => void;
+  /** A persistent leading icon independent of onBack — e.g. the chat sidebar's menu button. */
+  menu?: IconName;
+  onMenu?: () => void;
   right?: React.ReactNode;
 }) {
   return (
     <Row gap={SPACING.md - 4} style={styles.appBar}>
+      {menu && onMenu ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="menu" onPress={onMenu} hitSlop={8}>
+          <Icon name={menu} size={24} />
+        </Pressable>
+      ) : null}
       {onBack ? (
         <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} hitSlop={8}>
           <Icon name="arrowLeft" size={24} />
@@ -52,11 +71,35 @@ export function AppBar({
         ) : null}
       </Col>
       {right}
-      {action ? (
-        <Pressable accessibilityRole="button" onPress={onAction} hitSlop={8}>
+      {action && onAction ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel ?? action}
+          onPress={onAction}
+          hitSlop={8}
+        >
           <Icon name={action} size={22} color={COLORS.textSecondary} />
         </Pressable>
       ) : null}
+    </Row>
+  );
+}
+
+/**
+ * Transient feedback strip. Used where a control's backing service does not
+ * exist yet: pressing it must still say something truthful rather than appear
+ * broken.
+ */
+export function NoticeBar({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  return (
+    <Row gap={SPACING.sm} style={styles.notice}>
+      <Icon name="info" size={16} color={COLORS.surface} />
+      <AppText variant="xs" color={COLORS.surface} style={{ flex: 1 }}>
+        {message}
+      </AppText>
+      <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" onPress={onDismiss} hitSlop={8}>
+        <Icon name="close" size={16} color={COLORS.surface} />
+      </Pressable>
     </Row>
   );
 }
@@ -78,6 +121,7 @@ export function BottomNav({
   onSelect: (key: string) => void;
   onScan: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const left = tabs.slice(0, 2);
   const right = tabs.slice(2);
 
@@ -103,7 +147,9 @@ export function BottomNav({
   };
 
   return (
-    <View style={styles.nav}>
+    // The surface itself extends under the gesture bar, rather than floating
+    // above a strip of page background.
+    <View style={[styles.nav, { paddingBottom: insets.bottom }]}>
       <Row style={styles.navRow}>
         {left.map(item)}
         <Pressable accessibilityRole="button" accessibilityLabel="Scan a fruit" onPress={onScan} style={styles.navItem}>
@@ -134,6 +180,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+  },
+  notice: {
+    backgroundColor: COLORS.primaryDark,
+    paddingHorizontal: SPACING.md - 4,
+    paddingVertical: SPACING.sm + 2,
   },
   navRow: {
     paddingTop: SPACING.sm + 2,

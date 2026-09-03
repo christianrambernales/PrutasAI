@@ -14,7 +14,7 @@ export type IconName =
   | 'check' | 'plus' | 'search' | 'send' | 'sparkle' | 'warning' | 'info'
   | 'refresh' | 'trash' | 'download' | 'pin' | 'droplet' | 'mountain' | 'sun'
   | 'leaf' | 'thermometer' | 'trendingDown' | 'wifi' | 'wifiOff' | 'globe'
-  | 'shield' | 'package' | 'file' | 'calendar' | 'image';
+  | 'shield' | 'package' | 'file' | 'calendar' | 'image' | 'menu' | 'moreHorizontal';
 
 interface IconProps {
   name: IconName;
@@ -118,15 +118,36 @@ function draw(name: IconName, s: number, c: string): React.ReactElement[] {
           borderWidth: t, borderColor: c, borderBottomWidth: 0, borderTopLeftRadius: t, borderTopRightRadius: t }, 'h'),
         ring('l', c, s * 0.32, t, { left: s * 0.34, top: s * 0.38 }),
       ];
-    case 'gear':
+    case 'gear': {
+      // Eight teeth on a hub. Each tooth is a short bar inside a full-size
+      // rotated box, so it orbits the centre — the same trick the sun icon
+      // uses, and it avoids a masking disc that would assume a background
+      // colour. The old drawing was two rings and four bars at the compass
+      // points, which reads as a crosshair rather than a gear.
+      const teeth = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => (
+        <View
+          key={`tooth${deg}`}
+          style={{ position: 'absolute', width: s, height: s, transform: [{ rotate: `${deg}deg` }] }}
+        >
+          <View
+            style={{
+              position: 'absolute',
+              left: mid - t * 0.9,
+              top: s * 0.02,
+              width: t * 1.8,
+              height: s * 0.17,
+              borderRadius: t * 0.5,
+              backgroundColor: c,
+            }}
+          />
+        </View>
+      ));
       return [
-        ring('o', c, s * 0.7, t, { left: s * 0.15, top: s * 0.15 }),
-        ring('i', c, s * 0.26, t, { left: s * 0.37, top: s * 0.37 }),
-        bar('t1', c, t, s * 0.16, { left: mid - t / 2, top: 0 }),
-        bar('t2', c, t, s * 0.16, { left: mid - t / 2, top: s * 0.84 }),
-        bar('t3', c, s * 0.16, t, { left: 0, top: mid - t / 2 }),
-        bar('t4', c, s * 0.16, t, { left: s * 0.84, top: mid - t / 2 }),
+        ...teeth,
+        ring('body', c, s * 0.62, t, { left: s * 0.19, top: s * 0.19 }),
+        ring('hub', c, s * 0.24, t, { left: s * 0.38, top: s * 0.38 }),
       ];
+    }
     case 'chevronRight':
       return [chevron('c', c, s * 0.36, t, -45, { left: s * 0.28, top: s * 0.32 })];
     case 'chevronLeft':
@@ -152,6 +173,12 @@ function draw(name: IconName, s: number, c: string): React.ReactElement[] {
       return [
         bar('a', c, s * 0.66, t, { left: s * 0.17, top: mid - t / 2 }),
         bar('b', c, t, s * 0.66, { left: mid - t / 2, top: s * 0.17 }),
+      ];
+    case 'menu':
+      return [
+        bar('a', c, s * 0.74, t, { left: s * 0.13, top: s * 0.22 }),
+        bar('b', c, s * 0.74, t, { left: s * 0.13, top: mid - t / 2 }),
+        bar('c', c, s * 0.74, t, { left: s * 0.13, top: s * 0.72 }),
       ];
     case 'search':
       return [
@@ -326,6 +353,12 @@ function draw(name: IconName, s: number, c: string): React.ReactElement[] {
           borderWidth: t, borderColor: c, borderRadius: t * 1.6 }, 'b'),
         disc('s', c, s * 0.16, { left: s * 0.26, top: s * 0.3 }),
         triangle('m', c, s * 0.5, s * 0.3, { left: s * 0.34, top: s * 0.5 }),
+      ];
+    case 'moreHorizontal':
+      return [
+        disc('a', c, t * 1.3, { left: s * 0.16, top: mid - t * 0.65 }),
+        disc('b', c, t * 1.3, { left: mid - t * 0.65, top: mid - t * 0.65 }),
+        disc('c', c, t * 1.3, { left: s * 0.84 - t * 1.3, top: mid - t * 0.65 }),
       ];
     default:
       return [ring('r', c, s * 0.8, t, { left: s * 0.1, top: s * 0.1 })];

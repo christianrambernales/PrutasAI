@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { createRateStore } from '../_lib/rateStore';
+import { createRateStore } from '../_lib/rateStore.js';
 
 function client(count: number) {
   return {

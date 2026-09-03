@@ -11,17 +11,19 @@
  * feed the screens.
  */
 
-import { COLORS } from '../ui';
+import { COLORS, SEVERITY_COLOR } from '../ui';
 import type {
   ChatMessage,
   ClimateNormals,
   ClimateSnapshot,
+  DetectionStage,
   FruitSummary,
   ModelRow,
   MonitoringSession,
   ScanGroup,
   ScanResult,
   ScanSummary,
+  Checkpoint,
   Source,
   Suitability,
   VarietySummary,
@@ -30,13 +32,13 @@ import type {
 export const FRUITS: FruitSummary[] = [
   { key: 'banana', emoji: '🍌', nameEn: 'Banana', nameFil: 'Saging', varietyCount: 4 },
   { key: 'mango', emoji: '🥭', nameEn: 'Mango', nameFil: 'Mangga', varietyCount: 3 },
-  { key: 'papaya', emoji: '🫒', nameEn: 'Papaya', nameFil: 'Papaya', varietyCount: 4 },
+  { key: 'papaya', emoji: '🍈', nameEn: 'Papaya', nameFil: 'Papaya', varietyCount: 4 },
 ];
 
 export const RECENT_SCANS: ScanSummary[] = [
   { id: 's6', emoji: '🍌', title: 'Banana · Lakatan', status: 'moderate', detail: 'Anthracnose', timeLabel: '10:24' },
   { id: 's5', emoji: '🥭', title: 'Mango · Carabao', status: 'healthy', detail: 'No disease found', timeLabel: 'Yesterday' },
-  { id: 's4', emoji: '🫒', title: 'Papaya', status: 'undetermined', detail: 'Variety unknown', timeLabel: 'Aug 8' },
+  { id: 's4', emoji: '🍈', title: 'Papaya', status: 'undetermined', detail: 'Variety unknown', timeLabel: 'Aug 8' },
 ];
 
 export const SCAN_GROUPS: ScanGroup[] = [
@@ -174,7 +176,16 @@ export const CHAT: ChatMessage[] = [
   { id: 'm3', role: 'assistant', text: 'Ang ulan ay mas mataas kaysa sa optimal na saklaw, kaya siguraduhing maayos ang drainage ng lupa.' },
 ];
 
-export const CHAT_SUGGESTIONS = ['Paano ang mangga?', 'Anthracnose remedy', 'Switch to English'];
+/**
+ * Every suggestion must be something the intent matcher actually routes.
+ * "Switch to English" used to sit here and looked like a command, but it matched
+ * nothing and fell through to the catch-all reply.
+ */
+export const CHAT_SUGGESTIONS = [
+  'Paano ang mangga?',
+  'Anthracnose remedy',
+  'Anong mga uri ng saging?',
+];
 
 export const SOURCES_BY_FRUIT: Record<string, Source[]> = {
   banana: [
@@ -193,6 +204,93 @@ export const SOURCES_BY_FRUIT: Record<string, Source[]> = {
     },
   ],
 };
+
+/** Every sample scan, newest first, flattened out of the grouped history. */
+export const ALL_SCANS: ScanSummary[] = SCAN_GROUPS.flatMap(group => group.scans);
+
+const SEVERITY_PERCENT: Record<ScanSummary['status'], number | null> = {
+  early: 12,
+  moderate: 27,
+  severe: 61,
+  healthy: null,
+  undetermined: null,
+};
+
+/**
+ * Builds the sample result for a sample scan, so opening two different history
+ * rows shows two different results rather than the same banana every time.
+ *
+ * Sample data only — a *fresh* capture never lands here. It goes to
+ * CaptureResultScreen, which reports what the registry can actually do.
+ */
+export function resultForScan(scanId: string): ScanResult | null {
+  const scan = ALL_SCANS.find(s => s.id === scanId);
+  if (!scan) return null;
+
+  const [fruit, variety] = scan.title.split('·').map(part => part.trim());
+  const diseased = scan.detail !== 'No disease found' && scan.status !== 'undetermined';
+  const percent = SEVERITY_PERCENT[scan.status];
+
+  const stages: DetectionStage[] = [
+    { stage: 1, caption: 'STAGE 1 · FRUIT', name: fruit, confidence: 96, color: COLORS.healthy },
+    variety
+      ? { stage: 2, caption: 'STAGE 2 · VARIETY', name: variety, confidence: 88, color: COLORS.healthy }
+      : { stage: 2, caption: 'STAGE 2 · VARIETY', name: 'Not identified', secondary: `· ${scan.detail}`, confidence: 0, color: COLORS.textLight },
+    diseased
+      ? { stage: 3, caption: 'STAGE 3 · DISEASE', name: scan.detail, confidence: 91, color: SEVERITY_COLOR[scan.status] }
+      : { stage: 3, caption: 'STAGE 3 · DISEASE', name: scan.detail, confidence: scan.status === 'healthy' ? 94 : 0, color: scan.status === 'healthy' ? COLORS.healthy : COLORS.textLight },
+  ];
+
+  return {
+    emoji: scan.emoji,
+    savedLabel: `Sample scan ${scan.id} · ${scan.timeLabel}`,
+    severityLabel: scan.status,
+    severityPercent: percent,
+    stages,
+    remedy: diseased ? RESULT.remedy : null,
+  };
+}
+
+/**
+ * The monitoring session for a given scan.
+ *
+ * Same reasoning as resultForScan: opening monitoring from a mango scan used to
+ * show a banana session, because the screen was handed one frozen constant no
+ * matter which scan started it.
+ */
+export function sessionForScan(scanId: string): MonitoringSession | null {
+  const scan = ALL_SCANS.find(s => s.id === scanId);
+  if (!scan) return null;
+
+  const percent = SEVERITY_PERCENT[scan.status];
+  const diseased = percent !== null;
+
+  // Nothing is being tracked yet for a healthy or unidentified scan, so the
+  // session opens with only its first checkpoint recorded.
+  const later: Checkpoint[] = diseased
+    ? [
+        { day: 5, dateLabel: '+5 days', status: 'early', percent: Math.round(percent * 0.45), note: 'Improving since day 0', done: true },
+        { day: 10, dateLabel: '+10 days', status: null, percent: null, note: 'due', done: false },
+      ]
+    : [
+        { day: 5, dateLabel: '+5 days', status: null, percent: null, note: 'due', done: false },
+        { day: 10, dateLabel: '+10 days', status: null, percent: null, note: 'due', done: false },
+      ];
+
+  return {
+    emoji: scan.emoji,
+    title: scan.title,
+    subtitle: `${scan.detail} · started ${scan.timeLabel}`,
+    progress: diseased ? 'improving' : 'stable',
+    progressDetail: diseased
+      ? `Severity fell from ${percent}% to ${Math.round(percent * 0.45)}% over 5 days.`
+      : 'Nothing to track yet — no lesion was measured on the first scan.',
+    checkpoints: [
+      { day: 0, dateLabel: scan.timeLabel, status: scan.status, percent, note: 'Initial scan', done: true },
+      ...later,
+    ],
+  };
+}
 
 /**
  * A mixed registry state: stage 1 and the banana head ready, the mango head

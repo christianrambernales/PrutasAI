@@ -4,7 +4,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { RateClient } from './rateStore';
+import type { RateClient } from './rateStore.js';
 
 export interface ServiceEnv {
   SUPABASE_URL: string;

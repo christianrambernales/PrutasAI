@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import {
   AppText, Card, Chip, Col, COLORS, Divider, EmojiBadge, Icon, PressableRow,
-  RADIUS, Row, Section, SectionHeader, SPACING,
+  RADIUS, Row, Section, SectionHeader, SPACING, useT,
 } from '../../ui';
 import type { FruitSummary, Source, VarietySummary } from '../viewModels';
 
@@ -20,11 +20,14 @@ export interface VarietyInfoScreenProps {
   requirements: CropRequirement[];
   requirementsVerified: boolean;
   sources: Source[];
+  /** Key of the row currently opened; the design has no separate detail screen. */
+  expandedVarietyKey: string | null;
   onOpenVariety: (key: string) => void;
 }
 
 export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
-  const { fruit, modelVarieties, informationOnly, requirements, sources } = props;
+  const t = useT();
+  const { fruit, modelVarieties, informationOnly, requirements, sources, expandedVarietyKey } = props;
 
   return (
     <>
@@ -35,39 +38,70 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
             <AppText variant="xxl">{fruit.nameEn}</AppText>
             <AppText variant="sm" color={COLORS.textSecondary}>{fruit.nameFil}</AppText>
             <AppText variant="xs" color={COLORS.textLight}>
-              {modelVarieties.length} model classes · {informationOnly.length} information-only strains
+              {t.modelClassesAndStrains(modelVarieties.length, informationOnly.length)}
             </AppText>
           </Col>
         </Row>
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <SectionHeader title="Identified by the model" meta="stage 2" />
+        <SectionHeader title={t.identifiedByModel} meta="stage 2" />
         <Col gap={SPACING.sm}>
-          {modelVarieties.map(v => (
-            <PressableRow key={v.key} onPress={() => props.onOpenVariety(v.key)}>
-              <Card>
-                <Row gap={SPACING.md - 4}>
-                  <View style={styles.index}>
-                    <AppText variant="xsSemi" color={COLORS.primary}>{v.mlClassIndex}</AppText>
-                  </View>
-                  <Col gap={2} style={{ flex: 1 }}>
-                    <AppText variant="mdSemi">{v.nameEn}</AppText>
-                    <AppText variant="xs" color={COLORS.textSecondary}>{v.note ?? v.nameFil}</AppText>
-                  </Col>
-                  <Icon name="chevronRight" size={18} color={COLORS.textLight} />
-                </Row>
-              </Card>
-            </PressableRow>
-          ))}
+          {modelVarieties.map(v => {
+            const open = v.key === expandedVarietyKey;
+            return (
+              <PressableRow
+                key={v.key}
+                accessibilityLabel={v.nameEn}
+                selected={open}
+                onPress={() => props.onOpenVariety(v.key)}
+              >
+                <Card style={open ? { gap: SPACING.sm + 2 } : undefined}>
+                  <Row gap={SPACING.md - 4}>
+                    <View style={styles.index}>
+                      <AppText variant="xsSemi" color={COLORS.primary}>{v.mlClassIndex}</AppText>
+                    </View>
+                    <Col gap={2} style={{ flex: 1 }}>
+                      <AppText variant="mdSemi">{v.nameEn}</AppText>
+                      <AppText variant="xs" color={COLORS.textSecondary}>{v.note ?? v.nameFil}</AppText>
+                    </Col>
+                    <Icon name={open ? 'chevronDown' : 'chevronRight'} size={18} color={COLORS.textLight} />
+                  </Row>
+                  {open ? (
+                    <>
+                      <Divider />
+                      <Col gap={SPACING.sm}>
+                        <Row justify="space-between">
+                          <AppText variant="xs" color={COLORS.textSecondary}>{t.filipinoName}</AppText>
+                          <AppText variant="xsSemi">{v.nameFil}</AppText>
+                        </Row>
+                        <Row justify="space-between">
+                          <AppText variant="xs" color={COLORS.textSecondary}>{t.classIndex}</AppText>
+                          <AppText variant="xsSemi">{v.mlClassIndex}</AppText>
+                        </Row>
+                        <Row justify="space-between">
+                          <AppText variant="xs" color={COLORS.textSecondary}>{t.predictedByModel}</AppText>
+                          <AppText variant="xsSemi">{t.yes}</AppText>
+                        </Row>
+                        <AppText variant="xs" color={COLORS.textLight}>
+                          Growing detail arrives with crop-requirements.yaml, which is not written
+                          yet — nothing variety-specific is claimed until it carries a citation.
+                        </AppText>
+                      </Col>
+                    </>
+                  ) : null}
+                </Card>
+              </PressableRow>
+            );
+          })}
         </Col>
       </Section>
 
       {informationOnly.length > 0 ? (
         <Section gap={SPACING.sm + 2}>
           <Row justify="space-between" align="baseline">
-            <AppText variant="lg">Information only</AppText>
-            <Chip label="not predicted" tone="outline" />
+            <AppText variant="lg">{t.informationOnly}</AppText>
+            <Chip label={t.notPredicted} tone="outline" />
           </Row>
           <Card style={{ gap: SPACING.sm + 2 }}>
             <Row gap={SPACING.sm} align="flex-start">
@@ -92,8 +126,8 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
 
       <Section gap={SPACING.sm + 2}>
         <Row justify="space-between" align="baseline">
-          <AppText variant="lg">Growing conditions</AppText>
-          {!props.requirementsVerified ? <Chip label="Unverified" tone="warning" /> : null}
+          <AppText variant="lg">{t.growingConditions}</AppText>
+          {!props.requirementsVerified ? <Chip label={t.unverified} tone="warning" /> : null}
         </Row>
         <Card style={{ gap: SPACING.sm + 2 }}>
           {requirements.map((req, i) => (
@@ -119,7 +153,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <SectionHeader title="Sources" />
+        <SectionHeader title={t.sources} />
         <Card style={{ gap: SPACING.sm }}>
           {sources.map((s, i) => (
             <Col key={s.citation} gap={SPACING.sm}>

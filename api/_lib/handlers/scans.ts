@@ -5,12 +5,13 @@
  * so a fully compromised client still cannot retrieve another device's rows.
  */
 
-import type { RateLimitBinding } from '../limits';
-import { checkLimits } from '../limits';
-import type { ApiResult, RequestContext } from '../http';
-import { validateScan } from '../validate';
+import type { RateLimitBinding } from '../limits.js';
+import { checkLimits } from '../limits.js';
+import type { ApiResult, RequestContext } from '../http.js';
+import { validateScan } from '../validate.js';
 
 export interface InsertableScan {
+  user_id: string;
   id: string;
   device_id: string;
   image_uri: string | null;
@@ -32,7 +33,18 @@ function coarse(value: number | undefined): number | null {
 
 export interface ScanDeps {
   limiter: RateLimitBinding;
+  /** Returns the user id the token belongs to, or null if it does not verify. */
+  verifyToken(token: string): Promise<string | null>;
   insertScan(row: InsertableScan): Promise<void>;
+}
+
+export interface ScanContext extends RequestContext {
+  /**
+   * The raw bearer token the request carried, or null when it carried none.
+   * Unverified at this point: `deps.verifyToken` is what turns it into a user,
+   * and it runs behind the rate-limit gate.
+   */
+  accessToken: string | null;
 }
 
 function json(status: number, body: unknown, headers?: Record<string, string>): ApiResult {
@@ -42,7 +54,7 @@ function json(status: number, body: unknown, headers?: Record<string, string>): 
 export async function handleScans(
   deps: ScanDeps,
   body: unknown,
-  ctx: RequestContext,
+  ctx: ScanContext,
 ): Promise<ApiResult> {
   // Throttle first: a flood of malformed bodies must cost one counter check,
   // not a full validation pass each.
@@ -51,8 +63,25 @@ export async function handleScans(
     return json(429, { error: 'rate limited' }, { 'Retry-After': String(gate.retryAfter) });
   }
 
-  // Anonymous is fine; unattributable is not. device_id is what a later
-  // sign-in claims these rows by.
+  // Fail closed: an unattributed row is exactly what this design removed.
+  if (ctx.accessToken === null) return json(401, { error: 'authentication required' });
+
+  // Verification is a network round trip to the auth service, so it lives
+  // behind the gate above rather than in front of it: a flood of requests
+  // carrying junk tokens must cost one counter check, not one round trip each.
+  let userId: string | null;
+  try {
+    userId = await deps.verifyToken(ctx.accessToken);
+  } catch (cause) {
+    // Same rule as the storage failure below: log the cause, never echo it.
+    // An auth outage is an upstream failure, not a bad request.
+    console.error('scans: verifyToken failed', cause);
+    return json(502, { error: 'upstream unavailable' });
+  }
+  if (userId === null) return json(401, { error: 'authentication required' });
+
+  // device_id is scan metadata and the rate-limiter key — no longer an
+  // ownership mechanism.
   if (ctx.deviceId === null) return json(400, { error: 'X-Device-Id required' });
 
   const check = validateScan(body);
@@ -61,6 +90,7 @@ export async function handleScans(
 
   try {
     await deps.insertScan({
+      user_id: userId,
       id: row.uuid,
       device_id: ctx.deviceId,
       // image_uri is always null in practice: the drain never sends it (a

@@ -55,13 +55,25 @@ export function Button({
 }: {
   label: string;
   onPress?: () => void;
-  variant?: 'primary' | 'accent' | 'secondary';
+  variant?: 'primary' | 'accent' | 'secondary' | 'danger';
   icon?: IconName;
 }) {
   const bg =
-    variant === 'primary' ? COLORS.primary : variant === 'accent' ? COLORS.accent : COLORS.surface;
+    variant === 'primary'
+      ? COLORS.primary
+      : variant === 'accent'
+        ? COLORS.accent
+        : variant === 'danger'
+          ? COLORS.error
+          : COLORS.surface;
   const fg =
-    variant === 'primary' ? COLORS.surface : variant === 'accent' ? COLORS.primaryDark : COLORS.text;
+    variant === 'primary'
+      ? COLORS.surface
+      : variant === 'accent'
+        ? COLORS.primaryDark
+        : variant === 'danger'
+          ? COLORS.surface
+          : COLORS.text;
 
   return (
     <Pressable
@@ -81,10 +93,20 @@ export function Button({
   );
 }
 
-export function Toggle({ on, onPress }: { on: boolean; onPress?: () => void }) {
+export function Toggle({
+  on,
+  onPress,
+  accessibilityLabel,
+}: {
+  on: boolean;
+  onPress?: () => void;
+  /** Required in practice: the switch sits beside its label, never inside it. */
+  accessibilityLabel?: string;
+}) {
   return (
     <Pressable
       accessibilityRole="switch"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ checked: on }}
       onPress={onPress}
       style={[styles.track, { backgroundColor: on ? COLORS.primary : COLORS.border }]}
@@ -130,16 +152,26 @@ export function PressableRow({
   onPress,
   children,
   style,
+  accessibilityLabel,
+  selected,
+  disabled,
 }: {
   onPress?: () => void;
   children: React.ReactNode;
   style?: ViewStyle;
+  accessibilityLabel?: string;
+  /** Surfaces selection to assistive tech and to the interaction tests. */
+  selected?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={selected === undefined ? { disabled } : { selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }, style]}
+      style={({ pressed }) => [{ opacity: pressed && !disabled ? 0.7 : 1 }, style]}
     >
       {children}
     </Pressable>

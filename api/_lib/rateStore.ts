@@ -10,7 +10,7 @@
  * fail-closed — this exception applies only to the throttle.
  */
 
-import type { RateLimitBinding } from './limits';
+import type { RateLimitBinding } from './limits.js';
 
 export interface RateClient {
   prune(key: string, before: string): Promise<void>;
@@ -27,8 +27,10 @@ const WINDOW_MS = 60_000;
 const CEILINGS: { prefix: string; max: number }[] = [
   { prefix: 'scan:ip:', max: 120 },
   { prefix: 'chat:ip:', max: 40 },
+  { prefix: 'conv:ip:', max: 120 },
   { prefix: 'scan:', max: 30 },
   { prefix: 'chat:', max: 10 },
+  { prefix: 'conv:', max: 40 },
 ];
 
 function ceilingFor(key: string): number {

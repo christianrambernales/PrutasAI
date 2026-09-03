@@ -19,7 +19,7 @@ export const RETRY_AFTER_SECONDS = 60;
 
 export async function checkLimits(
   binding: RateLimitBinding,
-  scope: 'scan' | 'chat',
+  scope: 'scan' | 'chat' | 'conv',
   deviceId: string | null,
   ip: string,
 ): Promise<LimitResult> {

@@ -8,22 +8,40 @@ import type { ScanResult } from '../viewModels';
 
 export interface ResultScreenProps {
   result: ScanResult;
+  /** True for the bundled sample scans, so the screen never reads as a real detection. */
+  sample?: boolean;
   onStartMonitoring: () => void;
   onAskAssistant: () => void;
 }
 
-export function ResultScreen({ result, onStartMonitoring, onAskAssistant }: ResultScreenProps) {
+export function ResultScreen({ result, sample, onStartMonitoring, onAskAssistant }: ResultScreenProps) {
   const { severityLabel, severityPercent, remedy } = result;
+  const fruitStage = result.stages.find(s => s.stage === 1);
 
   return (
     <>
+      {sample ? (
+        <Section>
+          <Tile style={{ backgroundColor: '#fdf1e3' }}>
+            <Row gap={SPACING.sm} align="flex-start">
+              <Icon name="info" size={16} color="#8a4b00" />
+              <AppText variant="xs" color="#8a4b00" style={{ flex: 1 }}>
+                Sample scan. The scan database is not wired yet, so this is bundled design content —
+                not something a model produced.
+              </AppText>
+            </Row>
+          </Tile>
+        </Section>
+      ) : null}
+
       <Section>
         <View style={styles.photo}>
           <Text style={styles.subject}>{result.emoji}</Text>
           <View style={styles.bbox}>
             <View style={styles.bboxLabel}>
+              {/* Labelled from the result, so a mango box never reads "banana". */}
               <AppText variant="xsSemi" color={COLORS.primaryDark} style={{ fontSize: 10 }}>
-                banana · 0.96
+                {fruitStage ? `${fruitStage.name.toLowerCase()} · ${(fruitStage.confidence / 100).toFixed(2)}` : 'no fruit box'}
               </AppText>
             </View>
           </View>

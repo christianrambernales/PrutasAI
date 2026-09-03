@@ -1,10 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleAssistant } from '../_lib/handlers/assistant';
-import { clientIp, deviceIdOf, send } from '../_lib/http';
-import { createRateStore } from '../_lib/rateStore';
-import { createSupabaseRateClient, serviceClient } from '../_lib/supabase';
+import { handleAssistant } from '../_lib/handlers/assistant.js';
+import { createGeminiAsk } from '../_lib/gemini.js';
+import { clientIp, deviceIdOf, send } from '../_lib/http.js';
+import { createRateStore } from '../_lib/rateStore.js';
+import { createSupabaseRateClient, serviceClient } from '../_lib/supabase.js';
 
-const UPSTREAM = 'https://generativelanguage.googleapis.com/v1beta/models';
+// Ordered by free-tier daily ceiling, richest first. A 429 on one model
+// advances to the next rather than failing the request, because each model
+// carries its own ceiling within the project's shared quota.
+const DEFAULT_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+];
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return send(res, { status: 405, body: { error: 'method not allowed' } });
@@ -17,47 +27,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return send(res, { status: 503, body: { error: 'server not configured' } });
   }
 
-  const model = process.env.GEMINI_MODEL ?? 'gemini-3.6-flash';
+  const models = process.env.GEMINI_MODELS
+    ? process.env.GEMINI_MODELS.split(',').map(m => m.trim()).filter(Boolean)
+    : DEFAULT_MODELS;
   const supabase = serviceClient({ SUPABASE_URL: url, SUPABASE_SERVICE_ROLE_KEY: serviceKey });
 
   const result = await handleAssistant(
     {
       limiter: createRateStore(createSupabaseRateClient(supabase)),
-      async ask(instruction, payload) {
-        let response: Response;
-        try {
-          response = await fetch(`${UPSTREAM}/${model}:generateContent`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: instruction }] },
-              contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload) }] }],
-              generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
-            }),
-          });
-        } catch (cause) {
-          console.error('assistant: upstream fetch failed', cause);
-          return { ok: false, status: 502 };
-        }
-
-        if (!response.ok) return { ok: false, status: response.status };
-
-        const data = (await response.json().catch(() => null)) as
-          | { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-          | null;
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (typeof text !== 'string') {
-          console.error('assistant: upstream response missing text', data);
-          return { ok: false, status: 502 };
-        }
-
-        try {
-          return { ok: true, data: JSON.parse(text) };
-        } catch (cause) {
-          console.error('assistant: upstream text was not valid JSON', cause);
-          return { ok: false, status: 502 };
-        }
-      },
+      ask: createGeminiAsk({ apiKey: geminiKey, models }),
     },
     req.body,
     { deviceId: deviceIdOf(req.headers), ip: clientIp(req.headers) },

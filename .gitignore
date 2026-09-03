@@ -32,3 +32,38 @@ app/android/
 app/ios/
 *.keystore
 *.jks
+
+api/node_modules/
+
+.vercel
+.env*
+
+# Agent/workflow scratch (was local-only in .git/info/exclude)
+.superpowers/
+.agent/
+
+# Claude Code runtime state (settings.local.json covered above)
+**/.claude/scheduled_tasks.lock
+**/.claude/scheduled_tasks.json
+**/.claude/routines/.state/
+**/.claude/worktrees/
+**/.claude/checkpoints/
+**/.claude/mailbox/
+**/.claude/agent-registry.json
+**/.claude/agent-memory-local
+**/.claude/first-run
+**/.claude/assistant-daemon-state.json
+
+# Caches & logs
+.pytest_cache/
+.expo/
+app/.expo/
+*.log
+npm-debug.log*
+
+# Working notes: only docs/BUILDING.md is tracked
+docs/*
+!docs/BUILDING.md
+
+# Scratch scripts
+scratch.*

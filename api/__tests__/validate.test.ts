@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { validateScan } from '../_lib/validate';
+import { validateScan } from '../_lib/validate.js';
 
 const VALID = {
   uuid: '3f2504e0-4f89-11d3-9a0c-0305e82c3301',

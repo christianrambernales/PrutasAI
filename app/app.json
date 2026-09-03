@@ -12,7 +12,10 @@
     "android": {
       "package": "com.prutasai.app",
       "versionCode": 1,
-      "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION"],
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -23,6 +26,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "PrutasAI uses a coarse, one-off location to fetch local weather and climate normals. The coordinate is rounded to about a kilometre before it is stored."
+        }
+      ],
+      "expo-sqlite",
+      "expo-secure-store"
+    ]
   }
 }

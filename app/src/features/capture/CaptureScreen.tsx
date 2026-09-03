@@ -1,14 +1,22 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { AppText, COLORS, Icon, RADIUS, Row, SPACING } from '../../ui';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppText, COLORS, Icon, RADIUS, Row, SPACING, useT } from '../../ui';
 
 export interface CaptureScreenProps {
   onClose: () => void;
   onCapture: () => void;
   onPickImage: () => void;
   onFlip: () => void;
-  /** Stand-in for the live preview until expo-camera is wired in. */
-  previewEmoji?: string;
+  /**
+   * The live camera preview, supplied by the container. Kept as a node so this
+   * screen stays presentational and testable without a camera.
+   */
+  preview?: React.ReactNode;
+  /** False while permission is pending or denied — the shutter is disabled. */
+  canCapture?: boolean;
+  /** True while a photo is being written. */
+  busy?: boolean;
 }
 
 /**
@@ -16,9 +24,15 @@ export interface CaptureScreenProps {
  * navigation, so the frame is the whole screen.
  */
 export function CaptureScreen(props: CaptureScreenProps) {
+  const t = useT();
+  const canCapture = props.canCapture !== false && !props.busy;
+  // This screen bypasses <Screen>, so it insets itself: without this the close
+  // button sits under the status bar and the shutter under the gesture bar.
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.root}>
-      <Row justify="space-between" style={styles.top}>
+      <Row justify="space-between" style={[styles.top, { paddingTop: insets.top + SPACING.sm }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close camera" onPress={props.onClose} hitSlop={10}>
           <Icon name="close" size={24} color={COLORS.surface} />
         </Pressable>
@@ -27,14 +41,14 @@ export function CaptureScreen(props: CaptureScreenProps) {
       </Row>
 
       <View style={styles.viewfinder}>
-        <View style={styles.brackets}>
+        {props.preview}
+        <View style={styles.brackets} pointerEvents="none">
           <View style={[styles.bracket, styles.tl]} />
           <View style={[styles.bracket, styles.tr]} />
           <View style={[styles.bracket, styles.bl]} />
           <View style={[styles.bracket, styles.br]} />
         </View>
-        <Text style={styles.subject}>{props.previewEmoji ?? '🍌'}</Text>
-        <View style={styles.hint}>
+        <View style={styles.hint} pointerEvents="none">
           <AppText variant="xs" color={COLORS.surface}>Center the fruit in the frame</AppText>
         </View>
       </View>
@@ -42,15 +56,22 @@ export function CaptureScreen(props: CaptureScreenProps) {
       <Row gap={SPACING.sm} justify="center" style={{ paddingTop: 14 }}>
         <Icon name="shield" size={14} color="rgba(255,255,255,0.62)" />
         <AppText variant="xs" color="rgba(255,255,255,0.62)">
-          Runs on your phone · nothing is uploaded
+          {t.captureOnDevice}
         </AppText>
       </Row>
 
-      <Row justify="space-between" style={styles.controls}>
+      <Row justify="space-between" style={[styles.controls, { paddingBottom: insets.bottom + 14 }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Choose a photo" onPress={props.onPickImage} style={styles.thumb}>
           <Icon name="image" size={22} color={COLORS.surface} />
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Take photo" onPress={props.onCapture} style={styles.shutter}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Take photo"
+          accessibilityState={{ disabled: !canCapture }}
+          disabled={!canCapture}
+          onPress={props.onCapture}
+          style={[styles.shutter, !canCapture && styles.shutterOff]}
+        >
           <View style={styles.shutterInner} />
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Flip camera" onPress={props.onFlip} hitSlop={10}>
@@ -88,7 +109,6 @@ const styles = StyleSheet.create({
   tr: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 12 },
   bl: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 12 },
   br: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 12 },
-  subject: { fontSize: 96 },
   hint: {
     position: 'absolute',
     bottom: 22,
@@ -115,5 +135,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  shutterOff: { opacity: 0.4 },
   shutterInner: { width: 52, height: 52, borderRadius: 26, backgroundColor: COLORS.surface },
 });

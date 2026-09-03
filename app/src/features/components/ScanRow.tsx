@@ -4,7 +4,7 @@ import type { ScanSummary } from '../viewModels';
 
 export function ScanRow({ scan, onPress }: { scan: ScanSummary; onPress?: () => void }) {
   return (
-    <PressableRow onPress={onPress}>
+    <PressableRow accessibilityLabel={scan.title} onPress={onPress}>
       <Card>
         <Row gap={SPACING.md - 4}>
           <EmojiBadge emoji={scan.emoji} size={44} square />

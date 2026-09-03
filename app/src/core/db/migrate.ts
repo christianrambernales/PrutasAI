@@ -1,7 +1,13 @@
 import type { SqlDriver } from './driver';
 import initial from './migrations/001_initial.sql';
+import location from './migrations/002_scan_location.sql';
+import conversations from './migrations/003_conversations.sql';
 
-const MIGRATIONS: { version: number; sql: string }[] = [{ version: 1, sql: initial }];
+const MIGRATIONS: { version: number; sql: string }[] = [
+  { version: 1, sql: initial },
+  { version: 2, sql: location },
+  { version: 3, sql: conversations },
+];
 
 export function migrate(driver: SqlDriver): number {
   driver.exec(

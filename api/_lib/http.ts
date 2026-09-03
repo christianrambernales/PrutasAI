@@ -38,6 +38,20 @@ export function deviceIdOf(headers: Headers): string | null {
   return first(headers['x-device-id']);
 }
 
+/**
+ * The token from an `Authorization: Bearer <token>` header, or null.
+ *
+ * Null for every shape that is not a usable token — no header, a different
+ * scheme, or `Bearer ` with nothing after it — so a handler has one thing to
+ * check rather than three.
+ */
+export function bearerToken(headers: Headers): string | null {
+  const value = first(headers['authorization']);
+  if (value === null || !value.startsWith('Bearer ')) return null;
+  const token = value.slice('Bearer '.length).trim();
+  return token === '' ? null : token;
+}
+
 export function send(res: VercelResponse, result: ApiResult): void {
   for (const [key, value] of Object.entries(result.headers ?? {})) {
     res.setHeader(key, value);

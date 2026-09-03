@@ -3,16 +3,20 @@ import type { AppState, Language, SavedLocation } from '../../../state/appState'
 
 export const SETTING_KEYS = {
   language: 'app_language',
+  languagePicked: 'app_language_picked',
   savedLocation: 'app_saved_location',
   useLocation: 'app_use_location',
   aiAssistant: 'app_ai_assistant',
+  lastPurgeSweep: 'app_last_purge_sweep',
 } as const;
 
 const KEY_ALIAS_MAP: Record<string, string> = {
   language: SETTING_KEYS.language,
+  languagePicked: SETTING_KEYS.languagePicked,
   savedLocation: SETTING_KEYS.savedLocation,
   useLocation: SETTING_KEYS.useLocation,
   aiAssistant: SETTING_KEYS.aiAssistant,
+  lastPurgeSweep: SETTING_KEYS.lastPurgeSweep,
 };
 
 function resolveKey(key: string): string {

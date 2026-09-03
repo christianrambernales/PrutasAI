@@ -6,16 +6,22 @@
  * decrypt to use it. The only fix is that the key never ships.
  */
 
-import type { RateLimitBinding } from '../limits';
-import { checkLimits, RETRY_AFTER_SECONDS } from '../limits';
-import type { ApiResult, RequestContext } from '../http';
-import { GENERAL_INSTRUCTION, REPHRASE_INSTRUCTION } from '../instructions';
+import type { RateLimitBinding } from '../limits.js';
+import { checkLimits, RETRY_AFTER_SECONDS } from '../limits.js';
+import type { ApiResult, RequestContext } from '../http.js';
+import { GENERAL_INSTRUCTION, REPHRASE_INSTRUCTION } from '../instructions.js';
 
 export type AskResult = { ok: true; data: unknown } | { ok: false; status: number };
+export type Turn = { role: 'user' | 'model'; text: string };
 
 export interface AssistantDeps {
   limiter: RateLimitBinding;
-  ask(instruction: string, payload: unknown): Promise<AskResult>;
+  ask(instruction: string, turns: Turn[]): Promise<AskResult>;
+}
+
+interface HistoryTurn {
+  role: 'user' | 'assistant';
+  text: string;
 }
 
 interface AssistantBody {
@@ -25,6 +31,34 @@ interface AssistantBody {
   verdict?: string | null;
   facts?: string[];
   curated?: string;
+  history?: unknown;
+}
+
+/** How many prior turns ride along, matching the app's own history window. */
+const HISTORY_WINDOW = 10;
+/** Per-turn ceiling. Well above any real chat turn, far below a quota-burning one. */
+const MAX_TURN_TEXT = 4000;
+
+/**
+ * Turns an untrusted `history` into turns worth forwarding.
+ *
+ * This route has no bearer check — only a device-id/IP throttle — so the
+ * body is whatever a client chose to send. Left unchecked, `history` is an
+ * unbounded prompt on someone else's Gemini quota, and a non-array value
+ * makes `.map` throw a 500. Anything unrecognised is dropped, not rejected:
+ * a malformed turn is not worth failing an otherwise answerable question.
+ */
+function historyTurns(raw: unknown): Turn[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((turn): turn is HistoryTurn => {
+      if (turn === null || typeof turn !== 'object') return false;
+      const { role, text } = turn as Record<string, unknown>;
+      if (role !== 'user' && role !== 'assistant') return false;
+      return typeof text === 'string' && text.length > 0 && text.length <= MAX_TURN_TEXT;
+    })
+    .slice(-HISTORY_WINDOW)
+    .map((h): Turn => ({ role: h.role === 'assistant' ? 'model' : 'user', text: h.text }));
 }
 
 export async function handleAssistant(
@@ -46,7 +80,12 @@ export async function handleAssistant(
     ? { question: body.question ?? '', context: body.context ?? '' }
     : { verdict: body.verdict ?? null, facts: body.facts ?? [], curated_wording: body.curated ?? '' };
 
-  const result = await deps.ask(instruction, payload);
+  // History is a general-tier concept only: rephrase explains one scan's
+  // verdict in isolation and is never part of a saved conversation thread.
+  const priorTurns: Turn[] = general ? historyTurns(body.history) : [];
+  const turns: Turn[] = [...priorTurns, { role: 'user', text: JSON.stringify(payload) }];
+
+  const result = await deps.ask(instruction, turns);
 
   if (!result.ok) {
     // Pass 429 through so the app degrades to curated wording, as it already does.

@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText, Chip, Col, COLORS, Icon, IconName, PressableRow, RADIUS, Row,
-  Section, Segmented, SHADOWS, SPACING, Toggle,
+  Section, Segmented, SHADOWS, SPACING, Toggle, useT,
 } from '../../ui';
 
 export interface SettingsScreenProps {
@@ -11,18 +11,22 @@ export interface SettingsScreenProps {
   savedLocationLabel: string;
   climateProvider: string;
   normalsFetchedLabel: string;
-  onlinePhrasing: boolean;
-  onlinePhrasingDetail: string;
+  aiAssistant: boolean;
+  aiAssistantDetail: string;
   contentVersion: string;
   modelsLabel: string;
   historyLabel: string;
+  accountLabel: string;
   onChangeLanguage: (lang: string) => void;
   onToggleLocation: () => void;
+  onChangeLocation: () => void;
   onForgetLocation: () => void;
   onRefreshNormals: () => void;
-  onToggleOnlinePhrasing: () => void;
+  onToggleAiAssistant: () => void;
   onOpenModels: () => void;
   onOpenHistory: () => void;
+  onOpenAccount: () => void;
+  onOpenTrash: () => void;
 }
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -64,109 +68,150 @@ function GroupRow({
 }
 
 export function SettingsScreen(props: SettingsScreenProps) {
+  const t = useT();
   return (
     <>
       <Section gap={SPACING.sm + 2}>
-        <AppText variant="smSemi" color={COLORS.textSecondary}>LANGUAGE</AppText>
+        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.sectionAccount}</AppText>
+        <Group>
+          <GroupRow
+            first
+            icon="shield"
+            title={t.titleAccount}
+            detail={props.accountLabel}
+            right={<Icon name="chevronRight" size={18} color={COLORS.textLight} />}
+            onPress={props.onOpenAccount}
+          />
+        </Group>
+      </Section>
+
+      <Section gap={SPACING.sm + 2}>
+        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.sectionLanguage}</AppText>
         <Group>
           <GroupRow
             first
             icon="globe"
-            title="App language"
+            title={t.appLanguage}
             right={<Segmented options={['EN', 'FIL']} value={props.language} onChange={props.onChangeLanguage} />}
           />
         </Group>
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <AppText variant="smSemi" color={COLORS.textSecondary}>LOCATION &amp; PRIVACY</AppText>
+        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.sectionLocation}</AppText>
         <Group>
           <GroupRow
             first
             icon="pin"
-            title="Use my location"
-            detail="Coarse only · asked when first needed"
-            right={<Toggle on={props.useLocation} onPress={props.onToggleLocation} />}
+            title={t.useMyLocation}
+            detail={t.useMyLocationDetail}
+            right={
+              <Toggle
+                on={props.useLocation}
+                onPress={props.onToggleLocation}
+                accessibilityLabel={t.useMyLocation}
+              />
+            }
           />
-          <GroupRow icon="shield" title="Saved location" detail={props.savedLocationLabel} />
+          <GroupRow
+            icon="shield"
+            title={t.savedLocation}
+            detail={props.savedLocationLabel}
+            right={<Icon name="chevronRight" size={18} color={COLORS.textLight} />}
+            onPress={props.onChangeLocation}
+          />
           <GroupRow
             icon="trash"
             iconColor={COLORS.error}
-            title="Forget my location"
+            title={t.forgetLocation}
             titleColor={COLORS.error}
-            detail="Clears cached coordinates and climate rows"
+            detail={t.forgetLocationDetail}
             onPress={props.onForgetLocation}
           />
         </Group>
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <AppText variant="smSemi" color={COLORS.textSecondary}>CLIMATE</AppText>
+        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.sectionClimate}</AppText>
         <Group>
-          <GroupRow
-            first
-            icon="cloud"
-            title="Provider"
-            detail={props.climateProvider}
-            right={<Icon name="chevronDown" size={18} color={COLORS.textLight} />}
-          />
+          {/* One provider is bundled, so this states a fact rather than
+              offering a choice — no chevron promising a picker. */}
+          <GroupRow first icon="cloud" title={t.provider} detail={props.climateProvider} />
           <GroupRow
             icon="refresh"
-            title="Refresh normals"
+            title={t.refreshNormals}
             detail={props.normalsFetchedLabel}
-            right={<Chip label="Refresh" tone="outline" />}
+            right={<Chip label={t.refresh} tone="outline" />}
             onPress={props.onRefreshNormals}
           />
         </Group>
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <AppText variant="smSemi" color={COLORS.textSecondary}>ASSISTANT</AppText>
+        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.sectionAssistant}</AppText>
         <Group>
           <GroupRow
             first
             icon="sparkle"
-            title="Online phrasing"
-            detail={props.onlinePhrasingDetail}
-            right={<Toggle on={props.onlinePhrasing} onPress={props.onToggleOnlinePhrasing} />}
+            title={t.aiAssistant}
+            detail={props.aiAssistantDetail}
+            right={
+              <Toggle
+                on={props.aiAssistant}
+                onPress={props.onToggleAiAssistant}
+                accessibilityLabel={t.aiAssistant}
+              />
+            }
           />
           <GroupRow
             icon="info"
-            title="Facts stay on the device"
-            detail="An online model may only reword a verdict, never change it."
+            title={t.factsStayOnDevice}
+            detail={t.factsStayDetail}
           />
         </Group>
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <AppText variant="smSemi" color={COLORS.textSecondary}>DATA</AppText>
+        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.sectionData}</AppText>
         <Group>
-          <GroupRow first icon="file" title="Knowledge base" detail={`Content version ${props.contentVersion}`} />
+          <GroupRow
+            first
+            icon="send"
+            title={t.dataDisclosure}
+            detail={t.dataDisclosureDetail}
+          />
+          <GroupRow icon="file" title={t.knowledgeBase} detail={t.contentVersion(props.contentVersion)} />
           <GroupRow
             icon="package"
-            title="Detection models"
+            title={t.detectionModels}
             detail={props.modelsLabel}
             right={<Icon name="chevronRight" size={18} color={COLORS.textLight} />}
             onPress={props.onOpenModels}
           />
           <GroupRow
             icon="history"
-            title="Scan history"
+            title={t.scanHistory}
             detail={props.historyLabel}
             right={<Icon name="chevronRight" size={18} color={COLORS.textLight} />}
             onPress={props.onOpenHistory}
+          />
+          <GroupRow
+            icon="trash"
+            title={t.trashRow}
+            right={<Icon name="chevronRight" size={18} color={COLORS.textLight} />}
+            onPress={props.onOpenTrash}
           />
         </Group>
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <AppText variant="smSemi" color={COLORS.textSecondary}>ABOUT</AppText>
+        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.sectionAbout}</AppText>
         <Group>
           <GroupRow
             first
             icon="leaf"
             title="PrutasAI"
-            detail="Offline-first fruit, variety and disease identification"
+            detail={t.aboutBlurb}
           />
           <GroupRow
             title="Climate data by Open-Meteo, CC BY 4.0. Variety data from PCAARRD-DOST, DA and UPLB IPB."

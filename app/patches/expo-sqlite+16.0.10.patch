@@ -1,0 +1,49 @@
+diff --git a/node_modules/expo-sqlite/web/WorkerChannel.ts b/node_modules/expo-sqlite/web/WorkerChannel.ts
+index 7fba380..1613571 100644
+--- a/node_modules/expo-sqlite/web/WorkerChannel.ts
++++ b/node_modules/expo-sqlite/web/WorkerChannel.ts
+@@ -40,7 +40,29 @@ export function sendWorkerResult({
+     const resultJson = error != null ? serialize({ error }) : serialize({ result });
+     const resultBytes = new TextEncoder().encode(resultJson);
+     const length = resultBytes.length;
+-    resultArray.set(new Uint32Array([length]), 0);
++    // The result buffer is a fixed 1 MiB SharedArrayBuffer with a 4-byte length
++    // header. Without this check an oversized payload makes the `set` below
++    // throw *inside the worker*, so RESOLVED is never stored and the main
++    // thread busy-waits until it reports "Sync operation timeout" — which
++    // blames the wrong thing. Report the real problem instead.
++    const maxBytes = resultBuffer.byteLength - 4;
++    if (length > maxBytes) {
++      const overflowBytes = new TextEncoder().encode(
++        serialize({
++          error: `SQLite result too large for the sync channel: ${length} bytes, maximum ${maxBytes}.`,
++        })
++      );
++      new Uint32Array(resultBuffer, 0, 1)[0] = overflowBytes.length;
++      resultArray.set(overflowBytes, 4);
++      Atomics.store(lock, 0, RESOLVED);
++      return;
++    }
++    // The old write went through resultArray (a Uint8Array) via .set() with a
++    // Uint32Array source: `set` given a differently-typed source converts
++    // element-wise, so only length & 0xFF was stored. Writing through the same
++    // view type the reader uses also makes endianness agree by construction
++    // rather than by assumption.
++    new Uint32Array(resultBuffer, 0, 1)[0] = length;
+     resultArray.set(resultBytes, 4);
+     Atomics.store(lock, 0, RESOLVED);
+   } else {
+@@ -123,7 +145,12 @@ export function invokeWorkerSync<T extends SQLiteWorkerMessageType & keyof Resul
+     ++i;
+
+     if (useAtomicsPause) {
+-      if (i > 1_000_000) {
++      // 1_000_000 Atomics.pause() calls measure ~38ms in Chromium, which is not
++      // enough for a synchronous open of an OPFS-backed database on a loaded
++      // machine — about 1 page load in 12 failed here. Still bounded, so a dead
++      // worker cannot hang the main thread forever; just not tuned so tight that
++      // a slow-but-healthy open is reported as a timeout.
++      if (i > 100_000_000) {
+         throw new Error('Sync operation timeout');
+       }
+       // @ts-expect-error: Remove this when TypeScript supports Atomics.pause

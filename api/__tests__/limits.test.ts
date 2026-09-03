@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import { checkLimits } from '../_lib/limits';
+import { checkLimits } from '../_lib/limits.js';
 
 // The parameter is annotated so `limit.mock.calls[n][0]` is typed rather than
 // inferred as an empty tuple — the assertions below read the key back out.

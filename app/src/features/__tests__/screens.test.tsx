@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 
 import { AppNavigator } from '../../navigation/AppNavigator';
+import { resetAppDatabase, seedConsent, seedLanguagePicked, seedSyncMode } from '../../testing/appDatabase';
 import { CaptureScreen } from '../capture/CaptureScreen';
 import { ChatScreen } from '../chat/ChatScreen';
 import { ClimateScreen } from '../climate/ClimateScreen';
@@ -46,6 +47,13 @@ function texts(tree: ReactTestRenderer): string {
 
 const noop = () => {};
 
+beforeEach(() => {
+  resetAppDatabase();
+  seedLanguagePicked();
+  seedConsent();
+  seedSyncMode();
+});
+
 test('Home renders the capability headline it is given', () => {
   const tree = render(
     <HomeScreen
@@ -56,6 +64,9 @@ test('Home renders the capability headline it is given', () => {
       fruits={preview.FRUITS}
       climate={preview.CLIMATE}
       recentScans={preview.RECENT_SCANS}
+      language="EN"
+      onToggleLanguage={noop}
+      onSetLocation={noop}
       onScan={noop}
       onOpenFruit={noop}
       onOpenScan={noop}
@@ -75,7 +86,10 @@ test('Capture shows the framing hint and the on-device promise', () => {
     render(<CaptureScreen onClose={noop} onCapture={noop} onPickImage={noop} onFlip={noop} />),
   );
   expect(content).toContain('Center the fruit in the frame');
-  expect(content).toContain('nothing is uploaded');
+  // The old copy claimed nothing was uploaded at all, which stopped being true
+  // when anonymous scans began syncing. What is still true, and is the point, is
+  // that the photograph never leaves the phone.
+  expect(content).toContain('Your photo never leaves it');
 });
 
 test('Result shows all three pipeline stages with their confidences', () => {
@@ -118,6 +132,7 @@ test('Variety info separates model classes from information-only strains', () =>
         requirementsVerified={false}
         requirements={[{ label: 'Temperature', value: '24–30 °C', icon: 'thermometer' }]}
         sources={preview.MANGO_SOURCES}
+        expandedVarietyKey={null}
         onOpenVariety={noop}
       />,
     ),
@@ -135,6 +150,13 @@ test('Climate shows the verdict and one row per evidence parameter', () => {
         climate={preview.CLIMATE}
         normals={preview.NORMALS}
         suitability={preview.SUITABILITY}
+        fruits={preview.FRUITS}
+        selectedFruitKey="banana"
+        status="ready"
+        error={null}
+        hasLocation
+        onRetry={noop}
+        onSelectFruit={noop}
         onChangeLocation={noop}
       />,
     ),
@@ -146,21 +168,139 @@ test('Climate shows the verdict and one row per evidence parameter', () => {
   expect(content).toContain('tolerated');
 });
 
-test('Chat renders the conversation and the offline notice', () => {
+test('Chat renders the conversation and explains curated wording without claiming to be offline', () => {
   const content = texts(
     render(
       <ChatScreen
         messages={preview.CHAT}
-        verdict={preview.SUITABILITY}
         suggestions={preview.CHAT_SUGGESTIONS}
-        offline
+        curatedWording
+        draft=""
+        onChangeDraft={noop}
         onSend={noop}
         onSuggestion={noop}
       />,
     ),
   );
   expect(content).toContain('Pwede bang magtanim');
-  expect(content).toContain('No connection');
+  expect(content).toContain('curated templates');
+  // The banner used to read "No connection", which was false for every user
+  // who simply had online phrasing switched off — the default.
+  expect(content).not.toContain('No connection');
+});
+
+test('shows the typing indicator while pending', () => {
+  const tree = render(
+    <ChatScreen
+      messages={[]}
+      suggestions={[]}
+      curatedWording={false}
+      draft=""
+      onChangeDraft={noop}
+      onSend={noop}
+      onSuggestion={noop}
+      pending
+    />,
+  );
+  expect(tree.root.findAll(node => node.props.testID === 'typing-dot')).toHaveLength(3);
+});
+
+/**
+ * The strip that carries the left-edge swipe. It has to sit over the
+ * transcript: the swipe is claimed on press, and anywhere higher up the tree
+ * that would mean claiming across the whole screen.
+ */
+test('lays an edge-swipe catcher over the transcript when handlers are given', () => {
+  const handlers = { onStartShouldSetResponder: () => true };
+  const withHandlers = render(
+    <ChatScreen
+      messages={[]}
+      suggestions={[]}
+      curatedWording={false}
+      draft=""
+      onChangeDraft={noop}
+      onSend={noop}
+      onSuggestion={noop}
+      edgeSwipeHandlers={handlers}
+    />,
+  );
+  expect(
+    withHandlers.root.findAll(
+      node => node.props.onStartShouldSetResponder === handlers.onStartShouldSetResponder,
+    ).length,
+  ).toBeGreaterThan(0);
+
+  const without = render(
+    <ChatScreen
+      messages={[]}
+      suggestions={[]}
+      curatedWording={false}
+      draft=""
+      onChangeDraft={noop}
+      onSend={noop}
+      onSuggestion={noop}
+    />,
+  );
+  expect(
+    without.root.findAll(
+      node => node.props.onStartShouldSetResponder === handlers.onStartShouldSetResponder,
+    ),
+  ).toHaveLength(0);
+});
+
+test('does not show the typing indicator when not pending', () => {
+  const tree = render(
+    <ChatScreen
+      messages={[]}
+      suggestions={[]}
+      curatedWording={false}
+      draft=""
+      onChangeDraft={noop}
+      onSend={noop}
+      onSuggestion={noop}
+      pending={false}
+    />,
+  );
+  expect(tree.root.findAll(node => node.props.testID === 'typing-dot')).toHaveLength(0);
+});
+
+test('plain Enter calls onSend and prevents the default newline', () => {
+  const onSend = jest.fn();
+  const tree = render(
+    <ChatScreen
+      messages={[]}
+      suggestions={[]}
+      curatedWording={false}
+      draft="hello"
+      onChangeDraft={noop}
+      onSend={onSend}
+      onSuggestion={noop}
+    />,
+  );
+  const input = tree.root.find(node => node.props.accessibilityLabel === 'Message'); // t.message in EN
+  const preventDefault = jest.fn();
+  input.props.onKeyPress({ nativeEvent: { key: 'Enter', shiftKey: false }, preventDefault });
+
+  expect(onSend).toHaveBeenCalledTimes(1);
+});
+
+test('Shift+Enter does not call onSend', () => {
+  const onSend = jest.fn();
+  const tree = render(
+    <ChatScreen
+      messages={[]}
+      suggestions={[]}
+      curatedWording={false}
+      draft="hello"
+      onChangeDraft={noop}
+      onSend={onSend}
+      onSuggestion={noop}
+    />,
+  );
+  const input = tree.root.find(node => node.props.accessibilityLabel === 'Message');
+  input.props.onKeyPress({ nativeEvent: { key: 'Enter', shiftKey: true } });
+
+  expect(onSend).not.toHaveBeenCalled();
 });
 
 test('History groups scans by recency', () => {
@@ -168,9 +308,11 @@ test('History groups scans by recency', () => {
     render(
       <HistoryScreen
         groups={preview.SCAN_GROUPS}
-        filters={['All', 'Diseased']}
-        activeFilter="All"
+        filters={[{ key: 'All', label: 'All' }, { key: 'Diseased', label: 'Diseased' }]}
+        activeFilterKey="All"
         totalLabel="6 scans stored on this device"
+        query={null}
+        onChangeQuery={noop}
         onFilter={noop}
         onOpenScan={noop}
       />,
@@ -186,9 +328,11 @@ test('History shows an empty state rather than an empty list', () => {
     render(
       <HistoryScreen
         groups={[{ label: 'TODAY', scans: [] }]}
-        filters={['All']}
-        activeFilter="All"
+        filters={[{ key: 'All', label: 'All' }]}
+        activeFilterKey="All"
         totalLabel="0 scans"
+        query={null}
+        onChangeQuery={noop}
         onFilter={noop}
         onOpenScan={noop}
       />,
@@ -200,7 +344,7 @@ test('History shows an empty state rather than an empty list', () => {
 test('Monitoring renders every checkpoint including the one still due', () => {
   const content = texts(
     render(
-      <MonitoringScreen session={preview.SESSION} onScanCheckpoint={noop} onOpenCheckpoint={noop} />,
+      <MonitoringScreen session={preview.SESSION} expandedCheckpointDay={null} onScanCheckpoint={noop} onOpenCheckpoint={noop} />,
     ),
   );
   expect(content).toContain('Day 0');
@@ -218,23 +362,27 @@ test('Settings surfaces the privacy and assistant controls', () => {
         savedLocationLabel="14.17, 121.24"
         climateProvider="Open-Meteo"
         normalsFetchedLabel="Last fetched 12 Jun 2026"
-        onlinePhrasing={false}
-        onlinePhrasingDetail="No API key set"
+        aiAssistant={false}
+        aiAssistantDetail="Grounded answers only, fully offline"
         contentVersion="2026.08.10"
         modelsLabel="0 of 0 installed"
         historyLabel="6 scans"
+        accountLabel="Not signed in"
         onChangeLanguage={noop}
         onToggleLocation={noop}
+        onChangeLocation={noop}
         onForgetLocation={noop}
         onRefreshNormals={noop}
-        onToggleOnlinePhrasing={noop}
+        onToggleAiAssistant={noop}
         onOpenModels={noop}
         onOpenHistory={noop}
+        onOpenAccount={noop}
+        onOpenTrash={noop}
       />,
     ),
   );
   expect(content).toContain('Forget my location');
-  expect(content).toContain('Online phrasing');
+  expect(content).toContain('AI assistant');
   expect(content).toContain('2026.08.10');
 });
 
