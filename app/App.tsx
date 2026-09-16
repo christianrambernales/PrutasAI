@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -51,15 +51,13 @@ function browserBlocksDatabase(): boolean {
 export default function App() {
   const [startup, setStartup] = useState<Startup>({ status: 'opening' });
 
-  useEffect(() => {
-    // Before the warm-up, not after: on a page without the isolation headers
-    // the open fails with a message about SharedArrayBuffer, which says nothing
-    // about what to do. Naming the real cause is only possible here.
+  const start = useCallback(() => {
     if (browserBlocksDatabase()) {
       setStartup({ status: 'notIsolated' });
-      return;
+      return () => {};
     }
 
+    setStartup({ status: 'opening' });
     let cancelled = false;
     prepareAppDatabase().then(
       () => !cancelled && setStartup({ status: 'ready' }),
@@ -72,6 +70,8 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => start(), [start]);
+
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
@@ -80,7 +80,7 @@ export default function App() {
           <AppNavigator />
         </ErrorBoundary>
       ) : (
-        <Startup startup={startup} />
+        <Startup startup={startup} onRetry={start} />
       )}
     </SafeAreaProvider>
   );
@@ -93,7 +93,7 @@ export default function App() {
  * Wording comes from the dictionary's English default: this renders above
  * `LanguageProvider`, before the app has read the user's setting.
  */
-function Startup({ startup }: { startup: Exclude<Startup, { status: 'ready' }> }) {
+function Startup({ startup, onRetry }: { startup: Exclude<Startup, { status: 'ready' }>, onRetry: () => void }) {
   const t = useT();
 
   return (
@@ -124,6 +124,9 @@ function Startup({ startup }: { startup: Exclude<Startup, { status: 'ready' }> }
           <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
             {t.notIsolatedBody}
           </AppText>
+          <AppText variant="sm" color={COLORS.primary} center style={{ marginTop: SPACING.xl }} onPress={onRetry}>
+            {t.tryAgain}
+          </AppText>
         </>
       ) : (
         <>
@@ -132,6 +135,9 @@ function Startup({ startup }: { startup: Exclude<Startup, { status: 'ready' }> }
           </AppText>
           <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
             {t.startupFailedBody}
+          </AppText>
+          <AppText variant="sm" color={COLORS.primary} center style={{ marginTop: SPACING.xl }} onPress={onRetry}>
+            {t.tryAgain}
           </AppText>
           {/* The raw message. Unreadable to a grower, but it is the difference
               between a bug report that can be acted on and "it went white". */}
