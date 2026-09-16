@@ -16,6 +16,27 @@ export interface Variety {
   sourceId: string | null;
 }
 
+export interface Disease {
+  key: string;
+  fruitKey: string;
+  nameEn: string;
+  nameFil: string;
+  descriptionEn: string | null;
+  descriptionFil: string | null;
+  sourceId: string | null;
+}
+
+export interface Remedy {
+  key: string;
+  diseaseKey: string;
+  nameEn: string;
+  nameFil: string;
+  instructionEn: string | null;
+  instructionFil: string | null;
+  isPrevention: boolean;
+  sourceId: string | null;
+}
+
 interface FruitRow {
   key: string;
   name_en: string;
@@ -205,3 +226,50 @@ export function listSourcesByFruit(driver: SqlDriver): Record<string, Source[]> 
 
   return sourcesByFruit;
 }
+
+export function listDiseasesByFruit(driver: SqlDriver, fruitKey: string): Disease[] {
+  return driver
+    .all<{
+      key: string;
+      fruit_key: string;
+      name_en: string;
+      name_fil: string;
+      description_en: string | null;
+      description_fil: string | null;
+      source_id: string | null;
+    }>('SELECT * FROM disease WHERE fruit_key = ? ORDER BY key', [fruitKey])
+    .map((r) => ({
+      key: r.key,
+      fruitKey: r.fruit_key,
+      nameEn: r.name_en,
+      nameFil: r.name_fil,
+      descriptionEn: r.description_en,
+      descriptionFil: r.description_fil,
+      sourceId: r.source_id,
+    }));
+}
+
+export function listRemediesByDisease(driver: SqlDriver, diseaseKey: string): Remedy[] {
+  return driver
+    .all<{
+      key: string;
+      disease_key: string;
+      name_en: string;
+      name_fil: string;
+      instruction_en: string | null;
+      instruction_fil: string | null;
+      is_prevention: number;
+      source_id: string | null;
+    }>('SELECT * FROM remedy WHERE disease_key = ? ORDER BY is_prevention DESC, key', [diseaseKey])
+    .map((r) => ({
+      key: r.key,
+      diseaseKey: r.disease_key,
+      nameEn: r.name_en,
+      nameFil: r.name_fil,
+      instructionEn: r.instruction_en,
+      instructionFil: r.instruction_fil,
+      isPrevention: r.is_prevention === 1,
+      sourceId: r.source_id,
+    }));
+}
+
