@@ -38,3 +38,22 @@ test('reseeding preserves user tables', () => {
   seedContent(db, SQL.replace("'1.0'", "'2.0'"), '2.0');
   expect(db.all('SELECT * FROM scan')).toHaveLength(1);
 });
+
+test('a failing seed preserves the previous content version and user rows', () => {
+  const db = createTestDriver();
+  migrate(db);
+  seedContent(db, SQL, '1.0');
+  db.exec("INSERT INTO scan (uuid,image_uri,created_at) VALUES ('u1','file://a','2026-01-01')");
+  
+  // Make a failing seed SQL: invalid table name inside the transaction
+  const badSQL = SQL.replace("'1.0'", "'2.0'").replace("INSERT INTO fruit", "INSERT INTO unknown_table");
+  
+  expect(() => seedContent(db, badSQL, '2.0')).toThrow();
+  
+  // Content version remains 1.0
+  const v = db.get<{value: string}>("SELECT value FROM setting WHERE key = 'content_version'");
+  expect(v?.value).toBe('1.0');
+  
+  // User rows preserved
+  expect(db.all('SELECT * FROM scan')).toHaveLength(1);
+});

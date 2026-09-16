@@ -76,3 +76,24 @@ test('deleting a conversation cascades to its messages', () => {
   const msg = db.get('SELECT uuid FROM conversation_message WHERE uuid = ?', ['m1']);
   expect(msg).toBeUndefined();
 });
+
+test('a failing migration leaves neither its schema mutation nor version row', () => {
+  const db = createTestDriver();
+  migrate(db); // applied up to 3
+  
+  const badMigrations = [
+    { version: 4, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
+  ];
+  
+  expect(() => migrate(db, badMigrations)).toThrow();
+  
+  // Table dummy should not exist
+  const names = db.all<{ name: string }>(
+    "SELECT name FROM sqlite_master WHERE type='table'"
+  ).map(r => r.name);
+  expect(names).not.toContain('dummy');
+  
+  // Version 4 should not be in schema_version
+  const row = db.get<{ version: number }>('SELECT MAX(version) AS version FROM schema_version');
+  expect(row?.version).toBe(3);
+});
