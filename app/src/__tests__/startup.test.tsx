@@ -22,7 +22,7 @@ describe('Startup', () => {
 
   test('startup failure exposes the error and a non-destructive retry', async () => {
     const mockPrepare = db.prepareAppDatabase as jest.Mock;
-    let promiseResolve: () => void;
+    let promiseResolve: (value: unknown) => void;
     let promiseReject: (e: Error) => void;
     
     // First attempt will fail
@@ -31,21 +31,21 @@ describe('Startup', () => {
       promiseReject = reject;
     }));
     
-    let tree: renderer.ReactTestRenderer;
+    let tree: import('react-test-renderer').ReactTestRenderer;
     await act(async () => {
       tree = renderer.create(<App />);
     });
     
     // Fail the promise
     await act(async () => {
-      promiseReject(new Error('Simulated startup failure'));
+      promiseReject!(new Error('Simulated startup failure'));
     });
     
     const text = textOf(tree!.root);
     expect(text).toContain('The app could not open its database');
     expect(text).toContain('Simulated startup failure');
     
-    let promiseResolve2: () => void;
+    let promiseResolve2: (value: unknown) => void;
     // Set up second attempt to hang until we check it
     mockPrepare.mockReturnValueOnce(new Promise((resolve) => {
       promiseResolve2 = resolve;
@@ -61,7 +61,7 @@ describe('Startup', () => {
     
     // Resolve second attempt
     await act(async () => {
-      promiseResolve2();
+      promiseResolve2!(undefined);
     });
     
     expect(mockPrepare).toHaveBeenCalledTimes(2);
