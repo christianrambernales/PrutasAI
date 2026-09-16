@@ -43,7 +43,7 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 
 **Plans:**
 - [x] 02-01-PLAN.md — Make database startup, migrations, seeding, rollback, and bilingual retry deterministic and non-destructive.
-- [ ] 02-02-PLAN.md — Extend compiled fruit-first knowledge browsing with cited disease/remedy contracts and truthful approval-gated empty states.
+- [x] 02-02-PLAN.md — Extend compiled fruit-first knowledge browsing with cited disease/remedy contracts and truthful approval-gated empty states.
 - [ ] 02-03-PLAN.md — Enforce persistent app-owned photos, scan retention primitives, coarse location, and image-free sync payloads.
 - [ ] 02-04-PLAN.md — Run full Phase 2 verification and publish evidence-scoped requirement verdicts.
 
