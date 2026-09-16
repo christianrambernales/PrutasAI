@@ -120,3 +120,67 @@ test('rejects fruit missing "varieties" array', () => {
     'should reject fruit without varieties array',
   );
 });
+
+test('compiles diseases and remedies', () => {
+  const k = compileKnowledge(dir, {
+    taxonomyOverride: {
+      content_version: '1',
+      fruits: [{
+        key: 'banana', name: { en: 'Banana', fil: 'Saging' }, emoji: '🍌', ml_class_index: 0,
+        varieties: [],
+        diseases: [{
+          key: 'panama',
+          name: { en: 'Panama Disease', fil: 'Panama Disease' },
+          sources: ['pcaarrd_banana'],
+          remedies: [{
+            key: 'burn',
+            name: { en: 'Burn', fil: 'Sunugin' },
+            instruction: { en: 'Burn', fil: 'Sunugin' },
+            is_prevention: false,
+            sources: ['pcaarrd_banana']
+          }]
+        }]
+      }],
+    },
+  });
+  assert.equal(k.diseases.length, 1);
+  assert.equal(k.remedies.length, 1);
+  assert.match(k.seedSql, /INSERT INTO disease/);
+  assert.match(k.seedSql, /INSERT INTO remedy/);
+});
+
+test('rejects dangling source reference in diseases', () => {
+  assert.throws(
+    () => compileKnowledge(dir, {
+      taxonomyOverride: {
+        content_version: '1',
+        fruits: [{
+          key: 'banana', name: { en: 'B', fil: 'B' }, emoji: '🍌', ml_class_index: 0,
+          varieties: [],
+          diseases: [{ key: 'panama', name: { en: 'P', fil: 'P' }, sources: ['unknown'] }]
+        }],
+      },
+    }),
+    KnowledgeError,
+  );
+});
+
+test('rejects dangling source reference in remedies', () => {
+  assert.throws(
+    () => compileKnowledge(dir, {
+      taxonomyOverride: {
+        content_version: '1',
+        fruits: [{
+          key: 'banana', name: { en: 'B', fil: 'B' }, emoji: '🍌', ml_class_index: 0,
+          varieties: [],
+          diseases: [{
+            key: 'panama', name: { en: 'P', fil: 'P' }, sources: ['pcaarrd_banana'],
+            remedies: [{ key: 'burn', name: { en: 'B', fil: 'B' }, instruction: { en: 'B', fil: 'B' }, sources: ['unknown'] }]
+          }]
+        }],
+      },
+    }),
+    KnowledgeError,
+  );
+});
+
