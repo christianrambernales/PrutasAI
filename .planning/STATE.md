@@ -35,7 +35,7 @@ See: `.planning/PROJECT.md` (updated 2026-09-15)
 ## Current Position
 
 Phase: 02 (offline-data-and-persistence) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 - Codebase map exists in `.planning/codebase/`.
 - Project definition exists in `.planning/PROJECT.md`.
@@ -43,6 +43,8 @@ Plan: 3 of 4
 - Phase 1 is complete and independently verified after clean-snapshot gap closure.
 - Phase 2 Plan 1 completed (database startup, transactions, migrations, and retries).
 - Phase 2 Plan 2 completed (compiled knowledge storage for diseases and remedies).
+- Phase 2 Plan 3 completed (scan retention and file isolation).
+- Phase 2 Plan 4 completed (evidence gathering and goal-backward requirement mapping).
 - ML weights are intentionally absent and remain a future file-import step.
 - Vercel is QA-only for this milestone; live production promotion is out of scope.
 

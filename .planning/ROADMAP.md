@@ -12,7 +12,7 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 | Phase | Name | Goal | Requirements | Progress |
 |------:|------|------|--------------|----------|
 | 1 | Baseline and Foundations | Establish a reproducible, observable baseline for the existing app | Cross-cutting support for all phases | ● 100% |
-| 2 | Offline Data and Persistence | Make local knowledge, database startup, privacy, and offline behavior dependable | FLOW-03, OFFL-01–03 | ○ 0% |
+| 2 | Offline Data and Persistence | Make local knowledge, database startup, privacy, and offline behavior dependable | FLOW-03, OFFL-01–03 | ● 100% |
 | 3 | Cloud, Auth, and Sync Security | Make optional accounts and synchronization safe and recoverable | OFFL-04, SYNC-01–04 | ○ 0% |
 | 4 | Complete Product Flows | Finish navigation and end-to-end offline/future-diagnostic/cloud UI flows | FLOW-01–02, FLOW-04–06 | ○ 0% |
 | 5 | Assistant, Climate, and Safety | Verify grounded guidance, climate evidence, and guarded assistant behavior | SAFE-01–04 | ○ 0% |
@@ -44,8 +44,8 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 **Plans:**
 - [x] 02-01-PLAN.md — Make database startup, migrations, seeding, rollback, and bilingual retry deterministic and non-destructive.
 - [x] 02-02-PLAN.md — Extend compiled fruit-first knowledge browsing with cited disease/remedy contracts and truthful approval-gated empty states.
-- [ ] 02-03-PLAN.md — Enforce persistent app-owned photos, scan retention primitives, coarse location, and image-free sync payloads.
-- [ ] 02-04-PLAN.md — Run full Phase 2 verification and publish evidence-scoped requirement verdicts.
+- [x] 02-03-PLAN.md — Enforce persistent app-owned photos, scan retention primitives, coarse location, and image-free sync payloads.
+- [x] 02-04-PLAN.md — Run full Phase 2 verification and publish evidence-scoped requirement verdicts.
 
 ### Phase 3: Cloud, Auth, and Sync Security
 **Goal:** Make optional accounts and synchronization safe, recoverable, and provably owner-scoped.
