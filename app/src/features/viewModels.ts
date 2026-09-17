@@ -24,6 +24,25 @@ export interface VarietySummary {
   parentName?: string;
 }
 
+export interface RemedySummary {
+  key: string;
+  nameEn: string;
+  nameFil: string;
+  instructionEn: string | null;
+  instructionFil: string | null;
+  isPrevention: boolean;
+}
+
+export interface DiseaseSummary {
+  key: string;
+  nameEn: string;
+  nameFil: string;
+  descriptionEn: string | null;
+  descriptionFil: string | null;
+  remedies: RemedySummary[];
+}
+
+
 export interface ScanSummary {
   id: string;
   emoji: string;

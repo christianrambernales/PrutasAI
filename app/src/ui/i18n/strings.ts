@@ -196,6 +196,11 @@ const EN = {
   yes: 'yes',
   modelClassesAndStrains: (classes: number, strains: number) =>
     `${classes} model classes · ${strains} information-only strains`,
+  diseases: 'Diseases',
+  noVerifiedDiseaseInfo: 'No verified disease information',
+  noDescription: 'No description available',
+  noApprovedRemedy: 'Disease without approved remedy',
+  unknownFruit: 'Unknown fruit',
 
   // welcome
   welcomeTitle: 'Keep your scans on this phone, or across your devices',
@@ -426,6 +431,11 @@ const FIL: Dictionary = {
   yes: 'oo',
   modelClassesAndStrains: (classes: number, strains: number) =>
     `${classes} klase ng modelo · ${strains} pang-impormasyong strain`,
+  diseases: 'Mga sakit',
+  noVerifiedDiseaseInfo: 'Walang napatunayang impormasyon tungkol sa sakit',
+  noDescription: 'Walang paglalarawan',
+  noApprovedRemedy: 'Sakit na walang aprubadong lunas',
+  unknownFruit: 'Hindi alam na prutas',
 
   // welcome
   welcomeTitle: 'Itago ang mga scan sa teleponong ito, o sa lahat ng device mo',

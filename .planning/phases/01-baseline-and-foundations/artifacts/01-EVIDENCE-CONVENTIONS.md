@@ -172,3 +172,20 @@ When automated verification commands are recorded in planning files and executio
 ### Logging Rules
 - **Stdout / Stderr:** Record concise summaries of output; avoid persisting gigabytes of build traces.
 - **Exit Codes:** Must be captured explicitly. Any non-zero exit code invalidates a `Passed` status.
+
+---
+
+## 7. Device & Platform Acceptance Matrix (Disposition: Blocked)
+
+As recorded in `01-RESEARCH.md` Open Question 1, the formal acceptance matrix for target Android OS versions, specific physical handset models, web browsers, screen readers, zoom levels, and font scales is **Blocked** pending project owner designation of the acceptance-matrix authority.
+
+| Matrix Dimension | Specification / Target | Authority Role | Status | Phase Gate / Consequence |
+|---|---|---|---|---|
+| Android OS Versions | Android 10, 11, 12, 13, 14 | Project Owner (Unassigned) | `Blocked` | Phase 7 `QUAL-01`/`QUAL-04` gate. |
+| Physical Android Devices | 375dp, 393dp, 412dp handsets | Project Owner (Unassigned) | `Blocked` | Phase 7 `QUAL-01` gate. |
+| Web Browsers | Chrome, Firefox, Safari (Mobile/Desktop) | Project Owner (Unassigned) | `Blocked` | Phase 7 `QUAL-04` gate. |
+| Screen Readers | TalkBack (Android), VoiceOver (iOS/Web) | Project Owner (Unassigned) | `Blocked` | Phase 7 `QUAL-01` gate. |
+| Viewport Zoom Levels | 100%, 125%, 150%, 200% | Project Owner (Unassigned) | `Blocked` | Phase 7 `QUAL-01` gate. |
+| Font Scales | Dynamic Type / Android font scaling (100%–200%) | Project Owner (Unassigned) | `Blocked` | Phase 7 `QUAL-01` gate. |
+
+**Invariant:** Phases 1–6 may record only their actual local/static/runtime scope (`local-static`, `local-test`, `web-runtime`) and must never claim broad supported-device or assistive-technology acceptance without this authorized matrix.

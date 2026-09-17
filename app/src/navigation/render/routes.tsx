@@ -79,7 +79,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
     openVariety, setOpenVariety, openCheckpoint, setOpenCheckpoint,
   } = shell.nav;
   const {
-    db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, allScans,
+    db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit, allScans,
     trashedConversations, statuses, capability, depth, readyCount, aiAvailable, bumpData,
   } = shell.data;
 
@@ -129,6 +129,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
           fruit={fruit}
           modelVarieties={varietiesByFruit[fruit.key] ?? []}
           informationOnly={strainsByFruit[fruit.key] ?? []}
+          diseases={diseasesByFruit[fruit.key] ?? []}
           requirementsVerified={false}
           requirements={[
             { label: 'Temperature', value: '24–30 °C', icon: 'thermometer' },

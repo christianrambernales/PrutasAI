@@ -227,6 +227,61 @@ export function listSourcesByFruit(driver: SqlDriver): Record<string, Source[]> 
   return sourcesByFruit;
 }
 
+export function listAllDiseasesByFruit(driver: SqlDriver): Record<string, import('../../../features/viewModels').DiseaseSummary[]> {
+  const fruits = listFruits(driver);
+  const diseasesByFruit: Record<string, import('../../../features/viewModels').DiseaseSummary[]> = {};
+  
+  for (const fruit of fruits) {
+    diseasesByFruit[fruit.key] = [];
+  }
+
+  const diseaseRows = driver.all<{
+    key: string;
+    fruit_key: string;
+    name_en: string;
+    name_fil: string;
+    description_en: string | null;
+    description_fil: string | null;
+  }>('SELECT key, fruit_key, name_en, name_fil, description_en, description_fil FROM disease ORDER BY key');
+
+  const remedyRows = driver.all<{
+    key: string;
+    disease_key: string;
+    name_en: string;
+    name_fil: string;
+    instruction_en: string | null;
+    instruction_fil: string | null;
+    is_prevention: number;
+  }>('SELECT key, disease_key, name_en, name_fil, instruction_en, instruction_fil, is_prevention FROM remedy ORDER BY is_prevention DESC, key');
+
+  const remediesByDisease: Record<string, import('../../../features/viewModels').RemedySummary[]> = {};
+  for (const r of remedyRows) {
+    if (!remediesByDisease[r.disease_key]) remediesByDisease[r.disease_key] = [];
+    remediesByDisease[r.disease_key].push({
+      key: r.key,
+      nameEn: r.name_en,
+      nameFil: r.name_fil,
+      instructionEn: r.instruction_en,
+      instructionFil: r.instruction_fil,
+      isPrevention: r.is_prevention === 1,
+    });
+  }
+
+  for (const d of diseaseRows) {
+    if (!diseasesByFruit[d.fruit_key]) diseasesByFruit[d.fruit_key] = [];
+    diseasesByFruit[d.fruit_key].push({
+      key: d.key,
+      nameEn: d.name_en,
+      nameFil: d.name_fil,
+      descriptionEn: d.description_en,
+      descriptionFil: d.description_fil,
+      remedies: remediesByDisease[d.key] ?? [],
+    });
+  }
+
+  return diseasesByFruit;
+}
+
 export function listDiseasesByFruit(driver: SqlDriver, fruitKey: string): Disease[] {
   return driver
     .all<{

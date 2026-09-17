@@ -1,0 +1,14 @@
+{
+  "id": "session-1789470393299",
+  "startedAt": "2026-09-15T11:06:33.299Z",
+  "cwd": "C:\\Users\\chris\\OneDrive\\Documents\\PROG\\THESIS\\PrustasAI",
+  "context": {},
+  "metrics": {
+    "edits": 0,
+    "commands": 0,
+    "tasks": 0,
+    "errors": 0
+  },
+  "endedAt": "2026-09-15T11:06:48.400Z",
+  "duration": 15102
+}

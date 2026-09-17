@@ -48,6 +48,7 @@ jest.mock('expo-sqlite', () => {
         execSync: (sql) => db.exec(sql),
         getAllSync: (sql, params = []) => db.prepare(sql).all(...params),
         getFirstSync: (sql, params = []) => db.prepare(sql).get(...params) ?? null,
+        withTransactionSync: (fn) => db.transaction(fn)(),
       };
     },
     __resetDatabases: () => open.clear(),

@@ -63,3 +63,20 @@ export function validateFindingLedger(ledger, roadmapPath) {
     throw new TraceabilityValidationError('Traceability validation failed:\n' + errors.join('\n'));
   }
 }
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const filePath = process.argv[2];
+  const roadmapPath = process.argv[3] || '.planning/ROADMAP.md';
+  if (!filePath) {
+    console.error('Usage: node validate-traceability.mjs <path-to-json> [roadmap-path]');
+    process.exit(1);
+  }
+  try {
+    const data = JSON.parse(readFileSync(filePath, 'utf8'));
+    validateFindingLedger(data, roadmapPath);
+    console.log('Traceability validation passed.');
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+}

@@ -41,6 +41,7 @@ api/node_modules/
 # Agent/workflow scratch (was local-only in .git/info/exclude)
 .superpowers/
 .agent/
+.planning/
 
 # Claude Code runtime state (settings.local.json covered above)
 **/.claude/scheduled_tasks.lock

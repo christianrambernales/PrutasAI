@@ -106,3 +106,18 @@ The following items are permanently out of scope for the current milestone (v1) 
    - Cloud connectivity will never be made mandatory for core diagnostics, knowledge lookup, or scan history. Offline functionality is a non-negotiable core value.
 5. **Expansion Beyond Initial Fruit / Disease Scope:**
    - Domain hardening focuses strictly on the currently supported Philippine fruit crops (e.g., Mango, Banana, Papaya, Citrus). Adding new agricultural commodities is deferred to future milestones (v2).
+---
+
+## 6. Data Retention and Privacy Policy (Disposition: Blocked)
+
+As recorded in `01-RESEARCH.md` Open Question 2, the formal data retention policy governing photos, scans, location records, conversations, trash lifecycles, and cloud synchronization is **Blocked** pending project owner designation of the data-retention authority.
+
+| Policy Dimension | Current Implementation Baseline | Authority Role | Status | Phase Gate / Consequence |
+|---|---|---|---|---|
+| Photos & Image Storage | Stored locally on device; never sent in API/sync payloads | Project Owner (Unassigned) | `Blocked` | Phase 2 `OFFL-03` gate. No duration or auto-deletion promise. |
+| Scan Records & History | Persisted in local SQLite database | Project Owner (Unassigned) | `Blocked` | Phase 2 `OFFL-01`–`OFFL-03` gate. No expiration or purge policy. |
+| Coarse Location | Rounded coordinates stored with scan metadata | Project Owner (Unassigned) | `Blocked` | Phase 2 `OFFL-03` gate. Privacy rounding enforced; retention unbounded. |
+| Conversation & Trash | Local SQLite conversation store with soft delete (`trash`) | Project Owner (Unassigned) | `Blocked` | Phase 4 `FLOW-05`/`FLOW-06` gate. Permanent deletion SLA blocked. |
+| Cloud Sync Retention | Optional Supabase sync for eligible records | Project Owner (Unassigned) | `Blocked` | Phase 3 `SYNC-01`–`SYNC-04` gate. Cloud retention duration undefined. |
+
+**Invariants:** The active on-device photo and coarse-location privacy constraints are strictly preserved, but no lifecycle duration, auto-erase, trash purge timeline, or sync-retention SLA may be marked `Passed` in downstream phases until this policy is formally resolved.

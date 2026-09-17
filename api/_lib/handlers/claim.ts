@@ -10,9 +10,9 @@
  * data — but it is a real limitation of anonymous-then-claim.
  */
 
-import type { RateLimitBinding } from '../limits';
-import { checkLimits } from '../limits';
-import type { ApiResult } from '../http';
+import type { RateLimitBinding } from '../limits.js';
+import { checkLimits } from '../limits.js';
+import type { ApiResult } from '../http.js';
 
 export interface ClaimDeps {
   limiter: RateLimitBinding;

@@ -129,6 +129,7 @@ test('Variety info separates model classes from information-only strains', () =>
         fruit={preview.FRUITS[1]}
         modelVarieties={preview.MANGO_VARIETIES}
         informationOnly={preview.MANGO_STRAINS}
+        diseases={[]}
         requirementsVerified={false}
         requirements={[{ label: 'Temperature', value: '24–30 °C', icon: 'thermometer' }]}
         sources={preview.MANGO_SOURCES}

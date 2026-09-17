@@ -15,6 +15,7 @@ import {
   listFruits,
   listAllVarietiesByFruit,
   listSourcesByFruit,
+  listAllDiseasesByFruit,
 } from '../core/db/repositories/content';
 import { bundledModels } from '../core/ml/bundledModels';
 import manifest from '../core/ml/manifest.json';
@@ -99,6 +100,7 @@ export function AppNavigator() {
     [db],
   );
   const sourcesByFruit = useMemo(() => listSourcesByFruit(db), [db]);
+  const diseasesByFruit = useMemo(() => listAllDiseasesByFruit(db), [db]);
 
   // Read once from the database rather than held only in memory, so the
   // disclosure does not reappear on the next launch.
@@ -195,7 +197,7 @@ export function AppNavigator() {
       openCheckpoint, setOpenCheckpoint,
     },
     data: {
-      db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit,
+      db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit,
       scanGroups, allScans, trashedConversations,
       statuses, capability, depth, readyCount,
       aiAvailable,

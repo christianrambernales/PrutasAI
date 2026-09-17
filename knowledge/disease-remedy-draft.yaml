@@ -1,0 +1,426 @@
+draft_metadata:
+  project: PrutasAI
+  status: draft_only_pending_expert_review
+  supported_fruits:
+  - Banana
+  - Mango
+  - Papaya
+  candidate_keys:
+  - anthracnose
+  - powdery_mildew
+  - rust
+  - scab
+  - blight
+  - mold
+  - rot
+  production_merge_allowed: false
+  repository_schema_mapping_status: pending_repository_access
+  expert_review_required: true
+disease_remedy_draft:
+- fruit: Mango
+  variety: null
+  disease_key: anthracnose
+  disease_name_en: Anthracnose
+  disease_name_fil: Anthracnose
+  disease_scope: Specific fungal disease documented for mango
+  field_or_postharvest: both
+  symptoms_en: Possible signs include irregular brown spots on young leaves, distorted mature leaves with shot-hole-like damage,
+    blackening and withering of flowers, and brown-to-black sunken fruit spots.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan ang hindi regular na kayumangging batik sa murang dahon, pagkabaluktot
+    ng matatandang dahon na may tila butas-butas na pinsala, pag-itim at pagkalanta ng bulaklak, at lubog na kayumanggi hanggang
+    itim na batik sa bunga.
+  prevention_en: Maintain light penetration and air circulation, remove disease-source trash, and bag fruits using appropriate
+    materials to reduce field infection.
+  prevention_fil: Panatilihin ang pagpasok ng liwanag at pagdaloy ng hangin, alisin ang basurang maaaring pagmulan ng sakit,
+    at balutin ang bunga gamit ang angkop na materyal upang mabawasan ang impeksiyon sa bukid.
+  cultural_management_en: Prune after harvest to improve ventilation and reduce canopy humidity. Maintain tree vigor with
+    appropriate cultural practices.
+  cultural_management_fil: Magputol ng sanga pagkatapos ng anihan upang mapabuti ang bentilasyon at mabawasan ang halumigmig
+    sa loob ng puno. Panatilihin ang sigla ng puno sa pamamagitan ng angkop na gawaing pangkultura.
+  biological_or_mechanical_control_en: For post-harvest handling, the BAFS manual describes hot-water treatment. The disease-specific
+    annex directs newly harvested mangoes to hot-water treatment, while Section III gives treatment schedules for mango handling.
+  biological_or_mechanical_control_fil: Para sa paghawak pagkatapos anihin, inilalarawan ng manwal ng BAFS ang hot-water treatment.
+    Itinuturo ng annex para sa sakit na isailalim ang bagong aning mangga sa hot-water treatment, habang nasa Section III
+    ang mga iskedyul ng paggamot para sa paghawak ng mangga.
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: No pesticide product, dose, interval, or PHI is included because the cited source refers only to
+    registered fungicides and does not provide a product-specific label for this crop-disease pair.
+  safety_restrictions_fil: Walang isinamang partikular na produktong pestisidyo, dosis, pagitan ng aplikasyon, o PHI dahil
+    pangkalahatang 'registered fungicides' lamang ang tinutukoy ng sanggunian at walang label na tiyak sa crop-disease pair
+    na ito.
+  uncertainty_note_en: These signs are decision-support indicators only. Similar fruit or flower lesions may have other causes.
+    Seek confirmation from an agriculturist or plant pathologist.
+  uncertainty_note_fil: Mga palatandaang pantulong sa pagpapasya lamang ang mga ito. Maaaring may ibang sanhi ang kahawig
+    na pinsala sa bunga o bulaklak. Humingi ng kumpirmasyon mula sa agriculturist o plant pathologist.
+  source_id:
+  - PH_BAFS_MANGO_GAP_2025
+  source_url: https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+  source_title: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009
+  source_page_or_section: Annex II, printed p. 110; Section III, printed p. 54
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: Confirm Filipino wording and whether the hot-water handling text should be linked directly to anthracnose
+    in production.
+- fruit: Mango
+  variety: null
+  disease_key: scab
+  disease_name_en: Mango scab
+  disease_name_fil: Scab ng mangga
+  disease_scope: Specific fungal disease documented for mango
+  field_or_postharvest: field
+  symptoms_en: Possible signs on young developing fruit include grayish-brown spots with dark irregular margins. Enlarging
+    spots may crack and form fissured corky tissue. Panicles and pedicels may also be affected.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan sa murang nabubuong bunga ang abong-kayumangging batik na may madilim
+    at hindi regular na gilid. Kapag lumaki ang batik, maaaring magbitak at maging tila cork ang tisyu. Maaari ring maapektuhan
+    ang panicle at pedicel.
+  prevention_en: Use sanitation and pruning to improve light penetration and air circulation. Remove disease-source trash
+    and bag fruits with appropriate materials.
+  prevention_fil: Gumamit ng sanitasyon at pruning upang mapabuti ang pagpasok ng liwanag at pagdaloy ng hangin. Alisin ang
+    basurang maaaring pagmulan ng sakit at balutin ang bunga gamit ang angkop na materyal.
+  cultural_management_en: Prune after harvest to improve ventilation and reduce humidity inside the canopy.
+  cultural_management_fil: Mag-prune pagkatapos ng anihan upang mapabuti ang bentilasyon at mabawasan ang halumigmig sa loob
+    ng canopy.
+  biological_or_mechanical_control_en: null
+  biological_or_mechanical_control_fil: null
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: The source mentions spraying registered fungicides in scab-prone areas at the young-fruit stage,
+    but no product-specific label details are supplied here, so no pesticide entry is proposed.
+  safety_restrictions_fil: Binabanggit ng sanggunian ang pag-spray ng rehistradong fungicide sa scab-prone na lugar habang
+    bata pa ang bunga, ngunit walang product-specific label details, kaya walang pestisidyong inilalagay sa draft.
+  uncertainty_note_en: Seek confirmation because fruit surface injuries and other diseases may resemble scab.
+  uncertainty_note_fil: Humingi ng kumpirmasyon dahil maaaring magmukhang scab ang pinsala sa balat ng bunga at ibang sakit.
+  source_id:
+  - PH_BAFS_MANGO_GAP_2025
+  source_url: https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+  source_title: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009
+  source_page_or_section: Annex II, printed p. 111
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: Confirm whether the Filipino disease name should remain 'scab' for farmer-facing text.
+- fruit: Mango
+  variety: null
+  disease_key: mold
+  disease_name_en: Sooty mold
+  disease_name_fil: Sooty mold
+  disease_scope: Specific condition under the broad candidate term 'mold'
+  field_or_postharvest: field
+  symptoms_en: Possible signs include a black, velvety covering on leaves and fruit associated with honeydew from leafhoppers,
+    scales, or mealybugs.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan ang maitim at mala-pelus na sapin sa dahon at bunga na kaugnay ng honeydew
+    mula sa leafhopper, scale insect, o mealybug.
+  prevention_en: Manage honeydew-producing insects, bag clean fruits with appropriate materials, and practice pruning.
+  prevention_fil: Kontrolin ang mga insektong naglalabas ng honeydew, balutin ang malilinis na bunga gamit ang angkop na materyal,
+    at magsagawa ng pruning.
+  cultural_management_en: Pruning is documented as part of management.
+  cultural_management_fil: Nakadokumento ang pruning bilang bahagi ng pamamahala.
+  biological_or_mechanical_control_en: null
+  biological_or_mechanical_control_fil: null
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: No pesticide product is proposed.
+  safety_restrictions_fil: Walang produktong pestisidyo na iminungkahi.
+  uncertainty_note_en: The generic label 'mold' should not be shown to users as a diagnosis. This row applies only to source-defined
+    sooty mold.
+  uncertainty_note_fil: Hindi dapat ipakita ang pangkalahatang salitang 'mold' bilang diagnosis. Ang row na ito ay para lamang
+    sa sooty mold na malinaw na tinukoy ng sanggunian.
+  source_id:
+  - PH_BAFS_MANGO_GAP_2025
+  source_url: https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+  source_title: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009
+  source_page_or_section: Annex II, printed p. 112
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: 'Confirm taxonomy decision: keep stable key ''mold'' but display the specific disease name ''Sooty mold''.'
+- fruit: Mango
+  variety: null
+  disease_key: rot
+  disease_name_en: Diplodia stem-end rot
+  disease_name_fil: Diplodia stem-end rot
+  disease_scope: Specific disease under the broad candidate term 'rot'
+  field_or_postharvest: both
+  symptoms_en: Possible signs include dark lesions starting at the pedicel end after harvest, spreading toward the opposite
+    end under warm, moist conditions. Affected tissue may become dark-brown to purplish black, watery, and malodorous.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan ang madilim na sugat na nagsisimula sa dulo ng pedicel pagkatapos anihin
+    at lumalawak patungo sa kabilang dulo sa mainit at mahalumigmig na kondisyon. Maaaring maging dark-brown hanggang purplish
+    black, matubig, at mabaho ang apektadong tisyu.
+  prevention_en: Remove and destroy primary disease sources such as dead twigs, bark, and other plant trash. Harvest fruit
+    with about 1 to 2 cm of stalk attached.
+  prevention_fil: Alisin at sirain ang pangunahing pinagmumulan ng sakit gaya ng patay na sanga, balat, at iba pang plant
+    debris. Anihin ang bunga na may humigit-kumulang 1 hanggang 2 cm na tangkay na nakakabit.
+  cultural_management_en: Sanitation and careful harvest handling are documented.
+  cultural_management_fil: Nakadokumento ang sanitasyon at maingat na pag-aani.
+  biological_or_mechanical_control_en: null
+  biological_or_mechanical_control_fil: null
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: No pesticide product is proposed.
+  safety_restrictions_fil: Walang produktong pestisidyo na iminungkahi.
+  uncertainty_note_en: The generic term 'rot' is too broad. This row applies only to source-defined Diplodia/stem-end rot.
+  uncertainty_note_fil: Masyadong malawak ang salitang 'rot'. Ang row na ito ay para lamang sa Diplodia/stem-end rot na malinaw
+    na tinukoy ng sanggunian.
+  source_id:
+  - PH_BAFS_MANGO_GAP_2025
+  source_url: https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+  source_title: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009
+  source_page_or_section: Annex II, printed p. 112
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: Confirm pathogen naming and farmer-facing Filipino term.
+- fruit: Banana
+  variety: null
+  disease_key: anthracnose
+  disease_name_en: Banana anthracnose
+  disease_name_fil: Anthracnose ng saging
+  disease_scope: Specific post-harvest disease documented for banana
+  field_or_postharvest: postharvest
+  symptoms_en: Possible signs include black or brown sunken peel spots of varying size. Lesions may contain salmon-colored
+    spore masses, and affected fruit may ripen prematurely.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan ang lubog na itim o kayumangging batik sa balat ng bunga na iba-iba
+    ang laki. Maaaring magkaroon ng kulay-salmon na kumpol ng spores sa sugat at maaaring maagang mahinog ang apektadong bunga.
+  prevention_en: Use field sanitation, careful fruit handling to avoid bruises and wounds, clean packinghouse water and equipment,
+    and appropriate cool handling after harvest.
+  prevention_fil: Panatilihin ang sanitasyon sa bukid, iwasang mabugbog o masugatan ang bunga, panatilihing malinis ang tubig
+    at kagamitan sa packinghouse, at gumamit ng angkop na malamig na paghawak pagkatapos anihin.
+  cultural_management_en: Remove dead and dying banana tissues that can harbor the pathogen.
+  cultural_management_fil: Alisin ang patay at namamatay na tisyu ng saging na maaaring pamahayan ng pathogen.
+  biological_or_mechanical_control_en: PCAARRD reported laboratory and pot results for HiYEAST Dh against banana anthracnose.
+    The same source says the product was not commercially available and further packinghouse/production-area trials were needed.
+    Treat this as experimental evidence only.
+  biological_or_mechanical_control_fil: Iniulat ng PCAARRD ang laboratory at pot results ng HiYEAST Dh laban sa anthracnose
+    ng saging. Sinasabi rin ng sanggunian na hindi pa ito commercially available at kailangan pa ng karagdagang packinghouse
+    at production-area trials. Ituring lamang ito bilang experimental evidence.
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: Do not present HiYEAST as a currently available farmer treatment. No pesticide label claim is included.
+  safety_restrictions_fil: Huwag ipakita ang HiYEAST bilang kasalukuyang available na lunas para sa magsasaka. Walang pesticide
+    label claim na isinama.
+  uncertainty_note_en: These signs are not a diagnosis. Confirm with an agriculturist or plant pathologist, especially when
+    crown rot or other post-harvest rots are also possible.
+  uncertainty_note_fil: Hindi diagnosis ang mga palatandaang ito. Magpakumpirma sa agriculturist o plant pathologist, lalo
+    na kung posible rin ang crown rot o ibang post-harvest rot.
+  source_id:
+  - PH_PCAARRD_HIYEAST
+  - US_UH_BANANA_ROTS_PD54
+  source_url: https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops
+  source_title: PCAARRD HiYEAST article; UH CTAHR Postharvest Rots of Banana
+  source_page_or_section: 'PCAARRD: HiYEAST Dh results; UH CTAHR PD-54: Primary symptoms and integrated management'
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: Confirm whether external-extension symptom wording is suitable for Philippine cultivars. Experimental HiYEAST
+    text must remain clearly non-commercial.
+- fruit: Banana
+  variety: null
+  disease_key: rot
+  disease_name_en: Crown rot
+  disease_name_fil: Crown rot ng saging
+  disease_scope: Specific post-harvest disease under the broad candidate term 'rot'
+  field_or_postharvest: postharvest
+  symptoms_en: Possible signs include brown-to-black discoloration on the cut crown surface, sometimes followed by whitish
+    mold and deeper dry black rot into the crown and finger necks. Severely affected fingers may detach.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan ang kayumanggi hanggang itim na pagkulay sa pinutol na crown surface,
+    na maaaring sundan ng maputing amag at mas malalim na tuyong itim na pagkabulok sa crown at leeg ng mga daliri ng saging.
+    Maaaring matanggal ang mga daliri kapag malala ang pinsala.
+  prevention_en: Use field sanitation, clean packinghouse water and equipment, careful de-handing and fruit handling, and
+    appropriate cool handling after harvest.
+  prevention_fil: Panatilihin ang sanitasyon sa bukid, malinis na tubig at kagamitan sa packinghouse, maingat na de-handing
+    at paghawak ng bunga, at angkop na malamig na paghawak pagkatapos anihin.
+  cultural_management_en: Remove dead plant tissues and packinghouse debris that can serve as pathogen sources.
+  cultural_management_fil: Alisin ang patay na plant tissue at debris sa packinghouse na maaaring pagmulan ng pathogen.
+  biological_or_mechanical_control_en: PCAARRD reported laboratory and pot results for HiYEAST Dh against banana crown rot.
+    The source states that the product was not commercially available and further trials were needed.
+  biological_or_mechanical_control_fil: Iniulat ng PCAARRD ang laboratory at pot results ng HiYEAST Dh laban sa crown rot
+    ng saging. Sinasabi ng sanggunian na hindi pa commercially available ang produkto at kailangan pa ng karagdagang trials.
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: No pesticide label claim is included. Do not convert the experimental HiYEAST instructions into
+    farmer guidance without expert and regulatory review.
+  safety_restrictions_fil: Walang pesticide label claim na isinama. Huwag gawing farmer guidance ang experimental HiYEAST
+    instructions nang walang expert at regulatory review.
+  uncertainty_note_en: The candidate term 'rot' is broad. This row applies only to crown rot.
+  uncertainty_note_fil: Malawak ang candidate term na 'rot'. Ang row na ito ay para lamang sa crown rot.
+  source_id:
+  - PH_PCAARRD_HIYEAST
+  - US_UH_BANANA_ROTS_PD54
+  source_url: https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops
+  source_title: PCAARRD HiYEAST article; UH CTAHR Postharvest Rots of Banana
+  source_page_or_section: 'PCAARRD: HiYEAST Dh results; UH CTAHR PD-54: Crown rot symptoms and integrated management'
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: Confirm whether crown rot should be represented as its own production taxonomy item rather than only under
+    generic 'rot'.
+- fruit: Papaya
+  variety: null
+  disease_key: anthracnose
+  disease_name_en: Papaya anthracnose
+  disease_name_fil: Anthracnose ng papaya
+  disease_scope: Specific disease documented in Philippine papaya fruit and extension references
+  field_or_postharvest: both
+  symptoms_en: Philippine fruit samples were reported with brown-to-black, sunken, water-soaked lesions. Extension guidance
+    also describes sunken fruit spots.
+  symptoms_fil: Sa mga sample ng bunga mula sa Pilipinas, naiulat ang lubog, water-soaked, kayumanggi hanggang itim na lesions.
+    Inilalarawan din ng extension guidance ang lubog na batik sa bunga.
+  prevention_en: Improve aeration, remove diseased fruits and plant parts, and harvest ripe fruit promptly.
+  prevention_fil: Pagbutihin ang daloy ng hangin, alisin ang may sakit na bunga at bahagi ng halaman, at anihin agad ang hinog
+    na bunga.
+  cultural_management_en: Humidity management and removal of infected material are documented in extension guidance.
+  cultural_management_fil: Nakadokumento sa extension guidance ang pamamahala ng halumigmig at pag-alis ng infected material.
+  biological_or_mechanical_control_en: A University of Hawai‘i extension page describes immersing ripe fruit in 118°F water
+    for 20 minutes. This non-Philippine treatment requires local expert review before any farmer-facing use.
+  biological_or_mechanical_control_fil: Inilalarawan ng University of Hawai‘i extension page ang paglubog ng hinog na bunga
+    sa 118°F na tubig sa loob ng 20 minuto. Kailangan ng lokal na expert review bago ito gamitin sa farmer-facing guidance.
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: No Philippine pesticide label claim is included.
+  safety_restrictions_fil: Walang Philippine pesticide label claim na isinama.
+  uncertainty_note_en: The Philippine study confirms the disease relationship but is not a regulatory treatment source. Treatment
+    guidance comes from a non-Philippine extension source and needs local expert confirmation.
+  uncertainty_note_fil: Kinukumpirma ng Philippine study ang disease relationship ngunit hindi ito regulatory treatment source.
+    Ang treatment guidance ay mula sa non-Philippine extension source at kailangan ng lokal na expert confirmation.
+  source_id:
+  - PH_AGRIS_PAPAYA_ANTHRACNOSE_2021
+  - US_UH_PAPAYA_ANTHRACNOSE
+  source_url: https://agris.fao.org/search/en/providers/122535/records/65df0a077c7033e84beca4fe
+  source_title: Philippine papaya anthracnose study indexed by FAO AGRIS; UH papaya anthracnose extension page
+  source_page_or_section: 'AGRIS abstract; UH page: Anthracnose > Symptom/Control'
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: Confirm hot-water treatment suitability for local varieties and production conditions before use.
+- fruit: Papaya
+  variety: null
+  disease_key: powdery_mildew
+  disease_name_en: Papaya powdery mildew
+  disease_name_fil: Powdery mildew ng papaya
+  disease_scope: Specific fungal disease supported by non-Philippine extension evidence
+  field_or_postharvest: field
+  symptoms_en: Possible signs include powdery patches on the underside of leaves and powdery spots on immature fruit that
+    may later leave gray scars or deform the fruit.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan ang pulbos na patches sa ilalim ng dahon at pulbos na batik sa murang
+    bunga na maaaring mag-iwan ng abong peklat o magdulot ng deformity habang lumalaki.
+  prevention_en: Improve aeration between plants and remove and destroy heavily mildewed leaves.
+  prevention_fil: Pagbutihin ang daloy ng hangin sa pagitan ng mga halaman at alisin at sirain ang mga dahong malubhang may
+    powdery mildew.
+  cultural_management_en: The extension source also suggests humidity management, including lower-rainfall growing conditions
+    where applicable.
+  cultural_management_fil: Iminumungkahi rin ng extension source ang pamamahala ng halumigmig, kabilang ang mas mababang ulan
+    na growing conditions kung naaangkop.
+  biological_or_mechanical_control_en: null
+  biological_or_mechanical_control_fil: null
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: The extension page mentions fungicide or sulfur, but no Philippine product label was verified. No
+    pesticide recommendation is included.
+  safety_restrictions_fil: Binabanggit ng extension page ang fungicide o sulfur, ngunit walang Philippine product label na
+    na-verify. Walang pesticide recommendation na isinama.
+  uncertainty_note_en: Philippine-specific evidence was not located in the reviewed authoritative sources. Keep this relationship
+    draft-only until a Philippine agriculture expert confirms local relevance.
+  uncertainty_note_fil: Walang nahanap na Philippine-specific evidence sa mga authoritative source na nirepaso. Panatilihing
+    draft-only ang relationship na ito hanggang makumpirma ng Philippine agriculture expert ang lokal na relevance.
+  source_id:
+  - US_UH_PAPAYA_POWDERY_MILDEW
+  source_url: https://cms.ctahr.hawaii.edu/uhmgpd/Diagnose/Fruits/Papaya/Powdery-spots-on-fruit-and-leaves
+  source_title: 'Papaya: Powdery Spots on Fruit and Leaves'
+  source_page_or_section: Powdery Mildew > Symptom/Control
+  retrieved_at: '2026-09-16'
+  evidence_status: partially_supported
+  expert_review_status: pending
+  reviewer_notes: 'High priority: confirm occurrence and management under Philippine conditions before production inclusion.'
+- fruit: Papaya
+  variety: null
+  disease_key: rot
+  disease_name_en: Phytophthora rot
+  disease_name_fil: Phytophthora rot ng papaya
+  disease_scope: Specific disease under the broad candidate term 'rot'
+  field_or_postharvest: field
+  symptoms_en: Possible signs include root rot, wilt, trunk canker, and fruit rot. Affected areas may begin water-soaked and
+    later develop cottony growth and spores on the surface.
+  symptoms_fil: Kabilang sa mga posibleng palatandaan ang root rot, pagkalanta, canker sa puno, at fruit rot. Maaaring magsimula
+    bilang water-soaked ang apektadong bahagi at kalaunan ay magkaroon ng cottony growth at spores sa ibabaw.
+  prevention_en: Do not replant in areas where the disease previously occurred. Remove and destroy fallen trunks and fruits.
+    Maintain good field drainage.
+  prevention_fil: Huwag muling magtanim sa lugar na dati nang nagkaroon ng sakit. Alisin at sirain ang mga bumagsak na puno
+    at bunga. Panatilihin ang maayos na drainage sa bukid.
+  cultural_management_en: Good drainage and removal of infected fallen material are documented.
+  cultural_management_fil: Nakadokumento ang maayos na drainage at pag-alis ng infected na bumagsak na materyal.
+  biological_or_mechanical_control_en: null
+  biological_or_mechanical_control_fil: null
+  pesticide_product: null
+  active_ingredient: null
+  pesticide_target_crop: null
+  pesticide_target_disease: null
+  dosage: null
+  concentration: null
+  application_interval: null
+  preharvest_interval: null
+  safety_restrictions_en: No pesticide product is proposed from this source.
+  safety_restrictions_fil: Walang produktong pestisidyo na iminungkahi mula sa sangguniang ito.
+  uncertainty_note_en: The candidate term 'rot' is broad. This row applies only to source-defined Phytophthora rot. Seek confirmation
+    because root, trunk, and fruit symptoms overlap with other problems.
+  uncertainty_note_fil: Malawak ang candidate term na 'rot'. Ang row na ito ay para lamang sa Phytophthora rot na malinaw
+    na tinukoy ng sanggunian. Humingi ng kumpirmasyon dahil maaaring magkapareho ang sintomas sa ugat, puno, at bunga sa ibang
+    problema.
+  source_id:
+  - PH_BPI_PAPAYA_GUIDE
+  source_url: https://library.buplant.da.gov.ph/images/1641884692Papaya%20%20Production%20Guide.pdf
+  source_title: Papaya Production Guide
+  source_page_or_section: Important Insect Pests and Diseases > Phytophthora Rot
+  retrieved_at: '2026-09-16'
+  evidence_status: supported
+  expert_review_status: pending
+  reviewer_notes: Confirm Filipino terminology and whether field/post-harvest scope needs refinement.

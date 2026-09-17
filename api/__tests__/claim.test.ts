@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest';
-import { handleClaim } from '../_lib/handlers/claim';
+import { handleClaim } from '../_lib/handlers/claim.js';
 
 const CTX = { deviceId: 'dev-1', accessToken: 'tok', ip: '1.2.3.4' };
 

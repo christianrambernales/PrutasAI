@@ -51,6 +51,7 @@ export interface Shell {
     varietiesByFruit: Record<string, VarietySummary[]>;
     strainsByFruit: Record<string, VarietySummary[]>;
     sourcesByFruit: Record<string, Source[]>;
+    diseasesByFruit: Record<string, import('../features/viewModels').DiseaseSummary[]>;
     scanGroups: ScanGroup[];
     allScans: ScanSummary[];
     trashedConversations: ConversationSummary[];

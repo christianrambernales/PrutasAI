@@ -52,3 +52,23 @@ export function validatePrototypeMapping(mappingRows, canonical) {
     throw new PrototypeMappingValidationError('Prototype mapping validation failed:\n' + errors.join('\n'));
   }
 }
+
+import { fileURLToPath } from 'node:url';
+
+// CLI execution
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const { readFileSync } = await import('node:fs');
+  const filePath = process.argv[2];
+  if (!filePath) {
+    console.error('Usage: node validate-prototype-mapping.mjs <path-to-json>');
+    process.exit(1);
+  }
+  try {
+    const data = JSON.parse(readFileSync(filePath, 'utf8'));
+    validatePrototypeMapping(data.mappingRows, data.canonical);
+    console.log('Prototype mapping validation passed.');
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+}
