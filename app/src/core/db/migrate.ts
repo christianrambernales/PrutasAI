@@ -3,12 +3,14 @@ import initial from './migrations/001_initial.sql';
 import location from './migrations/002_scan_location.sql';
 import conversations from './migrations/003_conversations.sql';
 import disease_remedy from './migrations/004_knowledge_disease_remedy.sql';
+import scan_retention from './migrations/005_scan_retention.sql';
 
 export const MIGRATIONS: { version: number; sql: string }[] = [
   { version: 1, sql: initial },
   { version: 2, sql: location },
   { version: 3, sql: conversations },
   { version: 4, sql: disease_remedy },
+  { version: 5, sql: scan_retention },
 ];
 
 export function migrate(driver: SqlDriver, migrations = MIGRATIONS): number {

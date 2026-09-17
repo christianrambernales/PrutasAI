@@ -41,6 +41,7 @@ export function useCaptureRoute(input: CaptureRouteInput): CaptureRoute {
         // Already rounded to 2 dp in app state; the server rounds again.
         lat: savedLocation?.latitude ?? null,
         lon: savedLocation?.longitude ?? null,
+        isOwnedPhoto: true,
       });
       bumpData();
       replace({ name: 'captureResult', photoUri: ownedUri });

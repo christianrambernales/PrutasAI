@@ -39,4 +39,18 @@ export class ExpoPhotoStore implements PhotoStore {
       await FileSystem.deleteAsync(ownedUri);
     }
   }
+
+  async cleanupOrphans(referencedURIs: Set<string>): Promise<number> {
+    await this.ensureDir();
+    const files = await FileSystem.readDirectoryAsync(PHOTOS_DIR);
+    let deleted = 0;
+    for (const filename of files) {
+      const uri = `${PHOTOS_DIR}${filename}`;
+      if (!referencedURIs.has(uri)) {
+        await FileSystem.deleteAsync(uri);
+        deleted += 1;
+      }
+    }
+    return deleted;
+  }
 }

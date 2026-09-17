@@ -1,6 +1,6 @@
 import {
   countScans, findScan, insertScan, listScanGroups, markSynced, newScanUuid, pendingScans,
-  resetSyncQueue,
+  resetSyncQueue, softDeleteScan, restoreScan, listTrashedScans, getScanPhotoForHardDelete, hardDeleteScan
 } from '../repositories/scans';
 import { freshDb, sampleScan, seededDb } from '../testing/scanFixtures';
 
@@ -128,4 +128,71 @@ test('resetSyncQueue re-queues every scan, including already-synced ones', () =>
   resetSyncQueue(db);
 
   expect(pendingScans(db).map(s => s.uuid).sort()).toEqual(['a', 'b']);
+});
+
+test('soft-deleting a scan hides it from active history and findScan', () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'a1' }));
+  softDeleteScan(db, 'a1', '2026-08-30T10:00:00.000Z');
+
+  expect(listScanGroups(db)).toEqual([]);
+  expect(findScan(db, 'a1')).toBeNull();
+});
+
+test('soft-deleting queues the scan for sync', () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'a1', syncedAt: '2026-08-29T10:00:00.000Z' }));
+  softDeleteScan(db, 'a1', '2026-08-30T10:00:00.000Z');
+
+  expect(pendingScans(db).map(s => s.uuid)).toEqual(['a1']);
+});
+
+test('trashed scans appear in listTrashedScans newest-deleted first', () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'a1' }));
+  insertScan(db, sampleScan({ uuid: 'a2' }));
+  softDeleteScan(db, 'a1', '2026-08-30T10:00:00.000Z');
+  softDeleteScan(db, 'a2', '2026-08-31T10:00:00.000Z');
+
+  const trashed = listTrashedScans(db);
+  expect(trashed.map(s => s.id)).toEqual(['a2', 'a1']);
+});
+
+test('restoring a scan returns it to active history', () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'a1' }));
+  softDeleteScan(db, 'a1', '2026-08-30T10:00:00.000Z');
+  restoreScan(db, 'a1');
+
+  expect(listScanGroups(db).length).toBeGreaterThan(0);
+  expect(findScan(db, 'a1')).not.toBeNull();
+  expect(listTrashedScans(db)).toEqual([]);
+});
+
+test('restoring queues the scan for sync', () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'a1' }));
+  softDeleteScan(db, 'a1', '2026-08-30T10:00:00.000Z');
+  markSynced(db, 'a1', '2026-08-30T10:01:00.000Z');
+  restoreScan(db, 'a1');
+
+  expect(pendingScans(db).map(s => s.uuid)).toEqual(['a1']);
+});
+
+test('getScanPhotoForHardDelete distinguishes owned from non-owned photos', () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'owned', imageUri: 'file:///owned.jpg', isOwnedPhoto: true }));
+  insertScan(db, sampleScan({ uuid: 'unowned', imageUri: 'file:///cache.jpg', isOwnedPhoto: false }));
+
+  expect(getScanPhotoForHardDelete(db, 'owned')).toEqual({ imageUri: 'file:///owned.jpg', isOwned: true });
+  expect(getScanPhotoForHardDelete(db, 'unowned')).toEqual({ imageUri: 'file:///cache.jpg', isOwned: false });
+  expect(getScanPhotoForHardDelete(db, 'missing')).toBeNull();
+});
+
+test('hardDeleteScan removes the row entirely', () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'a1' }));
+  hardDeleteScan(db, 'a1');
+
+  expect(countScans(db)).toBe(0);
 });

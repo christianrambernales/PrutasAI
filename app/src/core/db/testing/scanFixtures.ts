@@ -34,6 +34,7 @@ export function sampleScan(overrides: Partial<NewScan> = {}): NewScan {
     manifestVersion: 1,
     lat: null,
     lon: null,
+    isOwnedPhoto: false,
     ...overrides,
   };
 }

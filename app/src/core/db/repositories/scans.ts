@@ -25,6 +25,8 @@ export interface NewScan {
    * them straight back.
    */
   syncedAt?: string | null;
+  /** True if the photo is in the app-owned directory and should be deleted with the row */
+  isOwnedPhoto?: boolean;
 }
 
 /** A history row plus the photo it was taken from, for reopening a scan. */
@@ -78,13 +80,13 @@ export function insertScan(db: SqlDriver, scan: NewScan): string {
   db.all(
     `INSERT OR IGNORE INTO scan
        (uuid, image_uri, fruit_key, fruit_conf, variety_key, variety_conf,
-        bbox_json, manifest_version, lat, lon, created_at, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        bbox_json, manifest_version, lat, lon, created_at, synced_at, is_owned_photo)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      RETURNING uuid`,
     [
       scan.uuid, scan.imageUri, scan.fruitKey, scan.fruitConf, scan.varietyKey,
       scan.varietyConf, scan.bboxJson, scan.manifestVersion, scan.lat, scan.lon,
-      scan.createdAt, scan.syncedAt ?? null,
+      scan.createdAt, scan.syncedAt ?? null, scan.isOwnedPhoto ? 1 : 0,
     ],
   );
   return scan.uuid;
@@ -133,9 +135,9 @@ function toSummary(row: ScanRow, now: Date): StoredScan {
   };
 }
 
-/** History, newest first, grouped by recency. */
+/** History, newest first, grouped by recency. Excludes trashed scans. */
 export function listScanGroups(db: SqlDriver, now: Date = new Date()): ScanGroup[] {
-  const rows = db.all<ScanRow>(`${SELECT_SCAN} ORDER BY s.created_at DESC`);
+  const rows = db.all<ScanRow>(`${SELECT_SCAN} WHERE s.deleted_at IS NULL ORDER BY s.created_at DESC`);
   const groups = new Map<string, ScanSummary[]>();
 
   for (const row of rows) {
@@ -149,7 +151,7 @@ export function listScanGroups(db: SqlDriver, now: Date = new Date()): ScanGroup
 
 /** One stored scan, or null — never a stand-in row. */
 export function findScan(db: SqlDriver, uuid: string, now: Date = new Date()): StoredScan | null {
-  const row = db.get<ScanRow>(`${SELECT_SCAN} WHERE s.uuid = ?`, [uuid]);
+  const row = db.get<ScanRow>(`${SELECT_SCAN} WHERE s.uuid = ? AND s.deleted_at IS NULL`, [uuid]);
   return row ? toSummary(row, now) : null;
 }
 
@@ -225,4 +227,37 @@ export function markSynced(db: SqlDriver, uuid: string, syncedAt: string): void 
  */
 export function resetSyncQueue(db: SqlDriver): void {
   db.all('UPDATE scan SET synced_at = NULL RETURNING uuid');
+}
+
+export function softDeleteScan(db: SqlDriver, uuid: string, now: string): void {
+  db.all(
+    'UPDATE scan SET deleted_at = ?, synced_at = NULL WHERE uuid = ? RETURNING uuid',
+    [now, uuid],
+  );
+}
+
+export function restoreScan(db: SqlDriver, uuid: string): void {
+  db.all(
+    'UPDATE scan SET deleted_at = NULL, synced_at = NULL WHERE uuid = ? RETURNING uuid',
+    [uuid],
+  );
+}
+
+export function listTrashedScans(db: SqlDriver, now: Date = new Date()): ScanSummary[] {
+  const rows = db.all<ScanRow>(
+    `${SELECT_SCAN} WHERE s.deleted_at IS NOT NULL ORDER BY s.deleted_at DESC`,
+  );
+  return rows.map(row => toSummary(row, now));
+}
+
+export function getScanPhotoForHardDelete(db: SqlDriver, uuid: string): { imageUri: string; isOwned: boolean } | null {
+  const row = db.get<{ image_uri: string; is_owned_photo: number }>(
+    'SELECT image_uri, is_owned_photo FROM scan WHERE uuid = ?',
+    [uuid],
+  );
+  return row ? { imageUri: row.image_uri, isOwned: row.is_owned_photo === 1 } : null;
+}
+
+export function hardDeleteScan(db: SqlDriver, uuid: string): void {
+  db.all('DELETE FROM scan WHERE uuid = ? RETURNING uuid', [uuid]);
 }
