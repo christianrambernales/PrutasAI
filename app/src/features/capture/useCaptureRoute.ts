@@ -4,40 +4,57 @@ import manifest from '../../core/ml/manifest.json';
 import type { SqlDriver } from '../../core/db/driver';
 import type { AppState } from '../../state/appState';
 import type { Route } from '../../navigation/navState';
+import type { PhotoStore } from '../../core/files/photoStore';
 
 export interface CaptureRouteInput {
   db: SqlDriver;
+  photoStore: PhotoStore;
   savedLocation: AppState['savedLocation'];
   /** Invalidates every dataVersion-keyed read after a write. */
   bumpData: () => void;
   replace: (route: Route) => void;
+  notify: (msg: string) => void;
 }
 
 export interface CaptureRoute {
-  onCaptured: (uri: string) => void;
+  onCaptured: (uri: string) => Promise<void>;
 }
 
 /** What a taken photo becomes: one stored scan, then the result screen. */
 export function useCaptureRoute(input: CaptureRouteInput): CaptureRoute {
-  const { db, savedLocation, bumpData, replace } = input;
+  const { db, photoStore, savedLocation, bumpData, replace, notify } = input;
 
-  const onCaptured = useCallback((uri: string) => {
-    insertScan(db, {
-      uuid: newScanUuid(),
-      imageUri: uri,
-      createdAt: new Date().toISOString(),
-      // No weights are installed, so nothing was inferred and nothing is
-      // claimed. The row records the photo and the time, and that is all.
-      fruitKey: null, fruitConf: null, varietyKey: null, varietyConf: null,
-      bboxJson: null, manifestVersion: manifest.manifest_version,
-      // The scan records where it was taken, if the user has set a place.
-      // Already rounded to 2 dp in app state; the server rounds again.
-      lat: savedLocation?.latitude ?? null,
-      lon: savedLocation?.longitude ?? null,
-    });
-    bumpData();
-    replace({ name: 'captureResult', photoUri: uri });
-  }, [db, savedLocation, bumpData, replace]);
+  const onCaptured = useCallback(async (uri: string) => {
+    let ownedUri: string | null = null;
+    try {
+      ownedUri = await photoStore.copyToOwned(uri);
+      
+      insertScan(db, {
+        uuid: newScanUuid(),
+        imageUri: ownedUri,
+        createdAt: new Date().toISOString(),
+        // No weights are installed, so nothing was inferred and nothing is
+        // claimed. The row records the photo and the time, and that is all.
+        fruitKey: null, fruitConf: null, varietyKey: null, varietyConf: null,
+        bboxJson: null, manifestVersion: manifest.manifest_version,
+        // The scan records where it was taken, if the user has set a place.
+        // Already rounded to 2 dp in app state; the server rounds again.
+        lat: savedLocation?.latitude ?? null,
+        lon: savedLocation?.longitude ?? null,
+      });
+      bumpData();
+      replace({ name: 'captureResult', photoUri: ownedUri });
+    } catch (err) {
+      if (ownedUri) {
+        try {
+          await photoStore.deleteOwned(ownedUri);
+        } catch (cleanupErr) {
+          // Ignore cleanup errors
+        }
+      }
+      notify('Failed to save the captured photo.');
+    }
+  }, [db, photoStore, savedLocation, bumpData, replace, notify]);
 
   return { onCaptured };
 }

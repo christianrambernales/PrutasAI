@@ -24,6 +24,7 @@ import { purgeTrash } from '../core/sync/purgeTrash';
 import { useAccountSync } from '../features/account/useAccountSync';
 import { CameraCapture } from '../features/capture/CameraCapture';
 import { useCaptureRoute } from '../features/capture/useCaptureRoute';
+import { ExpoPhotoStore } from '../core/files/expoPhotoStore';
 import { ConversationSidebar } from '../features/chat/ConversationSidebar';
 import { useChatRuntime } from '../features/chat/useChatRuntime';
 import { useConversationsUi } from '../features/chat/useConversationsUi';
@@ -181,11 +182,16 @@ export function AppNavigator() {
     scanGroups, allScans, historyFilter: app.historyFilter, historyQuery: app.historyQuery, t,
   });
 
+  // Using ExpoPhotoStore for handling scan images
+  const photoStore = useMemo(() => new ExpoPhotoStore(), []);
+
   const capture = useCaptureRoute({
     db,
+    photoStore,
     savedLocation: app.savedLocation,
     bumpData,
     replace,
+    notify,
   });
 
   const shell: Shell = {
