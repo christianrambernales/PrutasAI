@@ -52,11 +52,10 @@ export async function drainScans(options: DrainOptions): Promise<DrainReport> {
 
     // The allow-list rejects unknown fields, so send exactly what it accepts —
     // and note the actual image byte array is absent by choice, not by omission.
-    // image_uri is sent for active scans to trace sync state, but omitted for trashed ones.
     const body = {
       uuid: scan.uuid,
       created_at: scan.createdAt,
-      ...(scan.deletedAt === null ? { image_uri: scan.imageUri } : { deleted_at: scan.deletedAt }),
+      ...(scan.deletedAt === null ? {} : { deleted_at: scan.deletedAt }),
       ...(scan.fruitKey === null ? {} : { fruit_key: scan.fruitKey }),
       ...(scan.fruitConf === null ? {} : { fruit_conf: scan.fruitConf }),
       ...(scan.varietyKey === null ? {} : { variety_key: scan.varietyKey }),

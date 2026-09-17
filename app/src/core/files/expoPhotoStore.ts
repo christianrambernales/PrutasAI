@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { PhotoStore } from './photoStore';
 import * as crypto from 'crypto';
 

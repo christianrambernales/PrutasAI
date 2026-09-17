@@ -14,14 +14,14 @@ test('creates the content and user tables', () => {
 
 test('reports the resulting schema version', () => {
   const db = createTestDriver();
-  expect(migrate(db)).toBe(4);
+  expect(migrate(db)).toBe(5);
 });
 
 test('is idempotent', () => {
   const db = createTestDriver();
   migrate(db);
   expect(() => migrate(db)).not.toThrow();
-  expect(migrate(db)).toBe(4);
+  expect(migrate(db)).toBe(5);
 });
 
 test('adds lat/lon to scan, idempotently', () => {
@@ -46,7 +46,7 @@ test('rejects a variety whose fruit does not exist', () => {
 test('migrates to version 3 and creates the conversation tables', () => {
   const db = createTestDriver();
   const version = migrate(db);
-  expect(version).toBe(4);
+  expect(version).toBe(5);
 
   db.exec("INSERT INTO conversation (uuid, title, device_id, created_at, updated_at) VALUES ('c1', 'Hello', 'dev-1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z')");
   db.exec("INSERT INTO conversation_message (uuid, conversation_id, role, text, created_at) VALUES ('m1', 'c1', 'user', 'hi', '2026-08-30T00:00:01.000Z')");
@@ -82,7 +82,7 @@ test('a failing migration leaves neither its schema mutation nor version row', (
   migrate(db); // applied up to 3
   
   const badMigrations = [
-    { version: 5, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
+    { version: 6, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
   ];
   
   expect(() => migrate(db, badMigrations)).toThrow();
@@ -93,7 +93,7 @@ test('a failing migration leaves neither its schema mutation nor version row', (
   ).map(r => r.name);
   expect(names).not.toContain('dummy');
   
-  // Version 4 should not be in schema_version
+  // Version 6 should not be in schema_version
   const row = db.get<{ version: number }>('SELECT MAX(version) AS version FROM schema_version');
-  expect(row?.version).toBe(4);
+  expect(row?.version).toBe(5);
 });

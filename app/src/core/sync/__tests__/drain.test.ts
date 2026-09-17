@@ -21,15 +21,16 @@ test('a pending scan is posted and then marked synced', async () => {
   expect(pendingScans(db)).toEqual([]);
 });
 
-test('the photo byte array is never sent, but image_uri is sent for active scans', async () => {
+test('the photo byte array is never sent, and image_uri is omitted to preserve privacy', async () => {
   const db = freshDb();
   insertScan(db, sampleScan({ uuid: 'c1', imageUri: 'file:///private/photo.jpg' }));
 
-  const fetchImpl = jest.fn(async () => new Response());
+  const fetchImpl = jest.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response());
   await drainScans({ db, baseUrl: 'https://test', deviceId: 'dev1', accessToken: 't', fetchImpl });
 
-  const body = JSON.parse((fetchImpl.mock.calls[0][1] as RequestInit).body as string);
-  expect(body).toHaveProperty('image_uri', 'file:///private/photo.jpg');
+  const init = fetchImpl.mock.calls[0][1] as RequestInit;
+  const body = JSON.parse(init.body as string);
+  expect(body).not.toHaveProperty('image_uri');
   expect(body).not.toHaveProperty('image_bytes');
 });
 
@@ -38,10 +39,11 @@ test('image_uri is omitted and deleted_at is sent for trashed scans', async () =
   insertScan(db, sampleScan({ uuid: 'c1', imageUri: 'file:///private/photo.jpg' }));
   softDeleteScan(db, 'c1', '2026-08-30T10:00:00.000Z');
 
-  const fetchImpl = jest.fn(async () => new Response());
+  const fetchImpl = jest.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response());
   await drainScans({ db, baseUrl: 'https://test', deviceId: 'dev1', accessToken: 't', fetchImpl });
 
-  const body = JSON.parse((fetchImpl.mock.calls[0][1] as RequestInit).body as string);
+  const init = fetchImpl.mock.calls[0][1] as RequestInit;
+  const body = JSON.parse(init.body as string);
   expect(body).not.toHaveProperty('image_uri');
   expect(body).toHaveProperty('deleted_at', '2026-08-30T10:00:00.000Z');
 });

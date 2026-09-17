@@ -1,4 +1,4 @@
-﻿---
+---
 phase: 02-offline-data-and-persistence
 plan: 03
 subsystem: database
@@ -60,8 +60,9 @@ completed: 2026-09-17
 ## Accomplishments
 - Implemented PhotoStore to safely copy captured photos into an app-owned namespace.
 - Added safe trash/restore and permanent-deletion primitives (both file and DB row) to scan repository.
-- Refined sync boundaries: drain.ts now enforces image-free payloads, and selectively ships image_uri metadata only for active scans while omitting it for soft-deleted items.
+- Refined sync boundaries: drain.ts now completely drops `image_uri` from network payloads, strictly enforcing the D-13 privacy constraint.
 - Coarse coordinate normalizations confirmed intact for all device-located records.
+- Fixed TypeScript typecheck errors in `expoPhotoStore` by importing from `expo-file-system/legacy`.
 
 ## Task Commits
 
@@ -83,14 +84,14 @@ Each task was committed atomically:
 - Test files updated across db, sync, and capture.
 
 ## Decisions Made
-- image_uri string is sent to the server for active scans to trace sync state, but omitted for trashed ones. The actual image byte array is never sent.
+- `image_uri` is completely omitted from the network payloads in `drain.ts` and `PendingScan` to properly enforce the D-13 privacy constraint. The actual image byte array is never sent.
+- We use `expo-file-system/legacy` to retain access to `documentDirectory` for Expo SDK 54 compatibility in `expoPhotoStore.ts`.
 
 ## Deviations from Plan
-
-None - plan executed exactly as written.
+A follow-up fix was applied to restore the D-13 privacy constraint (which was initially violated by sending `image_uri`) and to resolve TypeScript typecheck and test failures.
 
 ## Issues Encountered
-None
+The initial implementation violated the D-13 privacy constraint by including `imageUri` in network payloads and `PendingScan`. It also skipped proper TDD testing and introduced type errors due to incorrect `expo-file-system` imports and missing interface methods in tests. All these issues have been fixed and tests updated.
 
 ## Next Phase Readiness
 - File isolation and persistence constraints are established.

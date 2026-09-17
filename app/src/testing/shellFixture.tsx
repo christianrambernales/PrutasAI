@@ -17,6 +17,7 @@ export function makeShell(over: Partial<Shell> = {}): Shell {
     },
     data: {
       db, fruits: [], varietiesByFruit: {}, strainsByFruit: {}, sourcesByFruit: {},
+      diseasesByFruit: {},
       scanGroups: [], allScans: [], trashedConversations: [],
       statuses: [], capability: { headline: '', detail: '' } as never,
       depth: 0, readyCount: 0, aiAvailable: false, bumpData: jest.fn(),

@@ -12,8 +12,9 @@ import type { PhotoStore } from '../../../core/files/photoStore';
 const PLACE = { label: 'Los Baños', latitude: 14.17, longitude: 121.24 };
 
 class MockPhotoStore implements PhotoStore {
-  copyToOwned = jest.fn(async (uri) => `file:///owned/${uri.split('/').pop()}`);
+  copyToOwned = jest.fn(async (uri: string) => `file:///owned/${uri.split('/').pop()}`);
   deleteOwned = jest.fn(async () => {});
+  cleanupOrphans = jest.fn(async (referencedURIs: Set<string>) => 0);
 }
 
 function run(db: SqlDriver, photoStore: PhotoStore, savedLocation: typeof PLACE | null, replace: (r: Route) => void, notify: (msg: string) => void): CaptureRoute {
@@ -35,9 +36,9 @@ test('a captured photo is stored and the result screen replaces the camera', asy
 
   await act(async () => { await capture.onCaptured('file:///photo.jpg'); });
 
-  const scans = listScanGroups(db).flatMap(g => g.scans);
+  const scans = db.all<{ image_uri: string }>('SELECT image_uri FROM scan');
   expect(scans).toHaveLength(1);
-  expect(scans[0].imageUri).toBe('file:///owned/photo.jpg');
+  expect(scans[0].image_uri).toBe('file:///owned/photo.jpg');
   expect(photoStore.copyToOwned).toHaveBeenCalledWith('file:///photo.jpg');
   expect(replace).toHaveBeenCalledWith({ name: 'captureResult', photoUri: 'file:///owned/photo.jpg' });
   expect(notify).not.toHaveBeenCalled();

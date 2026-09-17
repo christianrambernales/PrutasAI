@@ -157,7 +157,6 @@ export function findScan(db: SqlDriver, uuid: string, now: Date = new Date()): S
 
 export interface PendingScan {
   uuid: string;
-  imageUri: string;
   createdAt: string;
   fruitKey: string | null;
   fruitConf: number | null;
@@ -172,7 +171,6 @@ export interface PendingScan {
 
 interface PendingRow {
   uuid: string;
-  image_uri: string;
   created_at: string;
   fruit_key: string | null;
   fruit_conf: number | null;
@@ -193,7 +191,7 @@ interface PendingRow {
  */
 export function pendingScans(db: SqlDriver, limit = 50): PendingScan[] {
   const rows = db.all<PendingRow>(
-    `SELECT uuid, image_uri, created_at, fruit_key, fruit_conf,
+    `SELECT uuid, created_at, fruit_key, fruit_conf,
             variety_key, variety_conf, bbox_json, manifest_version, lat, lon, deleted_at
        FROM scan
       WHERE synced_at IS NULL
@@ -204,7 +202,6 @@ export function pendingScans(db: SqlDriver, limit = 50): PendingScan[] {
 
   return rows.map(row => ({
     uuid: row.uuid,
-    imageUri: row.image_uri,
     createdAt: row.created_at,
     fruitKey: row.fruit_key,
     fruitConf: row.fruit_conf,
