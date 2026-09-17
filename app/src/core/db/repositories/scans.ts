@@ -167,6 +167,7 @@ export interface PendingScan {
   manifestVersion: number | null;
   lat: number | null;
   lon: number | null;
+  deletedAt: string | null;
 }
 
 interface PendingRow {
@@ -181,6 +182,7 @@ interface PendingRow {
   manifest_version: number | null;
   lat: number | null;
   lon: number | null;
+  deleted_at: string | null;
 }
 
 /**
@@ -192,7 +194,7 @@ interface PendingRow {
 export function pendingScans(db: SqlDriver, limit = 50): PendingScan[] {
   const rows = db.all<PendingRow>(
     `SELECT uuid, image_uri, created_at, fruit_key, fruit_conf,
-            variety_key, variety_conf, bbox_json, manifest_version, lat, lon
+            variety_key, variety_conf, bbox_json, manifest_version, lat, lon, deleted_at
        FROM scan
       WHERE synced_at IS NULL
       ORDER BY created_at ASC
@@ -212,6 +214,7 @@ export function pendingScans(db: SqlDriver, limit = 50): PendingScan[] {
     manifestVersion: row.manifest_version,
     lat: row.lat,
     lon: row.lon,
+    deletedAt: row.deleted_at,
   }));
 }
 
