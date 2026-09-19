@@ -51,6 +51,8 @@ export function makeShell(over: Partial<Shell> = {}): Shell {
       continueOffline: jest.fn(),
       forgotPassword: jest.fn(),
       signOut: jest.fn(),
+      setNewPassword: jest.fn().mockResolvedValue({ ok: true }),
+      clearRecovery: jest.fn(),
     },
     chat: {
       messages: [], draft: '', setDraft: jest.fn(), send: jest.fn(), ask: jest.fn(),

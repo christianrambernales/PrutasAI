@@ -1,7 +1,8 @@
-﻿import {
+import {
   currentAccessToken,
   currentUser,
   resetPassword,
+  updateUserPassword,
   signIn,
   signOut,
   signUp,
@@ -270,5 +271,41 @@ describe('resetPassword', () => {
       resetPasswordForEmail: async () => ({ data: null, error: { message: 'boom' } }),
     });
     expect(await resetPassword('a@b.test')).toEqual({ ok: false });
+  });
+});
+
+describe('updateUserPassword', () => {
+  test('updates password successfully and returns ok: true', async () => {
+    let capturedArgs: any;
+    mockClient = client({
+      updateUser: async (args: any) => {
+        capturedArgs = args;
+        return { data: { user: { id: 'u1' } }, error: null };
+      },
+    });
+
+    const result = await updateUserPassword('new-secure-password');
+    expect(result).toEqual({ ok: true });
+    expect(capturedArgs).toEqual({ password: 'new-secure-password' });
+  });
+
+  test('maps weak password failure safely', async () => {
+    mockClient = client({
+      updateUser: async () => ({
+        data: { user: null },
+        error: { message: 'Password should be at least 6 characters', status: 422 },
+      }),
+    });
+
+    const result = await updateUserPassword('123');
+    expect(result).toEqual({ ok: false, errorKey: 'weak_password' });
+  });
+
+  test('returns service_unavailable when unconfigured', async () => {
+    mockClient = null;
+    expect(await updateUserPassword('new-secure-password')).toEqual({
+      ok: false,
+      errorKey: 'service_unavailable',
+    });
   });
 });

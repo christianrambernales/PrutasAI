@@ -41,6 +41,9 @@ beforeEach(() => {
   session.restoreSession.mockResolvedValue({ status: 'no_session' });
   session.signOut.mockResolvedValue({ ok: true });
   session.resendConfirmation.mockResolvedValue({ ok: true });
+  session.resetPassword.mockResolvedValue({ ok: true });
+  session.requestPasswordReset.mockResolvedValue({ ok: true });
+  session.updateUserPassword.mockResolvedValue({ ok: true });
 
   // Both drains honour the token, the way the real ones do: an empty token is
   // offline mode working, not an upload.
@@ -311,4 +314,62 @@ test('a 401 from the conversations drain alone still signs the user out', async 
   expect(session.signOut).toHaveBeenCalled();
   expect(h.value.account.email).toBeNull();
   expect(h.value.account.accessToken).toBe('');
+});
+
+test('forgotPassword surfaces rate_limit safe error', async () => {
+  session.requestPasswordReset.mockResolvedValue({ ok: false, errorKey: 'rate_limit' });
+  const h = mount();
+  await act(async () => { await h.value.forgotPassword('grower@example.com'); });
+  expect(h.value.account.error).toBe(t.authErrorRateLimit);
+  expect(h.value.account.errorKey).toBe('rate_limit');
+  expect(h.value.account.resetMessage).toBeNull();
+});
+
+test('forgotPassword surfaces network safe error', async () => {
+  session.requestPasswordReset.mockResolvedValue({ ok: false, errorKey: 'network_error' });
+  const h = mount();
+  await act(async () => { await h.value.forgotPassword('grower@example.com'); });
+  expect(h.value.account.error).toBe(t.authErrorNetwork);
+  expect(h.value.account.errorKey).toBe('network_error');
+  expect(h.value.account.resetMessage).toBeNull();
+});
+
+test('setNewPassword updates password via session and clears errors on success', async () => {
+  session.updateUserPassword.mockResolvedValue({ ok: true });
+  const h = mount();
+  let result: any;
+  await act(async () => {
+    result = await h.value.setNewPassword('newPassword123');
+  });
+  expect(session.updateUserPassword).toHaveBeenCalledWith('newPassword123');
+  expect(result).toEqual({ ok: true });
+  expect(h.value.account.error).toBeNull();
+  expect(h.value.account.errorKey).toBeNull();
+});
+
+test('setNewPassword maps weak_password error safely', async () => {
+  session.updateUserPassword.mockResolvedValue({ ok: false, errorKey: 'weak_password' });
+  const h = mount();
+  let result: any;
+  await act(async () => {
+    result = await h.value.setNewPassword('123');
+  });
+  expect(result).toEqual({ ok: false, errorKey: 'weak_password' });
+  expect(h.value.account.error).toBe(t.authErrorWeakPassword);
+  expect(h.value.account.errorKey).toBe('weak_password');
+});
+
+test('clearRecovery clears error and errorKey', async () => {
+  session.updateUserPassword.mockResolvedValue({ ok: false, errorKey: 'weak_password' });
+  const h = mount();
+  await act(async () => {
+    await h.value.setNewPassword('123');
+  });
+  expect(h.value.account.errorKey).toBe('weak_password');
+
+  act(() => {
+    h.value.clearRecovery();
+  });
+  expect(h.value.account.error).toBeNull();
+  expect(h.value.account.errorKey).toBeNull();
 });

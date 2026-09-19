@@ -29,6 +29,22 @@ jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: async () => ({ canceled: true, assets: [] }),
 }));
 
+// Persistent photo storage used by capture integration tests. This preserves
+// the copy-before-insert contract without touching the host filesystem.
+jest.mock('expo-file-system/legacy', () => {
+  const entries = new Set();
+  return {
+    documentDirectory: 'file:///documents/',
+    getInfoAsync: jest.fn(async uri => ({ exists: entries.has(uri) })),
+    makeDirectoryAsync: jest.fn(async uri => { entries.add(uri); }),
+    copyAsync: jest.fn(async ({ to }) => { entries.add(to); }),
+    deleteAsync: jest.fn(async uri => { entries.delete(uri); }),
+    readDirectoryAsync: jest.fn(async dir => [...entries]
+      .filter(uri => uri.startsWith(dir) && uri !== dir)
+      .map(uri => uri.slice(dir.length))),
+  };
+});
+
 // The app-level tests render the navigator, which opens a database. Back it
 // with the same in-memory better-sqlite3 the db tests use, so the navigator
 // exercises real SQL rather than a stub.

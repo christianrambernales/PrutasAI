@@ -6,6 +6,7 @@ import { restoreConversation } from '../../core/db/repositories/conversations';
 import { deleteConversationEverywhere } from '../../core/sync/purgeTrash';
 import { AccountScreen } from '../../features/account/AccountScreen';
 import { SignUpScreen } from '../../features/account/SignUpScreen';
+import { ResetPasswordScreen } from '../../features/account/ResetPasswordScreen';
 import { relativeTime } from '../../features/climate/useClimate';
 import { LocationPickerScreen } from '../../features/location/LocationPickerScreen';
 import { ModelStatusScreen } from '../../features/modelStatus/ModelStatusScreen';
@@ -44,6 +45,8 @@ export function routeTitle(route: Route, t: Strings, fruits: FruitSummary[]): st
       return t.titleAccount;
     case 'signup':
       return t.titleSignUp;
+    case 'resetPassword':
+      return t.titleResetPassword;
     case 'trash':
       return t.titleTrash;
   }
@@ -258,6 +261,19 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
       );
     case 'capture':
       return null;
+    case 'resetPassword':
+      return (
+        <ResetPasswordScreen
+          busy={account.account.busy}
+          error={account.account.error}
+          onSubmitNewPassword={account.setNewPassword}
+          onCancel={() => {
+            account.clearRecovery();
+            back();
+          }}
+          onDone={back}
+        />
+      );
     case 'trash':
       return (
         <TrashScreen
