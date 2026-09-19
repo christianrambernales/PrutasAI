@@ -6,6 +6,52 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const migrationsDir = join(root, 'supabase', 'migrations');
 
+const ownerBoundFunctionSignatures = [
+  'public.upsert_scan_atomic(uuid, uuid, text, text, text, real, text, real, jsonb, int, timestamptz, timestamptz, timestamptz, real, real)',
+  'public.upsert_conversation_atomic(uuid, uuid, text, timestamptz, timestamptz, timestamptz)',
+  'public.upsert_conversation_message_atomic(uuid, uuid, uuid, text, text, text, jsonb, timestamptz)',
+];
+
+function normalizeSql(sql) {
+  return sql
+    .replace(/--.*$/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function validateOwnerBoundFunctionPrivileges(sql) {
+  const normalizedSql = normalizeSql(sql);
+
+  for (const signature of ownerBoundFunctionSignatures) {
+    const normalizedSignature = signature.toLowerCase();
+    for (const role of ['public', 'anon', 'authenticated']) {
+      const requiredRevocation = `revoke execute on function ${normalizedSignature} from ${role};`;
+      if (!normalizedSql.includes(requiredRevocation)) {
+        throw new Error(`Migration 0007 missing ${role.toUpperCase()} execute revocation for ${signature}`);
+      }
+    }
+
+    const grants = [...normalizedSql.matchAll(new RegExp(
+      `grant execute on function ${escapeRegex(normalizedSignature)} to ([^;]+);`,
+      'g',
+    ))].map(match => match[1].split(',').map(role => role.trim()));
+
+    const unsafeGrant = grants.flat().find(role => ['public', 'anon', 'authenticated'].includes(role));
+    if (unsafeGrant) {
+      throw new Error(`Migration 0007 contains unsafe ${unsafeGrant} execute grant for ${signature}`);
+    }
+
+    if (grants.length !== 1 || grants[0].length !== 1 || grants[0][0] !== 'service_role') {
+      throw new Error(`Migration 0007 missing service_role-only execute grant for ${signature}`);
+    }
+  }
+}
+
 export function validateMigrations(dir = migrationsDir) {
   const files = readdirSync(dir).filter(f => f.endsWith('.sql')).sort();
   if (files.length === 0) {
@@ -114,6 +160,8 @@ export function validateMigrations(dir = migrationsDir) {
       throw new Error(`Migration 0007 missing atomic function primitive: "${fn}"`);
     }
   }
+
+  validateOwnerBoundFunctionPrivileges(m7Sql);
 
   // Check secrets absence
   const secretTokens = ['SUPABASE_SERVICE_ROLE_KEY', 'service_role_key=', 'eyJhbGciOi'];

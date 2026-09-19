@@ -349,9 +349,23 @@ begin
 end;
 $function$;
 
-grant execute on function public.upsert_scan_atomic to authenticated, service_role;
-grant execute on function public.upsert_conversation_atomic to authenticated, service_role;
-grant execute on function public.upsert_conversation_message_atomic to authenticated, service_role;
+-- These SECURITY DEFINER primitives accept p_user_id, so they must never be
+-- callable by PostgREST's PUBLIC, anon, or authenticated roles. The Vercel
+-- adapters verify the bearer token before invoking them with service_role.
+revoke execute on function public.upsert_scan_atomic(uuid, uuid, text, text, text, real, text, real, jsonb, int, timestamptz, timestamptz, timestamptz, real, real) from public;
+revoke execute on function public.upsert_scan_atomic(uuid, uuid, text, text, text, real, text, real, jsonb, int, timestamptz, timestamptz, timestamptz, real, real) from anon;
+revoke execute on function public.upsert_scan_atomic(uuid, uuid, text, text, text, real, text, real, jsonb, int, timestamptz, timestamptz, timestamptz, real, real) from authenticated;
+grant execute on function public.upsert_scan_atomic(uuid, uuid, text, text, text, real, text, real, jsonb, int, timestamptz, timestamptz, timestamptz, real, real) to service_role;
+
+revoke execute on function public.upsert_conversation_atomic(uuid, uuid, text, timestamptz, timestamptz, timestamptz) from public;
+revoke execute on function public.upsert_conversation_atomic(uuid, uuid, text, timestamptz, timestamptz, timestamptz) from anon;
+revoke execute on function public.upsert_conversation_atomic(uuid, uuid, text, timestamptz, timestamptz, timestamptz) from authenticated;
+grant execute on function public.upsert_conversation_atomic(uuid, uuid, text, timestamptz, timestamptz, timestamptz) to service_role;
+
+revoke execute on function public.upsert_conversation_message_atomic(uuid, uuid, uuid, text, text, text, jsonb, timestamptz) from public;
+revoke execute on function public.upsert_conversation_message_atomic(uuid, uuid, uuid, text, text, text, jsonb, timestamptz) from anon;
+revoke execute on function public.upsert_conversation_message_atomic(uuid, uuid, uuid, text, text, text, jsonb, timestamptz) from authenticated;
+grant execute on function public.upsert_conversation_message_atomic(uuid, uuid, uuid, text, text, text, jsonb, timestamptz) to service_role;
 
 -- ============================================================================
 -- 6. Rollback / Down Instructions (Reversible Rehearsal Documentation)
