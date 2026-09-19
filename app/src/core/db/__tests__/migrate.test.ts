@@ -1,5 +1,5 @@
-import { createTestDriver } from '../testing/betterSqliteDriver';
-import { migrate } from '../migrate';
+﻿import { createTestDriver } from '../testing/betterSqliteDriver';
+import { migrate, MIGRATIONS } from '../migrate';
 
 test('creates the content and user tables', () => {
   const db = createTestDriver();
@@ -14,14 +14,14 @@ test('creates the content and user tables', () => {
 
 test('reports the resulting schema version', () => {
   const db = createTestDriver();
-  expect(migrate(db)).toBe(5);
+  expect(migrate(db)).toBe(6);
 });
 
 test('is idempotent', () => {
   const db = createTestDriver();
   migrate(db);
   expect(() => migrate(db)).not.toThrow();
-  expect(migrate(db)).toBe(5);
+  expect(migrate(db)).toBe(6);
 });
 
 test('adds lat/lon to scan, idempotently', () => {
@@ -46,7 +46,7 @@ test('rejects a variety whose fruit does not exist', () => {
 test('migrates to version 3 and creates the conversation tables', () => {
   const db = createTestDriver();
   const version = migrate(db);
-  expect(version).toBe(5);
+  expect(version).toBe(6);
 
   db.exec("INSERT INTO conversation (uuid, title, device_id, created_at, updated_at) VALUES ('c1', 'Hello', 'dev-1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z')");
   db.exec("INSERT INTO conversation_message (uuid, conversation_id, role, text, created_at) VALUES ('m1', 'c1', 'user', 'hi', '2026-08-30T00:00:01.000Z')");
@@ -79,10 +79,10 @@ test('deleting a conversation cascades to its messages', () => {
 
 test('a failing migration leaves neither its schema mutation nor version row', () => {
   const db = createTestDriver();
-  migrate(db); // applied up to 3
+  migrate(db);
   
   const badMigrations = [
-    { version: 6, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
+    { version: 7, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
   ];
   
   expect(() => migrate(db, badMigrations)).toThrow();
@@ -93,7 +93,115 @@ test('a failing migration leaves neither its schema mutation nor version row', (
   ).map(r => r.name);
   expect(names).not.toContain('dummy');
   
-  // Version 6 should not be in schema_version
+  // Version 7 should not be in schema_version
   const row = db.get<{ version: number }>('SELECT MAX(version) AS version FROM schema_version');
-  expect(row?.version).toBe(5);
+  expect(row?.version).toBe(6);
+});
+
+test('migration 006 upgrades schema v5, preserves rows and photos, backfills metadata and creates indexes', () => {
+  const db = createTestDriver();
+
+  // Apply migrations 1 through 5 only
+  const v5Migrations = MIGRATIONS.filter(m => m.version <= 5);
+  expect(migrate(db, v5Migrations)).toBe(5);
+
+  // Seed rows as they exist under schema v5
+  db.exec(`
+    INSERT INTO scan (uuid, image_uri, created_at, synced_at, is_owned_photo)
+    VALUES ('s_synced', 'file:///photos/p1.jpg', '2026-08-01T00:00:00.000Z', '2026-08-01T01:00:00.000Z', 1);
+
+    INSERT INTO scan (uuid, image_uri, created_at, synced_at, is_owned_photo)
+    VALUES ('s_pending', 'file:///photos/p2.jpg', '2026-08-02T00:00:00.000Z', NULL, 0);
+
+    INSERT INTO conversation (uuid, title, device_id, created_at, updated_at, synced_at)
+    VALUES ('c_synced', 'Chat Synced', 'd1', '2026-08-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z', '2026-08-01T01:00:00.000Z');
+
+    INSERT INTO conversation (uuid, title, device_id, created_at, updated_at, synced_at)
+    VALUES ('c_pending', 'Chat Pending', 'd1', '2026-08-02T00:00:00.000Z', '2026-08-02T00:00:00.000Z', NULL);
+
+    INSERT INTO conversation_message (uuid, conversation_id, role, text, created_at, synced_at)
+    VALUES ('m_synced', 'c_synced', 'user', 'hello', '2026-08-01T00:00:00.000Z', '2026-08-01T01:00:00.000Z');
+
+    INSERT INTO conversation_message (uuid, conversation_id, role, text, created_at, synced_at)
+    VALUES ('m_pending', 'c_pending', 'user', 'world', '2026-08-02T00:00:00.000Z', NULL);
+  `);
+
+  // Now run full migration up to v6
+  const finalVersion = migrate(db);
+  expect(finalVersion).toBe(6);
+
+  // Verify scan table columns & backfill
+  const scanCols = db.all<{ name: string }>('PRAGMA table_info(scan)').map(c => c.name);
+  expect(scanCols).toContain('account_id');
+  expect(scanCols).toContain('updated_at');
+  expect(scanCols).toContain('sync_status');
+  expect(scanCols).toContain('sync_error_code');
+  expect(scanCols).toContain('retry_count');
+  expect(scanCols).toContain('next_retry_at');
+
+  const sSynced = db.get<{
+    uuid: string; image_uri: string; updated_at: string; sync_status: string; account_id: string | null; is_owned_photo: number;
+  }>('SELECT uuid, image_uri, updated_at, sync_status, account_id, is_owned_photo FROM scan WHERE uuid = ?', ['s_synced']);
+  expect(sSynced?.image_uri).toBe('file:///photos/p1.jpg');
+  expect(sSynced?.is_owned_photo).toBe(1);
+  expect(sSynced?.updated_at).toBe('2026-08-01T00:00:00.000Z');
+  expect(sSynced?.sync_status).toBe('synced');
+  expect(sSynced?.account_id).toBeNull();
+
+  const sPending = db.get<{
+    uuid: string; image_uri: string; updated_at: string; sync_status: string; account_id: string | null;
+  }>('SELECT uuid, image_uri, updated_at, sync_status, account_id FROM scan WHERE uuid = ?', ['s_pending']);
+  expect(sPending?.image_uri).toBe('file:///photos/p2.jpg');
+  expect(sPending?.updated_at).toBe('2026-08-02T00:00:00.000Z');
+  expect(sPending?.sync_status).toBe('pending');
+  expect(sPending?.account_id).toBeNull();
+
+  // Verify conversation backfill
+  const cSynced = db.get<{ sync_status: string; account_id: string | null }>(
+    'SELECT sync_status, account_id FROM conversation WHERE uuid = ?', ['c_synced']
+  );
+  expect(cSynced?.sync_status).toBe('synced');
+  expect(cSynced?.account_id).toBeNull();
+
+  const cPending = db.get<{ sync_status: string; account_id: string | null }>(
+    'SELECT sync_status, account_id FROM conversation WHERE uuid = ?', ['c_pending']
+  );
+  expect(cPending?.sync_status).toBe('pending');
+  expect(cPending?.account_id).toBeNull();
+
+  // Verify message backfill
+  const mSynced = db.get<{ updated_at: string; sync_status: string; account_id: string | null }>(
+    'SELECT updated_at, sync_status, account_id FROM conversation_message WHERE uuid = ?', ['m_synced']
+  );
+  expect(mSynced?.updated_at).toBe('2026-08-01T00:00:00.000Z');
+  expect(mSynced?.sync_status).toBe('synced');
+  expect(mSynced?.account_id).toBeNull();
+
+  const mPending = db.get<{ updated_at: string; sync_status: string; account_id: string | null }>(
+    'SELECT updated_at, sync_status, account_id FROM conversation_message WHERE uuid = ?', ['m_pending']
+  );
+  expect(mPending?.updated_at).toBe('2026-08-02T00:00:00.000Z');
+  expect(mPending?.sync_status).toBe('pending');
+  expect(mPending?.account_id).toBeNull();
+
+  // Verify sync_status check constraints
+  expect(() =>
+    db.exec("INSERT INTO scan (uuid, image_uri, created_at, sync_status) VALUES ('bad_s', 'uri', '2026-08-01', 'invalid')")
+  ).toThrow();
+  expect(() =>
+    db.exec("INSERT INTO conversation (uuid, title, device_id, created_at, updated_at, sync_status) VALUES ('bad_c', 't', 'd', '2026-08-01', '2026-08-01', 'invalid')")
+  ).toThrow();
+  expect(() =>
+    db.exec("INSERT INTO conversation_message (uuid, conversation_id, role, text, created_at, sync_status) VALUES ('bad_m', 'c_synced', 'user', 'hi', '2026-08-01', 'invalid')")
+  ).toThrow();
+
+  // Verify indexes exist
+  const indexNames = db.all<{ name: string }>(
+    "SELECT name FROM sqlite_master WHERE type='index'"
+  ).map(r => r.name);
+  expect(indexNames).toContain('idx_scan_account_created');
+  expect(indexNames).toContain('idx_scan_account_sync');
+  expect(indexNames).toContain('idx_conversation_account_updated');
+  expect(indexNames).toContain('idx_conversation_account_sync');
+  expect(indexNames).toContain('idx_conversation_message_account_sync');
 });
