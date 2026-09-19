@@ -29,6 +29,7 @@ function validateOwnerBoundFunctionPrivileges(sql) {
 
   for (const signature of ownerBoundFunctionSignatures) {
     const normalizedSignature = signature.toLowerCase();
+    const functionName = normalizedSignature.slice(0, normalizedSignature.indexOf('('));
     for (const role of ['public', 'anon', 'authenticated']) {
       const requiredRevocation = `revoke execute on function ${normalizedSignature} from ${role};`;
       if (!normalizedSql.includes(requiredRevocation)) {
@@ -37,7 +38,7 @@ function validateOwnerBoundFunctionPrivileges(sql) {
     }
 
     const grants = [...normalizedSql.matchAll(new RegExp(
-      `grant execute on function ${escapeRegex(normalizedSignature)} to ([^;]+);`,
+      `grant execute on function ${escapeRegex(functionName)}(?:\\([^;]*?\\))? to ([^;]+);`,
       'g',
     ))].map(match => match[1].split(',').map(role => role.trim()));
 
