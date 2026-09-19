@@ -247,6 +247,23 @@ const EN = {
   createAccountPrompt: 'New here? Create an account',
   alreadyHaveAccount: 'Already have an account? Sign in',
   titleSignUp: 'Create your account',
+  checkYourEmail: 'Check your email',
+  checkYourEmailDetail: (email: string) =>
+    `We sent a confirmation link to ${email}. Confirm your email to turn on cloud sync. You can continue using all offline features right now.`,
+  resendConfirmation: 'Resend confirmation email',
+  resendingConfirmation: 'Resending…',
+  confirmationResent: 'A new confirmation email has been sent.',
+  continueOffline: 'Continue offline',
+  signInAgain: 'Sign in again',
+
+  // auth errors
+  authErrorInvalidCredentials: 'The email or password you entered is incorrect.',
+  authErrorEmailNotConfirmed: 'Please check your email and confirm your account before signing in.',
+  authErrorWeakPassword: 'Password is too weak. Please use at least 6 characters.',
+  authErrorRateLimit: 'Too many attempts. Please try again in a few minutes.',
+  authErrorNetwork: 'Could not connect. Please check your internet connection.',
+  authErrorServiceUnavailable: 'The auth service is currently unavailable. Please try again shortly.',
+  authErrorUnknown: 'An unexpected authentication error occurred. Please try again.',
 
   // trash
   titleTrash: 'Trash',
@@ -482,6 +499,23 @@ const FIL: Dictionary = {
   createAccountPrompt: 'Bago dito? Gumawa ng akawnt',
   alreadyHaveAccount: 'May akawnt ka na? Mag-sign in',
   titleSignUp: 'Gumawa ng iyong akawnt',
+  checkYourEmail: 'Tingnan ang iyong email',
+  checkYourEmailDetail: (email: string) =>
+    `Nagpadala kami ng link ng kumpirmasyon sa ${email}. Kumpirmahin ang iyong email para buksan ang cloud sync. Maaari mong ipagpatuloy ang paggamit ng lahat ng offline na feature ngayon.`,
+  resendConfirmation: 'Ipadala muli ang kumpirmasyon',
+  resendingConfirmation: 'Ipinapadala muli…',
+  confirmationResent: 'Naipadala na muli ang kumpirmasyon sa email.',
+  continueOffline: 'Magpatuloy nang offline',
+  signInAgain: 'Mag-sign in ulit',
+
+  // auth errors
+  authErrorInvalidCredentials: 'Mali ang inilagay na email o password.',
+  authErrorEmailNotConfirmed: 'Pakisuri ang iyong email at kumpirmahin ang akawnt bago mag-sign in.',
+  authErrorWeakPassword: 'Masyadong mahina ang password. Gumamit ng kahit 6 na karakter.',
+  authErrorRateLimit: 'Masyadong maraming pagsubok. Subukang muli pagkalipas ng ilang minuto.',
+  authErrorNetwork: 'Hindi makakonekta. Pakisuri ang koneksyon sa internet.',
+  authErrorServiceUnavailable: 'Kasalukuyang hindi magamit ang serbisyo. Subukang muli mamaya.',
+  authErrorUnknown: 'May hindi inaasahang problema sa pag-authenticate. Subukang muli.',
 
   // trash
   titleTrash: 'Basurahan',

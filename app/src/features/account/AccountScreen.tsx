@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Pressable, StyleSheet, TextInput } from 'react-native';
 import {
   AppText, Button, Col, COLORS, RADIUS, Section, SPACING, useT,
@@ -6,13 +6,17 @@ import {
 
 export interface AccountScreenProps {
   email: string | null;
+  userId?: string | null;
   busy: boolean;
   error: string | null;
   resetMessage: string | null;
+  confirmationPendingEmail?: string | null;
   onSignIn: (email: string, password: string) => void;
   onForgotPassword: (email: string) => void;
   onCreateAccount: () => void;
   onSignOut: () => void;
+  onResendConfirmation?: (email?: string) => void;
+  onContinueOffline?: () => void;
 }
 
 export function AccountScreen(props: AccountScreenProps) {
@@ -25,6 +29,42 @@ export function AccountScreen(props: AccountScreenProps) {
       <Section gap={SPACING.md}>
         <AppText variant="md">{t.signedInAs(props.email)}</AppText>
         <Button label={t.signOut} onPress={props.onSignOut} />
+      </Section>
+    );
+  }
+
+  if (props.confirmationPendingEmail) {
+    return (
+      <Section gap={SPACING.md}>
+        <AppText variant="xl">{t.checkYourEmail}</AppText>
+        <AppText variant="sm" color={COLORS.textSecondary}>
+          {t.checkYourEmailDetail(props.confirmationPendingEmail)}
+        </AppText>
+
+        {props.resetMessage ? (
+          <AppText variant="sm" color={COLORS.primary}>{props.resetMessage}</AppText>
+        ) : null}
+
+        {props.error ? (
+          <AppText variant="sm" color={COLORS.error}>{props.error}</AppText>
+        ) : null}
+
+        <Button
+          label={props.busy ? t.resendingConfirmation : t.resendConfirmation}
+          onPress={() => {
+            if (!props.busy && props.onResendConfirmation) {
+              props.onResendConfirmation(props.confirmationPendingEmail!);
+            }
+          }}
+        />
+
+        <Button
+          variant="secondary"
+          label={t.continueOffline}
+          onPress={() => {
+            if (props.onContinueOffline) props.onContinueOffline();
+          }}
+        />
       </Section>
     );
   }
@@ -59,9 +99,6 @@ export function AccountScreen(props: AccountScreenProps) {
         <AppText variant="sm" color={COLORS.textSecondary}>{props.resetMessage}</AppText>
       ) : null}
 
-      {/* Button has no disabled prop, so the busy state is expressed by making
-          the handlers no-ops and by the label itself, rather than widening a
-          primitive shared across the whole app. */}
       <Button
         label={props.busy ? t.signingIn : t.signIn}
         onPress={() => { if (!props.busy) props.onSignIn(email, password); }}

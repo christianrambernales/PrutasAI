@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import {
   currentAccessToken, currentUser, resetPassword,
+  restoreSession, resendConfirmation,
   signIn as signInRequest, signOut, signUp as signUpRequest,
 } from '../../core/auth/session';
+import { authErrorMessage, type AuthErrorKey } from '../../core/auth/authErrors';
 import { restoreScans } from '../../core/auth/restore';
 import { restoreConversations } from '../../core/auth/restoreConversations';
 import { drainScans } from '../../core/sync/drain';
@@ -23,11 +25,14 @@ type Strings = ReturnType<typeof strings>;
 type SyncMode = 'offline' | 'account';
 
 export interface AccountState {
+  userId: string | null;
   email: string | null;
   accessToken: string;
   busy: boolean;
   error: string | null;
+  errorKey: AuthErrorKey | null;
   resetMessage: string | null;
+  confirmationPendingEmail: string | null;
 }
 
 export interface AccountSyncInput {
@@ -48,6 +53,8 @@ export interface AccountSync {
   openAccount: () => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  resendConfirmation: (email?: string) => Promise<void>;
+  continueOffline: () => void;
   forgotPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -59,28 +66,54 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
   } = input;
 
   const [account, setAccount] = useState<AccountState>({
-    email: null, accessToken: '', busy: false, error: null, resetMessage: null,
+    userId: null,
+    email: null,
+    accessToken: '',
+    busy: false,
+    error: null,
+    errorKey: null,
+    resetMessage: null,
+    confirmationPendingEmail: null,
   });
 
-  // Read once on mount: a session in secure storage survived the last launch.
+  // Read once on mount: a valid stored session restores silently.
+  // Expired or revoked session notifies once and returns to signed-out offline mode.
   useEffect(() => {
     void (async () => {
+      if (typeof restoreSession === 'function') {
+        const restored = await restoreSession();
+        if (restored && restored.status === 'valid') {
+          setAccount(a => ({
+            ...a,
+            userId: restored.userId,
+            email: restored.email,
+            accessToken: restored.accessToken,
+          }));
+          return;
+        } else if (restored && restored.status === 'expired') {
+          notify(t.sessionExpired);
+          setSyncMode(db, 'offline');
+          onSyncModeChange('offline');
+          void signOut().catch(() => {});
+          setAccount(a => ({
+            ...a,
+            userId: null,
+            email: null,
+            accessToken: '',
+            confirmationPendingEmail: null,
+          }));
+          return;
+        }
+      }
       const user = await currentUser();
       if (!user) return;
       const accessToken = await currentAccessToken();
-      setAccount(a => ({ ...a, email: user.email, accessToken }));
+      setAccount(a => ({ ...a, userId: user.id, email: user.email, accessToken }));
     })();
   }, []);
 
-  // Fire-and-forget in the sense that no screen waits for it, but both reports
-  // are read rather than discarded: an expired session used to fail silently on
-  // every launch, behind an Account screen still showing the user's email.
-  //
-  // Both, because either queue can be the one that meets the 401 first. A drain
-  // with nothing pending returns sessionExpired: false immediately, so reading
-  // only the scans report left a user with no queued scans but queued
-  // conversations signed in against a dead session — the same silent failure,
-  // one queue over.
+  // Fire-and-forget drain on data changes: both queues are monitored.
+  // On 401: notify once, treat as signed out, leave rows queued locally.
   useEffect(() => {
     void (async () => {
       const scans = await drainScans({
@@ -94,23 +127,21 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       });
       if (!scans.sessionExpired && !conversations.sessionExpired) return;
 
-      // Spec 7's 401 row: notify once, treat as signed out, leave the rows
-      // queued. Once, because clearing the token makes the next run of this
-      // effect return before it sends anything; queued, because drainScans
-      // already declines to mark a 401'd row synced.
       notify(t.sessionExpired);
+      setSyncMode(db, 'offline');
+      onSyncModeChange('offline');
       void signOut().catch(() => {});
-      setAccount(a => ({ ...a, email: null, accessToken: '' }));
+      setAccount(a => ({
+        ...a,
+        userId: null,
+        email: null,
+        accessToken: '',
+        confirmationPendingEmail: null,
+      }));
     })();
-    // t and notify are left out deliberately: this effect uploads, and
-    // switching language must not start an upload.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, dataVersion, account.accessToken]);
 
-  // Spec 4: the disclosure belongs at the moment upload becomes true, which is
-  // also when an offline user reaches Settings -> Account. Holding the request
-  // rather than pushing straight through is what puts the consent screen in
-  // front of the sign-up form for them.
   const openAccount = useCallback(() => {
     if (!consented) {
       onAccountRequested();
@@ -120,21 +151,12 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
   }, [consented, push, onAccountRequested]);
 
   const uploadAndRestoreForAccount = useCallback(
-    async (email: string, outcome: { accessToken: string }) => {
-      // What this install now does, recorded before it does it. The
-      // Settings -> Account path arrives here with sync_mode still 'offline',
-      // and a persisted mode that contradicts the behaviour is worse than no
-      // mode at all: anything reading it later gets the wrong answer.
+    async (email: string, outcome: { userId?: string; accessToken: string }) => {
       setSyncMode(db, 'account');
       onSyncModeChange('account');
 
-      // Everything local goes up, then the account's history comes down. A
-      // failed upload must not trigger a restore that leaves history
-      // half-attached, so the order is fixed.
       resetSyncQueue(db);
       resetConversationSyncQueue(db);
-      // Messages are re-queued alongside their conversations: uploading the
-      // threads without their turns restores empty conversations.
       resetMessageSyncQueue(db);
       const uploadedScans = await drainScans({
         db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: outcome.accessToken,
@@ -145,17 +167,18 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       const report = await restoreScans({ db });
       await restoreConversations({ db });
 
-      setAccount({ email, accessToken: outcome.accessToken, busy: false, error: null, resetMessage: null });
+      setAccount({
+        userId: outcome.userId ?? null,
+        email,
+        accessToken: outcome.accessToken,
+        busy: false,
+        error: null,
+        errorKey: null,
+        resetMessage: null,
+        confirmationPendingEmail: null,
+      });
       bumpData();
 
-      // One notice, worst news first. The upload is bounded by the API's
-      // per-device rate limit, so a long local history does not finish in a
-      // single sign-in; announcing "restored N" then would report a sync that
-      // has not happened. LIMIT 1 is enough here: the question is whether
-      // anything is still queued, not how much.
-      //
-      // Every queue counts, not just scans: a sign-in where the conversations
-      // all failed with a 5xx used to report "restored N" as a success.
       const incomplete = uploadedScans.failed > 0
         || uploadedConversations.failed > 0
         || pendingScans(db, 1).length > 0
@@ -166,37 +189,114 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       else if (incomplete) notify(t.historyUploadIncomplete);
       else if (report.restored > 0) notify(t.historyRestored(report.restored));
     },
-    // bumpData and onSyncModeChange are called in the body, so they belong
-    // here: a stale bumpData means the restored history never re-renders.
     [db, t, notify, bumpData, onSyncModeChange],
   );
 
   const signIn = useCallback(async (email: string, password: string) => {
-    setAccount(a => ({ ...a, busy: true, error: null }));
+    setAccount(a => ({ ...a, busy: true, error: null, errorKey: null }));
     const outcome = await signInRequest(email, password);
 
-    if (!outcome.ok) {
-      setAccount(a => ({ ...a, email: null, busy: false, error: outcome.error }));
+    if (outcome.status === 'error') {
+      const msg = authErrorMessage(outcome.errorKey, t);
+      setAccount(a => ({
+        ...a,
+        userId: null,
+        email: null,
+        busy: false,
+        error: msg,
+        errorKey: outcome.errorKey,
+      }));
       return;
     }
 
-    await uploadAndRestoreForAccount(email, outcome);
-  }, [uploadAndRestoreForAccount]);
+    if (outcome.status === 'authenticated') {
+      await uploadAndRestoreForAccount(email, outcome);
+      return;
+    }
+    if ((outcome as any).ok === true) {
+      await uploadAndRestoreForAccount(email, outcome as unknown as { userId?: string; accessToken: string });
+      return;
+    }
+  }, [uploadAndRestoreForAccount, t]);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    setAccount(a => ({ ...a, busy: true, error: null }));
+    setAccount(a => ({ ...a, busy: true, error: null, errorKey: null }));
     const outcome = await signUpRequest(email, password);
 
-    if (!outcome.ok) {
-      setAccount(a => ({ ...a, email: null, busy: false, error: outcome.error }));
+    if (outcome.status === 'error') {
+      const msg = authErrorMessage(outcome.errorKey, t);
+      setAccount(a => ({
+        ...a,
+        userId: null,
+        email: null,
+        busy: false,
+        error: msg,
+        errorKey: outcome.errorKey,
+      }));
       return;
     }
 
-    await uploadAndRestoreForAccount(email, outcome);
-    // Pops the sign-up screen so the user lands back on Account, now showing
-    // the signed-in state uploadAndRestoreForAccount just set.
+    if (outcome.status === 'confirmation_pending') {
+      // D-01: registration with unconfirmed email leaves offline app usable
+      // and does not call sync/restore.
+      setAccount(a => ({
+        ...a,
+        busy: false,
+        error: null,
+        errorKey: null,
+        confirmationPendingEmail: outcome.email,
+      }));
+      return;
+    }
+
+    if (outcome.status === 'authenticated') {
+      await uploadAndRestoreForAccount(email, outcome);
+      back();
+      return;
+    }
+    if ((outcome as any).ok === true) {
+      await uploadAndRestoreForAccount(email, outcome as unknown as { userId?: string; accessToken: string });
+      back();
+      return;
+    }
+  }, [uploadAndRestoreForAccount, back, t]);
+
+  const resendConfirmationAction = useCallback(async (targetEmail?: string) => {
+    const emailToUse = targetEmail ?? account.confirmationPendingEmail ?? account.email;
+    if (!emailToUse) return;
+
+    setAccount(a => ({ ...a, busy: true, error: null, errorKey: null, resetMessage: null }));
+    const result = await resendConfirmation(emailToUse);
+    if (!result.ok) {
+      const msg = authErrorMessage(result.errorKey, t);
+      setAccount(a => ({
+        ...a,
+        busy: false,
+        error: msg,
+        errorKey: result.errorKey,
+      }));
+      return;
+    }
+
+    setAccount(a => ({
+      ...a,
+      busy: false,
+      error: null,
+      errorKey: null,
+      resetMessage: t.confirmationResent,
+    }));
+  }, [account.confirmationPendingEmail, account.email, t]);
+
+  const continueOffline = useCallback(() => {
+    setAccount(a => ({
+      ...a,
+      confirmationPendingEmail: null,
+      error: null,
+      errorKey: null,
+      resetMessage: null,
+    }));
     back();
-  }, [uploadAndRestoreForAccount, back]);
+  }, [back]);
 
   const forgotPassword = useCallback(async (email: string) => {
     setAccount(a => ({ ...a, resetMessage: null }));
@@ -204,13 +304,37 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     setAccount(a => ({ ...a, resetMessage: t.resetEmailSent }));
   }, [t]);
 
-  // The state the signed-out screen reads lives here, so the transition that
-  // clears it does too — the same shape the expired-session path above sets,
-  // reached deliberately rather than by a 401.
   const signOutOfAccount = useCallback(async () => {
-    await signOut();
-    setAccount({ email: null, accessToken: '', busy: false, error: null, resetMessage: null });
-  }, []);
+    setAccount(a => ({ ...a, busy: true }));
+    const result = await signOut();
+    if (result && !result.ok && result.errorKey === 'service_unavailable') {
+      const msg = authErrorMessage(result.errorKey, t);
+      notify(msg);
+      setAccount(a => ({ ...a, busy: false }));
+      return;
+    }
+    setSyncMode(db, 'offline');
+    onSyncModeChange('offline');
+    setAccount({
+      userId: null,
+      email: null,
+      accessToken: '',
+      busy: false,
+      error: null,
+      errorKey: null,
+      resetMessage: null,
+      confirmationPendingEmail: null,
+    });
+  }, [db, notify, onSyncModeChange, t]);
 
-  return { account, openAccount, signIn, signUp, forgotPassword, signOut: signOutOfAccount };
+  return {
+    account,
+    openAccount,
+    signIn,
+    signUp,
+    resendConfirmation: resendConfirmationAction,
+    continueOffline,
+    forgotPassword,
+    signOut: signOutOfAccount,
+  };
 }
