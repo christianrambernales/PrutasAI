@@ -21,16 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (error || !data.user) return null;
         return data.user.id;
       },
-      async claim(userId: string, deviceId: string) {
-        const { data, error } = await supabase
-          .from('scan')
-          .update({ user_id: userId })
-          .eq('device_id', deviceId)
-          .is('user_id', null)
-          .select('id');
-        if (error) throw new Error(error.message);
-        return data?.length ?? 0;
-      },
     },
     {
       deviceId: deviceIdOf(req.headers),
