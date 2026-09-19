@@ -88,6 +88,15 @@ const directGrantForms = [
   ['quoted schema', ({ functionName, parameters }) => `"public".${functionName}${parameters}`],
   ['quoted function', ({ functionName, parameters }) => `public."${functionName}"${parameters}`],
   ['spaced quoted', ({ functionName, parameters }) => `"public" \n . \n "${functionName}" \n ${parameters}`],
+  ['comment before schema dot', ({ functionName, parameters }) => `public /* verifier */ . ${functionName}${parameters}`],
+  ['comment after schema dot', ({ functionName, parameters }) => `public . /* verifier */ ${functionName}${parameters}`],
+  ['comment before signature', ({ functionName, parameters }) => `public.${functionName} /* verifier */ ${parameters}`],
+  ['comments around schema, name, and signature', ({ functionName, parameters }) => `public /* schema */ . /* name */ ${functionName} /* signature */ ${parameters}`],
+];
+
+const unsafeRoleForms = [
+  ['unquoted role', role => role],
+  ['quoted role', role => `"${role}"`],
 ];
 
 for (const [name, signature] of Object.entries(functionSignatures)) {
@@ -95,13 +104,15 @@ for (const [name, signature] of Object.entries(functionSignatures)) {
 
   for (const role of ['public', 'anon', 'authenticated']) {
     for (const [formName, formatRoutine] of directGrantForms) {
-      test(`rejects ${role} execute access for ${name} RPC in ${formName} form`, () => {
-        withTempMigrations(tempMigrations => {
-          mutate0007(tempMigrations, sql => `${sql}\ngrant execute on function ${formatRoutine(parts)} to ${role};\n`);
+      for (const [roleFormName, formatRole] of unsafeRoleForms) {
+        test(`rejects ${roleFormName} ${role} execute access for ${name} RPC in ${formName} form`, () => {
+          withTempMigrations(tempMigrations => {
+            mutate0007(tempMigrations, sql => `${sql}\ngrant execute on function ${formatRoutine(parts)} to ${formatRole(role)};\n`);
 
-          assert.throws(() => validateMigrations(tempMigrations), new RegExp(`${role} execute grant`, 'i'));
+            assert.throws(() => validateMigrations(tempMigrations), new RegExp(`${role} execute grant`, 'i'));
+          });
         });
-      });
+      }
     }
   }
 

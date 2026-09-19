@@ -12,9 +12,85 @@ const ownerBoundFunctionSignatures = [
   'public.upsert_conversation_message_atomic(uuid, uuid, uuid, text, text, text, jsonb, timestamptz)',
 ];
 
+function stripSqlComments(sql) {
+  let result = '';
+  let index = 0;
+  let quote = null;
+  let dollarQuote = null;
+
+  while (index < sql.length) {
+    if (dollarQuote) {
+      if (sql.startsWith(dollarQuote, index)) {
+        result += dollarQuote;
+        index += dollarQuote.length;
+        dollarQuote = null;
+      } else {
+        result += sql[index];
+        index += 1;
+      }
+      continue;
+    }
+
+    const character = sql[index];
+    const nextCharacter = sql[index + 1];
+
+    if (quote) {
+      result += character;
+      if (character === quote && nextCharacter === quote) {
+        result += nextCharacter;
+        index += 2;
+        continue;
+      }
+      if (character === quote) {
+        quote = null;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (character === '$') {
+      const tag = sql.slice(index).match(/^\$[a-z_][a-z0-9_]*\$/i)?.[0] ??
+        (sql.startsWith('$$', index) ? '$$' : null);
+      if (tag) {
+        result += tag;
+        index += tag.length;
+        dollarQuote = tag;
+        continue;
+      }
+    }
+
+    if (character === '\'' || character === '"') {
+      quote = character;
+      result += character;
+      index += 1;
+      continue;
+    }
+
+    if (character === '-' && nextCharacter === '-') {
+      index += 2;
+      while (index < sql.length && sql[index] !== '\n') {
+        index += 1;
+      }
+      result += ' ';
+      continue;
+    }
+
+    if (character === '/' && nextCharacter === '*') {
+      const commentEnd = sql.indexOf('*/', index + 2);
+      index = commentEnd === -1 ? sql.length : commentEnd + 2;
+      result += ' ';
+      continue;
+    }
+
+    result += character;
+    index += 1;
+  }
+
+  return result;
+}
+
 function normalizeSql(sql) {
-  return sql
-    .replace(/--.*$/gm, '')
+  return stripSqlComments(sql)
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
@@ -38,10 +114,14 @@ function normalizeRoutineIdentifier(routine) {
     .join('.');
 }
 
+function normalizeRoleIdentifier(role) {
+  return role.trim().replace(/^"(.*)"$/, '$1').replace(/""/g, '"').toLowerCase();
+}
+
 function parseFunctionGrantStatements(sql) {
   return [...sql.matchAll(/grant execute on function\s+(.+?)\s+to\s+([^;]+);/g)].map(match => ({
     routine: normalizeRoutineIdentifier(match[1]),
-    roles: match[2].split(',').map(role => role.trim()),
+    roles: match[2].split(',').map(normalizeRoleIdentifier),
   }));
 }
 
