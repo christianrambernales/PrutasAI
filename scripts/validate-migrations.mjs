@@ -24,8 +24,38 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+const ownerBoundFunctionNames = ownerBoundFunctionSignatures.map(signature => {
+  const qualifiedName = signature.slice(0, signature.indexOf('('));
+  return qualifiedName.slice('public.'.length);
+});
+
+function normalizeRoutineIdentifier(routine) {
+  const signatureStart = routine.indexOf('(');
+  const identifier = (signatureStart === -1 ? routine : routine.slice(0, signatureStart)).trim();
+  return identifier
+    .split(/\s*\.\s*/)
+    .map(part => part.trim().replace(/^"(.*)"$/, '$1').replace(/""/g, '"').toLowerCase())
+    .join('.');
+}
+
+function parseFunctionGrantStatements(sql) {
+  return [...sql.matchAll(/grant execute on function\s+(.+?)\s+to\s+([^;]+);/g)].map(match => ({
+    routine: normalizeRoutineIdentifier(match[1]),
+    roles: match[2].split(',').map(role => role.trim()),
+  }));
+}
+
+function isOwnerBoundRoutine(routine) {
+  const segments = routine.split('.');
+  const functionName = segments[segments.length - 1];
+  const schema = segments.length === 2 ? segments[0] : null;
+
+  return ownerBoundFunctionNames.includes(functionName) && (schema === null || schema === 'public');
+}
+
 function validateOwnerBoundFunctionPrivileges(sql) {
   const normalizedSql = normalizeSql(sql);
+  const functionGrants = parseFunctionGrantStatements(normalizedSql);
 
   for (const signature of ownerBoundFunctionSignatures) {
     const normalizedSignature = signature.toLowerCase();
@@ -42,9 +72,13 @@ function validateOwnerBoundFunctionPrivileges(sql) {
       'g',
     ))].map(match => match[1].split(',').map(role => role.trim()));
 
-    const unsafeGrant = grants.flat().find(role => ['public', 'anon', 'authenticated'].includes(role));
+    const unsafeGrant = functionGrants.find(grant =>
+      isOwnerBoundRoutine(grant.routine) &&
+      grant.roles.some(role => ['public', 'anon', 'authenticated'].includes(role)),
+    );
     if (unsafeGrant) {
-      throw new Error(`Migration 0007 contains unsafe ${unsafeGrant} execute grant for ${signature}`);
+      const unsafeRole = unsafeGrant.roles.find(role => ['public', 'anon', 'authenticated'].includes(role));
+      throw new Error(`Migration 0007 contains unsafe ${unsafeRole} execute grant for ${signature}`);
     }
 
     if (grants.length !== 1 || grants[0].length !== 1 || grants[0][0] !== 'service_role') {

@@ -70,36 +70,39 @@ test('rejects an owner-bound RPC without its PUBLIC execute revocation', () => {
   });
 });
 
-test('rejects a legacy unqualified direct execute grant for an owner-bound RPC', () => {
-  withTempMigrations(tempMigrations => {
-    mutate0007(tempMigrations, sql => `${sql}\ngrant execute on function public.upsert_scan_atomic to authenticated;\n`);
+function routineParts(signature) {
+  const signatureStart = signature.indexOf('(');
+  const qualifiedName = signature.slice(0, signatureStart);
 
-    assert.throws(() => validateMigrations(tempMigrations), /authenticated execute grant/i);
-  });
-});
-
-for (const [label, signatureWhitespace] of [
-  ['space', ' '],
-  ['newline', '\n  '],
-]) {
-  test(`rejects a direct execute grant with ${label} before the signature`, () => {
-    withTempMigrations(tempMigrations => {
-      mutate0007(tempMigrations, sql => `${sql}\ngrant execute on function public.upsert_scan_atomic${signatureWhitespace}(uuid, uuid, text, text, text, real, text, real, jsonb, int, timestamptz, timestamptz, timestamptz, real, real) to authenticated;\n`);
-
-      assert.throws(() => validateMigrations(tempMigrations), /authenticated execute grant/i);
-    });
-  });
+  return {
+    functionName: qualifiedName.slice('public.'.length),
+    parameters: signature.slice(signatureStart),
+  };
 }
 
-for (const [name, signature] of Object.entries(functionSignatures)) {
-  for (const role of ['authenticated', 'anon']) {
-    test(`rejects ${role} execute access for ${name} owner-bound RPC`, () => {
-      withTempMigrations(tempMigrations => {
-        mutate0007(tempMigrations, sql => `${sql}\ngrant execute on function ${signature} to ${role};\n`);
+const directGrantForms = [
+  ['qualified', ({ functionName, parameters }) => `public.${functionName}${parameters}`],
+  ['legacy bare qualified', ({ functionName }) => `public.${functionName}`],
+  ['unqualified', ({ functionName, parameters }) => `${functionName}${parameters}`],
+  ['quoted', ({ functionName, parameters }) => `"public"."${functionName}"${parameters}`],
+  ['quoted schema', ({ functionName, parameters }) => `"public".${functionName}${parameters}`],
+  ['quoted function', ({ functionName, parameters }) => `public."${functionName}"${parameters}`],
+  ['spaced quoted', ({ functionName, parameters }) => `"public" \n . \n "${functionName}" \n ${parameters}`],
+];
 
-        assert.throws(() => validateMigrations(tempMigrations), new RegExp(`${role} execute grant`, 'i'));
+for (const [name, signature] of Object.entries(functionSignatures)) {
+  const parts = routineParts(signature);
+
+  for (const role of ['public', 'anon', 'authenticated']) {
+    for (const [formName, formatRoutine] of directGrantForms) {
+      test(`rejects ${role} execute access for ${name} RPC in ${formName} form`, () => {
+        withTempMigrations(tempMigrations => {
+          mutate0007(tempMigrations, sql => `${sql}\ngrant execute on function ${formatRoutine(parts)} to ${role};\n`);
+
+          assert.throws(() => validateMigrations(tempMigrations), new RegExp(`${role} execute grant`, 'i'));
+        });
       });
-    });
+    }
   }
 
   test(`rejects ${name} owner-bound RPC without a service_role-only grant`, () => {
