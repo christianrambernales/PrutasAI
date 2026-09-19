@@ -3,6 +3,7 @@ import type { AppAction, AppState } from '../state/appState';
 import type { describeDetectionCapability } from '../core/status';
 import type { pipelineDepth, resolveModels } from '../core/ml/registry';
 import type { SqlDriver } from '../core/db/driver';
+import type { LocalAccountScope } from '../core/db/repositories/scans';
 import type { ConversationSummary } from '../core/db/repositories/conversations';
 import type { useChat } from '../features/chat/useChat';
 import type { AccountSync } from '../features/account/useAccountSync';
@@ -47,6 +48,7 @@ export interface Shell {
   /** What is stored or installed on this device, plus the invalidator for it. */
   data: {
     db: SqlDriver;
+    accountScope: LocalAccountScope;
     fruits: FruitSummary[];
     varietiesByFruit: Record<string, VarietySummary[]>;
     strainsByFruit: Record<string, VarietySummary[]>;

@@ -17,10 +17,10 @@ class MockPhotoStore implements PhotoStore {
   cleanupOrphans = jest.fn(async (referencedURIs: Set<string>) => 0);
 }
 
-function run(db: SqlDriver, photoStore: PhotoStore, savedLocation: typeof PLACE | null, replace: (r: Route) => void, notify: (msg: string) => void): CaptureRoute {
+function run(db: SqlDriver, photoStore: PhotoStore, savedLocation: typeof PLACE | null, replace: (r: Route) => void, notify: (msg: string) => void, accountId: string | null = null): CaptureRoute {
   let capture!: CaptureRoute;
   function Harness() {
-    capture = useCaptureRoute({ db, photoStore, savedLocation, bumpData: jest.fn(), replace, notify });
+    capture = useCaptureRoute({ db, photoStore, savedLocation, bumpData: jest.fn(), replace, notify, accountId });
     return null;
   }
   act(() => { renderer.create(<Harness />); });
@@ -55,9 +55,18 @@ test('a captured photo records the saved location and the manifest version', asy
     'SELECT lat, lon, manifest_version FROM scan',
   );
   expect(rows).toHaveLength(1);
-  expect(rows[0].lat).toBe(PLACE.latitude);
-  expect(rows[0].lon).toBe(PLACE.longitude);
+  expect(rows[0].lat).toBe(14.18);
+  expect(rows[0].lon).toBe(121.24);
   expect(rows[0].manifest_version).toBe(manifest.manifest_version);
+});
+
+test('a signed-in capture is owned by the active local account', async () => {
+  const db = freshDb();
+  const capture = run(db, new MockPhotoStore(), null, jest.fn(), jest.fn(), 'account-a');
+
+  await act(async () => { await capture.onCaptured('file:///photo.jpg'); });
+
+  expect(db.get<{ account_id: string | null }>('SELECT account_id FROM scan')?.account_id).toBe('account-a');
 });
 
 test('insert failure removes only the owned file and notifies error', async () => {

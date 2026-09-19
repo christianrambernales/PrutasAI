@@ -21,6 +21,7 @@ import {
 import * as preview from '../../../preview/previewContent';
 import type { ChatContext } from '../../../core/chat/answer';
 import type { ChatProvider, HistoryTurn } from '../../../core/chat/providers/types';
+import type { LocalAccountScope } from '../../../core/db/repositories/scans';
 
 const CONTEXT: ChatContext = {
   language: 'EN',
@@ -64,10 +65,11 @@ function harness(
   provider: ChatProvider,
   context: ChatContext = CONTEXT,
   onPersisted?: () => void,
+  scope: LocalAccountScope = { activeAccountId: null },
 ) {
   let hook!: ReturnType<typeof useChat>;
   function Harness() {
-    hook = useChat(context, provider, db, 'device', onPersisted);
+    hook = useChat(context, provider, db, 'device', onPersisted, scope);
     return null;
   }
   act(() => {
@@ -107,6 +109,24 @@ test('sending the first message creates a conversation and persists both turns',
   expect(messages).toHaveLength(2);
   expect(messages[0].role).toBe('user');
   expect(messages[1].role).toBe('assistant');
+});
+
+test('an account switch cannot reopen another account\'s retained conversation id', async () => {
+  const db = freshDb();
+  const accountA = { activeAccountId: 'account-a' };
+  const accountB = { activeAccountId: 'account-b' };
+  const a = harness(db, fakeProvider(), CONTEXT, undefined, accountA);
+
+  await sendMessage(a, 'How do I care for a banana plant?');
+  const conversationId = a.current.conversationId!;
+  expect(listActiveConversations(db, accountA)).toHaveLength(1);
+
+  const b = harness(db, fakeProvider(), CONTEXT, undefined, accountB);
+  act(() => { b.current.openConversation(conversationId); });
+
+  expect(b.current.conversationId).toBeNull();
+  expect(b.current.messages).toEqual([]);
+  expect(listActiveConversations(db, accountB)).toHaveLength(0);
 });
 
 // Requirement carried in from outside the brief: `answerGeneral`'s `history`

@@ -6,6 +6,7 @@ import {
   type ConversationSummary,
 } from '../../core/db/repositories/conversations';
 import type { SqlDriver } from '../../core/db/driver';
+import type { LocalAccountScope } from '../../core/db/repositories/scans';
 import type { TabKey } from '../../navigation/navState';
 
 type Chat = ReturnType<typeof useChat>;
@@ -16,6 +17,7 @@ export interface ConversationsUiInput {
   dataVersion: number;
   /** Invalidates every dataVersion-keyed read after a write. */
   bumpData: () => void;
+  scope?: LocalAccountScope;
 }
 
 export interface ConversationsUi {
@@ -30,7 +32,7 @@ export interface ConversationsUi {
 }
 
 export function useConversationsUi(input: ConversationsUiInput): ConversationsUi {
-  const { db, chat, dataVersion, bumpData } = input;
+  const { db, chat, dataVersion, bumpData, scope = { activeAccountId: null } } = input;
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const openSidebar = useCallback(() => setSidebarOpen(true), []);
@@ -50,19 +52,19 @@ export function useConversationsUi(input: ConversationsUiInput): ConversationsUi
   // sidebar kept the order from whenever something else last happened: correct
   // in the database, stale on screen until the app was relaunched.
   const list = useMemo(
-    () => listActiveConversations(db),
-    [db, dataVersion, chat.conversationId, chat.messages.length],
+    () => listActiveConversations(db, scope),
+    [db, scope, dataVersion, chat.conversationId, chat.messages.length],
   );
 
   const rename = useCallback((uuid: string, title: string) => {
-    renameConversation(db, uuid, title, new Date().toISOString());
+    renameConversation(db, uuid, title, new Date().toISOString(), scope);
     bumpData();
-  }, [db, bumpData]);
+  }, [db, bumpData, scope]);
 
   const remove = useCallback((uuid: string) => {
-    softDeleteConversation(db, uuid, new Date().toISOString());
+    softDeleteConversation(db, uuid, new Date().toISOString(), scope);
     bumpData();
-  }, [db, bumpData]);
+  }, [db, bumpData, scope]);
 
   // Opening the Chat tab always starts a fresh conversation; resuming a past
   // one is what the sidebar is for.

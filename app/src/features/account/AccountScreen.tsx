@@ -17,6 +17,15 @@ export interface AccountScreenProps {
   onSignOut: () => void;
   onResendConfirmation?: (email?: string) => void;
   onContinueOffline?: () => void;
+  cloudSyncEnabled?: boolean;
+  unownedClaimPending?: { scans: number; conversations: number } | null;
+  onClaimUnowned?: () => void;
+  onDeclineUnowned?: () => void;
+  onSetCloudSyncEnabled?: (enabled: boolean) => void;
+  syncCounts?: { pending: number; needsAttention: number; conflicts: number };
+  lastSuccessfulSyncAt?: string | null;
+  onSyncNow?: () => void;
+  onRemoveLocalDeviceCopy?: () => void;
 }
 
 export function AccountScreen(props: AccountScreenProps) {
@@ -28,6 +37,46 @@ export function AccountScreen(props: AccountScreenProps) {
     return (
       <Section gap={SPACING.md}>
         <AppText variant="md">{t.signedInAs(props.email)}</AppText>
+        <AppText variant="sm" color={COLORS.textSecondary}>
+          {props.cloudSyncEnabled === false ? t.cloudSyncPaused : t.cloudSyncEnabled}
+        </AppText>
+        <AppText variant="sm" color={COLORS.textSecondary}>
+          {t.syncQueueStatus(
+            props.syncCounts?.pending ?? 0,
+            props.syncCounts?.needsAttention ?? 0,
+            props.syncCounts?.conflicts ?? 0,
+          )}
+        </AppText>
+        {props.lastSuccessfulSyncAt ? (
+          <AppText variant="sm" color={COLORS.textSecondary}>{t.lastSuccessfulSync(props.lastSuccessfulSyncAt)}</AppText>
+        ) : null}
+        {props.unownedClaimPending ? (
+          <Section gap={SPACING.sm}>
+            <AppText variant="smSemi">{t.claimLocalDataTitle}</AppText>
+            <AppText variant="sm" color={COLORS.textSecondary}>
+              {t.claimLocalDataDetail(props.unownedClaimPending.scans, props.unownedClaimPending.conversations)}
+            </AppText>
+            <Button label={t.claimLocalData} onPress={() => props.onClaimUnowned?.()} />
+            <Button variant="secondary" label={t.keepLocalOnly} onPress={() => props.onDeclineUnowned?.()} />
+          </Section>
+        ) : null}
+        <Button
+          variant="secondary"
+          label={props.cloudSyncEnabled === false ? t.resumeCloudSync : t.pauseCloudSync}
+          onPress={() => props.onSetCloudSyncEnabled?.(props.cloudSyncEnabled === false)}
+        />
+        <Button
+          label={t.syncNow}
+          onPress={props.cloudSyncEnabled === false || props.unownedClaimPending
+            ? undefined
+            : () => props.onSyncNow?.()}
+        />
+        <AppText variant="sm" color={COLORS.textSecondary}>{t.removeLocalDeviceCopyDetail}</AppText>
+        <Button
+          variant="secondary"
+          label={t.removeLocalDeviceCopy}
+          onPress={() => props.onRemoveLocalDeviceCopy?.()}
+        />
         <Button label={t.signOut} onPress={props.onSignOut} />
       </Section>
     );

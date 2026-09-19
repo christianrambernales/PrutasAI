@@ -14,6 +14,8 @@ export interface CaptureRouteInput {
   bumpData: () => void;
   replace: (route: Route) => void;
   notify: (msg: string) => void;
+  /** The verified local account scope at the instant the scan is saved. */
+  accountId?: string | null;
 }
 
 export interface CaptureRoute {
@@ -22,7 +24,7 @@ export interface CaptureRoute {
 
 /** What a taken photo becomes: one stored scan, then the result screen. */
 export function useCaptureRoute(input: CaptureRouteInput): CaptureRoute {
-  const { db, photoStore, savedLocation, bumpData, replace, notify } = input;
+  const { db, photoStore, savedLocation, bumpData, replace, notify, accountId = null } = input;
 
   const onCaptured = useCallback(async (uri: string) => {
     let ownedUri: string | null = null;
@@ -42,6 +44,7 @@ export function useCaptureRoute(input: CaptureRouteInput): CaptureRoute {
         lat: savedLocation?.latitude ?? null,
         lon: savedLocation?.longitude ?? null,
         isOwnedPhoto: true,
+        accountId,
       });
       bumpData();
       replace({ name: 'captureResult', photoUri: ownedUri });
@@ -55,7 +58,7 @@ export function useCaptureRoute(input: CaptureRouteInput): CaptureRoute {
       }
       notify('Failed to save the captured photo.');
     }
-  }, [db, photoStore, savedLocation, bumpData, replace, notify]);
+  }, [db, photoStore, savedLocation, bumpData, replace, notify, accountId]);
 
   return { onCaptured };
 }

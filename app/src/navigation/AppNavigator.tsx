@@ -119,10 +119,6 @@ export function AppNavigator() {
   // first-run gate behind it, so the request is held here until acknowledged.
   const [accountRequested, setAccountRequested] = useState(false);
 
-  const scanGroups = useMemo(() => listScanGroups(db), [db, dataVersion]);
-  const allScans = useMemo(() => scanGroups.flatMap(g => g.scans), [scanGroups]);
-  const trashedConversations = useMemo(() => listTrashedConversations(db), [db, dataVersion]);
-
   const route = currentRoute(nav);
   // Read directly rather than through useT: this component *provides* the
   // context its children consume.
@@ -146,6 +142,19 @@ export function AppNavigator() {
     onSyncModeChange: setSyncModeState,
     onAccountRequested: () => setAccountRequested(true),
   });
+  const accountScope = useMemo(
+    () => ({ activeAccountId: accountSync.account.userId }),
+    [accountSync.account.userId],
+  );
+  const scanGroups = useMemo(
+    () => listScanGroups(db, accountScope),
+    [db, dataVersion, accountScope],
+  );
+  const allScans = useMemo(() => scanGroups.flatMap(g => g.scans), [scanGroups]);
+  const trashedConversations = useMemo(
+    () => listTrashedConversations(db, accountScope),
+    [db, dataVersion, accountScope],
+  );
 
   // Android hardware back mirrors the in-app back button.
   useEffect(() => {
@@ -169,11 +178,11 @@ export function AppNavigator() {
   const { chat, aiAvailable } = useChatRuntime({
     db, notify, app, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit,
     climate: climateViews, capability, depth,
-    bumpData,
+    bumpData, scope: accountScope,
   });
 
   const conversations = useConversationsUi({
-    db, chat, dataVersion, bumpData,
+    db, chat, dataVersion, bumpData, scope: accountScope,
   });
 
   // --- history ---------------------------------------------------------------
@@ -192,6 +201,7 @@ export function AppNavigator() {
     bumpData,
     replace,
     notify,
+    accountId: accountScope.activeAccountId,
   });
 
   const shell: Shell = {
@@ -203,7 +213,7 @@ export function AppNavigator() {
       openCheckpoint, setOpenCheckpoint,
     },
     data: {
-      db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit,
+      db, accountScope, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit,
       scanGroups, allScans, trashedConversations,
       statuses, capability, depth, readyCount,
       aiAvailable,

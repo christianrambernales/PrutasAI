@@ -10,7 +10,8 @@
  */
 
 import type { SqlDriver } from '../db/driver';
-import { markSynced, pendingScans } from '../db/repositories/scans';
+import { markNeedsAttention, markSynced, pendingScans, scheduleScanRetry, type LocalAccountScope } from '../db/repositories/scans';
+import { nextRetryAt } from './backoff';
 
 export interface DrainOptions {
   db: SqlDriver;
@@ -19,6 +20,8 @@ export interface DrainOptions {
   deviceId: string;
   /** The signed-in user's access token. Empty means offline: nothing uploads. */
   accessToken: string;
+  /** Verified active owner; unowned and other-account rows are never uploaded. */
+  userId?: string;
   fetchImpl?: typeof fetch;
   limit?: number;
   now?: () => Date;
@@ -38,7 +41,7 @@ export interface DrainReport {
 }
 
 export async function drainScans(options: DrainOptions): Promise<DrainReport> {
-  const { db, baseUrl, deviceId, accessToken, fetchImpl = fetch, limit = 50, now = () => new Date() } = options;
+  const { db, baseUrl, deviceId, accessToken, userId, fetchImpl = fetch, limit = 50, now = () => new Date() } = options;
 
   const report: DrainReport = { attempted: 0, synced: 0, failed: 0, sessionExpired: false };
   // No account, no upload. This is offline mode working, not an error, so it
@@ -47,7 +50,9 @@ export async function drainScans(options: DrainOptions): Promise<DrainReport> {
 
   const endpoint = `${baseUrl.trim()}/v1/scans`;
 
-  for (const scan of pendingScans(db, limit)) {
+  const scope: LocalAccountScope | undefined = userId ? { activeAccountId: userId } : undefined;
+  const candidates = scope ? pendingScans(db, limit, scope).filter(scan => scan.accountId === userId) : pendingScans(db, limit);
+  for (const scan of candidates) {
     report.attempted += 1;
 
     // The allow-list rejects unknown fields, so send exactly what it accepts —
@@ -74,6 +79,7 @@ export async function drainScans(options: DrainOptions): Promise<DrainReport> {
     };
 
     let status: number;
+    let retryAfter: string | null = null;
     try {
       const response = await fetchImpl(endpoint, {
         method: 'POST',
@@ -85,9 +91,11 @@ export async function drainScans(options: DrainOptions): Promise<DrainReport> {
         body: JSON.stringify(body),
       });
       status = response.status;
+      retryAfter = response.headers?.get('Retry-After') ?? null;
     } catch {
+      scheduleScanRetry(db, scan.uuid, nextRetryAt(scan.retryCount, now().getTime(), null), 'network_error', scope);
       report.failed += 1;
-      return report;
+      continue;
     }
 
     // 401 means the session expired, not that the scan is unacceptable. The
@@ -102,17 +110,24 @@ export async function drainScans(options: DrainOptions): Promise<DrainReport> {
 
     // Throttled: stop. Continuing would spend the whole window on rejections
     // and the backlog is not going anywhere.
-    if (status === 429) return report;
+    if (status === 429) {
+      scheduleScanRetry(db, scan.uuid, nextRetryAt(scan.retryCount, now().getTime(), retryAfter), 'http_429', scope);
+      report.failed += 1;
+      return report;
+    }
 
-    // A 4xx other than 429 means this row will never be accepted in this
-    // shape. Retrying it forever is a permanently stuck queue that blocks
-    // every scan behind it, so record it as done and move on.
-    if (status < 300 || (status >= 400 && status < 500)) {
-      markSynced(db, scan.uuid, now().toISOString());
+    if (status < 300) {
+      markSynced(db, scan.uuid, now().toISOString(), scope);
       report.synced += 1;
       continue;
     }
+    if (status >= 400 && status < 500) {
+      markNeedsAttention(db, scan.uuid, `http_${status}`, scope);
+      report.failed += 1;
+      continue;
+    }
 
+    scheduleScanRetry(db, scan.uuid, nextRetryAt(scan.retryCount, now().getTime(), retryAfter), `http_${status}`, scope);
     report.failed += 1;
   }
 

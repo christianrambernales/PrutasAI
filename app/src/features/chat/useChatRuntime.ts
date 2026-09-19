@@ -8,6 +8,7 @@ import type { ChatContext } from '../../core/chat/answer';
 import type { describeDetectionCapability } from '../../core/status';
 import type { pipelineDepth } from '../../core/ml/registry';
 import type { SqlDriver } from '../../core/db/driver';
+import type { LocalAccountScope } from '../../core/db/repositories/scans';
 import type { AppState } from '../../state/appState';
 import type { ClimateViews } from '../climate/useClimateViews';
 import type { FruitSummary, Source, VarietySummary } from '../viewModels';
@@ -25,6 +26,7 @@ export interface ChatRuntimeInput {
   depth: ReturnType<typeof pipelineDepth>;
   /** Invalidates every dataVersion-keyed read after a write. */
   bumpData: () => void;
+  scope?: LocalAccountScope;
 }
 
 export interface ChatRuntime {
@@ -36,7 +38,7 @@ export interface ChatRuntime {
 export function useChatRuntime(input: ChatRuntimeInput): ChatRuntime {
   const {
     db, notify, app, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit,
-    climate, capability, depth, bumpData,
+    climate, capability, depth, bumpData, scope = { activeAccountId: null },
   } = input;
 
   // Only a public URL ships. The model credential lives as a Vercel Function's
@@ -84,7 +86,7 @@ export function useChatRuntime(input: ChatRuntimeInput): ChatRuntime {
     ],
   );
 
-  const chat = useChat(chatContext, provider, db, deviceId(db), bumpData);
+  const chat = useChat(chatContext, provider, db, deviceId(db), bumpData, scope);
 
   return { chat, aiAvailable: proxyProvider.isAvailable() };
 }

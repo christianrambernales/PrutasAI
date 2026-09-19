@@ -193,12 +193,11 @@ test('forgot password sends a reset request and shows a neutral confirmation', a
 });
 
 /**
- * Everything local goes up on sign-in, and a conversation without its turns
- * is not "everything": re-queueing the conversation rows while leaving the
- * message rows marked synced uploads a set of empty threads to the new
- * account.
+ * Local records made before sign-in stay unowned until the user accepts the
+ * explicit claim prompt. A sign-in must never silently re-queue or upload a
+ * previous user's device data.
  */
-test('signing in re-queues stored messages, not just the conversations holding them', async () => {
+test('signing in keeps unowned stored conversations and messages out of the account queue', async () => {
   seedSyncMode('offline');
   const when = '2026-08-30T12:00:00.000Z';
   insertConversation(db, {
@@ -214,6 +213,7 @@ test('signing in re-queues stored messages, not just the conversations holding t
   const tree = await render();
   await signInFromSettings(tree);
 
-  expect(pendingConversations(db, 50).map(c => c.uuid)).toEqual(['c1']);
-  expect(pendingMessages(db, 50).map(m => m.uuid)).toEqual(['m1']);
+  expect(pendingConversations(db, 50, { activeAccountId: 'u1' })).toEqual([]);
+  expect(pendingMessages(db, 50, { activeAccountId: 'u1' })).toEqual([]);
+  expect(db.get<{ account_id: string | null }>('SELECT account_id FROM conversation WHERE uuid = ?', ['c1'])?.account_id).toBeNull();
 });

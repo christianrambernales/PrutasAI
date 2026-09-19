@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   currentAccessToken, currentUser, resetPassword, requestPasswordReset,
   restoreSession, resendConfirmation, updateUserPassword,
@@ -12,11 +12,13 @@ import { drainScans } from '../../core/sync/drain';
 import { drainConversations } from '../../core/sync/drainConversations';
 import { apiBaseUrl } from '../../core/chat/apiBaseUrl';
 import { deviceId } from '../../core/chat/deviceId';
-import { setSyncMode } from '../../core/db/syncMode';
-import { pendingScans, resetSyncQueue } from '../../core/db/repositories/scans';
+import { getSyncMode, setSyncMode } from '../../core/db/syncMode';
 import {
-  pendingConversations, pendingMessages,
-  resetConversationSyncQueue, resetMessageSyncQueue,
+  claimUnownedScans, countScansBySyncStatus, pendingScans, removeLocalAccountScans,
+} from '../../core/db/repositories/scans';
+import {
+  claimUnownedConversations, countConversationsBySyncStatus, pendingConversations, pendingMessages,
+  removeLocalAccountConversations,
 } from '../../core/db/repositories/conversations';
 import type { SqlDriver } from '../../core/db/driver';
 import type { Route } from '../../navigation/navState';
@@ -34,6 +36,10 @@ export interface AccountState {
   errorKey: AuthErrorKey | null;
   resetMessage: string | null;
   confirmationPendingEmail: string | null;
+  cloudSyncEnabled: boolean;
+  unownedClaimPending: { scans: number; conversations: number } | null;
+  syncCounts: { pending: number; needsAttention: number; conflicts: number };
+  lastSuccessfulSyncAt: string | null;
 }
 
 export interface AccountSyncInput {
@@ -60,6 +66,11 @@ export interface AccountSync {
   signOut: () => Promise<void>;
   setNewPassword: (password: string) => Promise<{ ok: boolean; errorKey?: AuthErrorKey }>;
   clearRecovery: () => void;
+  claimUnowned: () => Promise<void>;
+  declineUnowned: () => Promise<void>;
+  setCloudSyncEnabled: (enabled: boolean) => void;
+  syncNow: () => Promise<void>;
+  removeLocalDeviceCopy: () => Promise<void>;
 }
 
 export function useAccountSync(input: AccountSyncInput): AccountSync {
@@ -77,7 +88,32 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     errorKey: null,
     resetMessage: null,
     confirmationPendingEmail: null,
+    // Null is a legacy/unselected value; an authenticated session remains
+    // compatible with the previous behavior until the user explicitly pauses.
+    cloudSyncEnabled: getSyncMode(db) !== 'offline',
+    unownedClaimPending: null,
+    syncCounts: { pending: 0, needsAttention: 0, conflicts: 0 },
+    lastSuccessfulSyncAt: null,
   });
+  const syncEpoch = useRef(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshSyncCounts = useCallback((ownerId: string | null) => {
+    const scope = { activeAccountId: ownerId };
+    const scans = countScansBySyncStatus(db, scope);
+    const conversations = countConversationsBySyncStatus(db, scope);
+    setAccount(a => ({
+      ...a,
+      syncCounts: {
+        pending: scans.pending + conversations.pending,
+        needsAttention: scans.needs_attention + conversations.needs_attention,
+        conflicts: scans.conflict + conversations.conflict,
+      },
+    }));
+  }, [db]);
+
+  useEffect(() => {
+    refreshSyncCounts(account.userId);
+  }, [account.userId, dataVersion, refreshSyncCounts]);
 
   // Recovery deep link listener: routes to resetPassword when valid recovery link arrives
   useEffect(() => {
@@ -99,6 +135,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
             userId: restored.userId,
             email: restored.email,
             accessToken: restored.accessToken,
+            cloudSyncEnabled: getSyncMode(db) !== 'offline',
           }));
           return;
         } else if (restored && restored.status === 'expired') {
@@ -119,23 +156,30 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       const user = await currentUser();
       if (!user) return;
       const accessToken = await currentAccessToken();
-      setAccount(a => ({ ...a, userId: user.id, email: user.email, accessToken }));
+      setAccount(a => ({
+        ...a, userId: user.id, email: user.email, accessToken,
+        cloudSyncEnabled: getSyncMode(db) !== 'offline',
+      }));
     })();
   }, []);
 
   // Fire-and-forget drain on data changes: both queues are monitored.
   // On 401: notify once, treat as signed out, leave rows queued locally.
   useEffect(() => {
+    if (!account.userId || !account.cloudSyncEnabled || account.unownedClaimPending) return;
+    const epoch = syncEpoch.current;
     void (async () => {
       const scans = await drainScans({
         db,
         baseUrl: apiBaseUrl(),
         deviceId: deviceId(db),
         accessToken: account.accessToken,
+        userId: account.userId ?? undefined,
       });
       const conversations = await drainConversations({
-        db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: account.accessToken,
+        db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: account.accessToken, userId: account.userId ?? undefined,
       });
+      if (epoch !== syncEpoch.current) return;
       if (!scans.sessionExpired && !conversations.sessionExpired) return;
 
       notify(t.sessionExpired);
@@ -151,7 +195,47 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       }));
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, dataVersion, account.accessToken]);
+  }, [db, dataVersion, account.accessToken, account.userId, account.cloudSyncEnabled, account.unownedClaimPending]);
+
+  // Persisted `next_retry_at` survives a relaunch; this timer only wakes the
+  // current process at the earliest owner-bound time. The queue remains the
+  // authority, so a late/cleared timer cannot manufacture an upload.
+  useEffect(() => {
+    if (retryTimer.current) {
+      clearTimeout(retryTimer.current);
+      retryTimer.current = null;
+    }
+    if (!account.userId || !account.cloudSyncEnabled || account.unownedClaimPending) return undefined;
+    const row = db.get<{ next_retry_at: string }>(
+      `SELECT MIN(next_retry_at) AS next_retry_at FROM (
+         SELECT next_retry_at FROM scan WHERE account_id = ? AND sync_status = 'pending' AND next_retry_at IS NOT NULL
+         UNION ALL SELECT next_retry_at FROM conversation WHERE account_id = ? AND sync_status = 'pending' AND next_retry_at IS NOT NULL
+         UNION ALL SELECT next_retry_at FROM conversation_message WHERE account_id = ? AND sync_status = 'pending' AND next_retry_at IS NOT NULL
+       )`,
+      [account.userId, account.userId, account.userId],
+    );
+    const next = row?.next_retry_at ? Date.parse(row.next_retry_at) : NaN;
+    if (!Number.isFinite(next)) return undefined;
+    const delay = Math.max(0, Math.min(next - Date.now(), 2_147_483_647));
+    const owner = account.userId;
+    const token = account.accessToken;
+    retryTimer.current = setTimeout(() => {
+      if (syncEpoch.current < 0) return;
+      void drainScans({ db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: token, userId: owner });
+      void drainConversations({ db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: token, userId: owner });
+    }, delay);
+    return () => {
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      retryTimer.current = null;
+    };
+  }, [account.accessToken, account.cloudSyncEnabled, account.unownedClaimPending, account.userId, dataVersion, db]);
+
+  const setCloudSyncEnabled = useCallback((enabled: boolean) => {
+    if (!enabled) syncEpoch.current += 1;
+    setSyncMode(db, enabled ? 'account' : 'offline');
+    onSyncModeChange(enabled ? 'account' : 'offline');
+    setAccount(a => ({ ...a, cloudSyncEnabled: enabled }));
+  }, [db, onSyncModeChange]);
 
   const openAccount = useCallback(() => {
     if (!consented) {
@@ -166,17 +250,14 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       setSyncMode(db, 'account');
       onSyncModeChange('account');
 
-      resetSyncQueue(db);
-      resetConversationSyncQueue(db);
-      resetMessageSyncQueue(db);
       const uploadedScans = await drainScans({
-        db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: outcome.accessToken,
+        db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: outcome.accessToken, userId: outcome.userId,
       });
       const uploadedConversations = await drainConversations({
-        db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: outcome.accessToken,
+        db, baseUrl: apiBaseUrl(), deviceId: deviceId(db), accessToken: outcome.accessToken, userId: outcome.userId,
       });
-      const report = await restoreScans({ db });
-      await restoreConversations({ db });
+      const report = await restoreScans({ db, userId: outcome.userId });
+      await restoreConversations({ db, userId: outcome.userId });
 
       setAccount({
         userId: outcome.userId ?? null,
@@ -187,6 +268,12 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
         errorKey: null,
         resetMessage: null,
         confirmationPendingEmail: null,
+        cloudSyncEnabled: true,
+        unownedClaimPending: null,
+        syncCounts: { pending: 0, needsAttention: 0, conflicts: 0 },
+        lastSuccessfulSyncAt: uploadedScans.failed === 0 && uploadedConversations.failed === 0 && !report.restoreFailed
+          ? new Date().toISOString()
+          : null,
       });
       bumpData();
 
@@ -221,6 +308,22 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     }
 
     if (outcome.status === 'authenticated') {
+      const unownedScans = pendingScans(db, 50, { activeAccountId: null }).length;
+      const unownedConversations = pendingConversations(db, 50, { activeAccountId: null }).length;
+      if (unownedScans + unownedConversations > 0) {
+        setSyncMode(db, 'account');
+        onSyncModeChange('account');
+        setAccount(a => ({
+          ...a,
+          userId: outcome.userId,
+          email,
+          accessToken: outcome.accessToken,
+          busy: false,
+          cloudSyncEnabled: true,
+          unownedClaimPending: { scans: unownedScans, conversations: unownedConversations },
+        }));
+        return;
+      }
       await uploadAndRestoreForAccount(email, outcome);
       return;
     }
@@ -228,7 +331,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       await uploadAndRestoreForAccount(email, outcome as unknown as { userId?: string; accessToken: string });
       return;
     }
-  }, [uploadAndRestoreForAccount, t]);
+  }, [uploadAndRestoreForAccount, t, db, onSyncModeChange]);
 
   const signUp = useCallback(async (email: string, password: string) => {
     setAccount(a => ({ ...a, busy: true, error: null, errorKey: null }));
@@ -371,8 +474,57 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       errorKey: null,
       resetMessage: null,
       confirmationPendingEmail: null,
+      cloudSyncEnabled: false,
+      unownedClaimPending: null,
+      syncCounts: { pending: 0, needsAttention: 0, conflicts: 0 },
+      lastSuccessfulSyncAt: null,
     });
   }, [db, notify, onSyncModeChange, t]);
+
+  const claimUnowned = useCallback(async () => {
+    if (!account.userId) return;
+    claimUnownedScans(db, account.userId);
+    claimUnownedConversations(db, account.userId);
+    setAccount(a => ({ ...a, unownedClaimPending: null }));
+    bumpData();
+    await uploadAndRestoreForAccount(account.email ?? '', {
+      userId: account.userId,
+      accessToken: account.accessToken,
+    });
+  }, [account.accessToken, account.email, account.userId, bumpData, db, uploadAndRestoreForAccount]);
+
+  const declineUnowned = useCallback(async () => {
+    setAccount(a => ({ ...a, unownedClaimPending: null }));
+    if (account.userId && account.cloudSyncEnabled) {
+      await uploadAndRestoreForAccount(account.email ?? '', {
+        userId: account.userId,
+        accessToken: account.accessToken,
+      });
+    }
+  }, [account.accessToken, account.cloudSyncEnabled, account.email, account.userId, uploadAndRestoreForAccount]);
+
+  const syncNow = useCallback(async () => {
+    if (!account.userId || !account.cloudSyncEnabled || account.unownedClaimPending) return;
+    // Manual retry changes only timing. It neither claims rows nor resets
+    // errors/attempt counts, so the diagnostic state remains truthful.
+    db.all("UPDATE scan SET next_retry_at = NULL WHERE account_id = ? AND sync_status = 'pending'", [account.userId]);
+    db.all("UPDATE conversation SET next_retry_at = NULL WHERE account_id = ? AND sync_status = 'pending'", [account.userId]);
+    db.all("UPDATE conversation_message SET next_retry_at = NULL WHERE account_id = ? AND sync_status = 'pending'", [account.userId]);
+    await uploadAndRestoreForAccount(account.email ?? '', {
+      userId: account.userId,
+      accessToken: account.accessToken,
+    });
+  }, [account.accessToken, account.cloudSyncEnabled, account.email, account.unownedClaimPending, account.userId, db, uploadAndRestoreForAccount]);
+
+  const removeLocalDeviceCopy = useCallback(async () => {
+    if (!account.userId) return;
+    // These repository calls only delete SQLite rows for the verified owner.
+    // They deliberately make no remote request: cloud data remains retained.
+    removeLocalAccountScans(db, account.userId);
+    removeLocalAccountConversations(db, account.userId);
+    bumpData();
+    refreshSyncCounts(account.userId);
+  }, [account.userId, bumpData, db, refreshSyncCounts]);
 
   return {
     account,
@@ -385,5 +537,10 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     signOut: signOutOfAccount,
     setNewPassword,
     clearRecovery,
+    claimUnowned,
+    declineUnowned,
+    setCloudSyncEnabled,
+    syncNow,
+    removeLocalDeviceCopy,
   };
 }

@@ -98,7 +98,7 @@ test('a 5xx leaves the scan pending so nothing is silently lost', async () => {
   expect(pendingScans(db).map(s => s.uuid)).toEqual(['a1']);
 });
 
-test('a 400 marks the scan synced, because retrying a rejected shape forever is a stuck queue', async () => {
+test('a permanent 400 moves the scan to needs attention without blocking later rows', async () => {
   const db = freshDb();
   insertScan(db, sampleScan({ uuid: 'a1' }));
   const fetchImpl = jest.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => (
@@ -107,8 +107,10 @@ test('a 400 marks the scan synced, because retrying a rejected shape forever is 
 
   const report = await drainScans({ db, baseUrl: 'https://x.test/api', deviceId: 'dev-1', accessToken: 'tok-1', fetchImpl });
 
-  expect(report.failed).toBe(0);
+  expect(report.failed).toBe(1);
   expect(pendingScans(db)).toEqual([]);
+  expect(db.get<{ sync_status: string; sync_error_code: string }>('SELECT sync_status, sync_error_code FROM scan WHERE uuid = ?', ['a1']))
+    .toEqual({ sync_status: 'needs_attention', sync_error_code: 'http_400' });
 });
 
 test('a 429 stops the drain rather than burning through the whole backlog', async () => {

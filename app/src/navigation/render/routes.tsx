@@ -83,7 +83,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
   } = shell.nav;
   const {
     db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit, allScans,
-    trashedConversations, statuses, capability, depth, readyCount, aiAvailable, bumpData,
+    trashedConversations, statuses, capability, depth, readyCount, aiAvailable, bumpData, accountScope,
   } = shell.data;
 
   switch (r.name) {
@@ -104,7 +104,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
       // So reopening one shows the same honest state a fresh capture shows.
       // It must never fall back to the design preview: that is how a
       // fabricated diagnosis reached a screen once already.
-      const stored = findScan(db, r.scanId);
+      const stored = findScan(db, r.scanId, accountScope);
       return (
         <CaptureResultScreen
           photoUri={stored?.imageUri ?? ''}
@@ -244,6 +244,15 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
           onSignOut={() => { void account.signOut(); }}
           onResendConfirmation={email => void account.resendConfirmation(email)}
           onContinueOffline={account.continueOffline}
+          cloudSyncEnabled={account.account.cloudSyncEnabled}
+          unownedClaimPending={account.account.unownedClaimPending}
+          onClaimUnowned={() => void account.claimUnowned()}
+          onDeclineUnowned={() => void account.declineUnowned()}
+          onSetCloudSyncEnabled={account.setCloudSyncEnabled}
+          syncCounts={account.account.syncCounts}
+          lastSuccessfulSyncAt={account.account.lastSuccessfulSyncAt}
+          onSyncNow={() => void account.syncNow()}
+          onRemoveLocalDeviceCopy={() => void account.removeLocalDeviceCopy()}
         />
       );
     case 'signup':

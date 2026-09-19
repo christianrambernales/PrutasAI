@@ -85,3 +85,11 @@ test('a failed read is reported, not swallowed as "you had nothing"', async () =
 
   expect(report).toEqual({ restored: 0, restoreFailed: true });
 });
+
+test('owner restore leaves an invalid remote timestamp visible as a local conflict', async () => {
+  const db = seededDb();
+  insertScan(db, sampleScan({ uuid: 'r1', accountId: 'owner', imageUri: 'file:///private.jpg' }));
+  await restoreScans({ db, userId: 'owner', fetchRemoteScans: async () => [remoteScan({ id: 'r1', updated_at: 'not-a-date' })] });
+  const row = db.get<{ sync_status: string; image_uri: string }>('SELECT sync_status, image_uri FROM scan WHERE uuid = ?', ['r1']);
+  expect(row).toEqual({ sync_status: 'conflict', image_uri: 'file:///private.jpg' });
+});

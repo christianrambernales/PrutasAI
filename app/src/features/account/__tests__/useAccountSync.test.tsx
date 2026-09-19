@@ -11,6 +11,7 @@ import { useAccountSync } from '../useAccountSync';
 import { resetAppDatabase } from '../../../testing/appDatabase';
 import { strings } from '../../../ui/i18n/strings';
 import { getSyncMode } from '../../../core/db/syncMode';
+import { insertScan } from '../../../core/db/repositories/scans';
 import type { SqlDriver } from '../../../core/db/driver';
 
 jest.mock('../../../core/auth/session');
@@ -97,6 +98,39 @@ test('opening the account screen with consent navigates there', () => {
   act(() => { h.value.openAccount(); });
   expect(h.push).toHaveBeenCalledWith({ name: 'account' });
   expect(h.onAccountRequested).not.toHaveBeenCalled();
+});
+
+test('a confirmed sign-in waits for an explicit decision before claiming unowned rows', async () => {
+  insertScan(db, {
+    uuid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', imageUri: 'file:///local.jpg',
+    createdAt: '2026-09-19T12:00:00.000Z', fruitKey: null, fruitConf: null,
+    varietyKey: null, varietyConf: null, bboxJson: null, manifestVersion: null,
+    lat: null, lon: null, isOwnedPhoto: true,
+  });
+  session.signIn.mockResolvedValue({ status: 'authenticated', ok: true, userId: 'account-a', accessToken: 'token-a' });
+  const h = mount();
+
+  await act(async () => { await h.value.signIn('a@example.test', 'password'); });
+
+  expect(h.value.account.unownedClaimPending).toEqual({ scans: 1, conversations: 0 });
+  expect(db.get<{ account_id: string | null }>('SELECT account_id FROM scan')?.account_id).toBeNull();
+  expect(drain.drainScans).not.toHaveBeenCalledWith(expect.objectContaining({ accessToken: 'token-a' }));
+});
+
+test('accepting the explicit claim binds only unowned rows to the verified account', async () => {
+  insertScan(db, {
+    uuid: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', imageUri: 'file:///local.jpg',
+    createdAt: '2026-09-19T12:00:00.000Z', fruitKey: null, fruitConf: null,
+    varietyKey: null, varietyConf: null, bboxJson: null, manifestVersion: null,
+    lat: null, lon: null, isOwnedPhoto: true,
+  });
+  session.signIn.mockResolvedValue({ status: 'authenticated', ok: true, userId: 'account-a', accessToken: 'token-a' });
+  const h = mount();
+  await act(async () => { await h.value.signIn('a@example.test', 'password'); });
+  await act(async () => { await h.value.claimUnowned(); });
+
+  expect(db.get<{ account_id: string | null }>('SELECT account_id FROM scan')?.account_id).toBe('account-a');
+  expect(h.value.account.unownedClaimPending).toBeNull();
 });
 
 test('a successful sign-in records the mode first, then uploads before restoring', async () => {

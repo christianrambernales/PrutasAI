@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { answerQuestion, ChatContext } from '../../core/chat/answer';
 import { routeQuestion } from '../../core/chat/router';
 import type { ChatProvider, GeneralErrorKind, HistoryTurn } from '../../core/chat/providers/types';
@@ -7,8 +7,9 @@ import type { ChatMessage } from '../viewModels';
 import type { SqlDriver } from '../../core/db/driver';
 import {
   insertConversation, insertMessage, lastMessages, listActiveConversations, listMessages,
-  newConversationUuid, newMessageUuid, touchConversation, updateMessageText,
+  findConversation, newConversationUuid, newMessageUuid, touchConversation, updateMessageText,
 } from '../../core/db/repositories/conversations';
+import type { LocalAccountScope } from '../../core/db/repositories/scans';
 
 /**
  * Chat state and the send path.
@@ -94,6 +95,7 @@ export function useChat(
   // `bumpData` every other writer uses, which is what makes a sent message
   // reach the sync queue's drain effect — see the 2026-09-03 spec, §5.
   onPersisted?: () => void,
+  scope: LocalAccountScope = { activeAccountId: null },
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -107,9 +109,19 @@ export function useChat(
     setDraft('');
   }, []);
 
+  // A shared device must never leave an account-A thread open in memory after
+  // switching to signed-out mode or account B.
+  useEffect(() => {
+    startNewConversation();
+  }, [scope.activeAccountId, startNewConversation]);
+
   /** Swap in a past conversation's messages, read straight from storage. */
   const openConversation = useCallback((uuid: string) => {
-    const rows = listMessages(db, uuid);
+    if (!findConversation(db, uuid, scope)) {
+      startNewConversation();
+      return;
+    }
+    const rows = listMessages(db, uuid, scope);
     setMessages(rows.map(r => ({
       id: r.uuid,
       role: r.role,
@@ -119,17 +131,20 @@ export function useChat(
     })));
     setConversationId(uuid);
     setDraft('');
-  }, [db]);
+  }, [db, scope, startNewConversation]);
 
   /** The active conversation, opening one titled from the first question if none exists yet. */
   const ensureConversation = useCallback((firstQuestion: string): string => {
     if (conversationId) return conversationId;
     const uuid = newConversationUuid();
     const now = new Date().toISOString();
-    insertConversation(db, { uuid, title: titleFrom(firstQuestion), deviceId, createdAt: now, updatedAt: now });
+    insertConversation(db, {
+      uuid, title: titleFrom(firstQuestion), deviceId, createdAt: now, updatedAt: now,
+      accountId: scope.activeAccountId,
+    });
     setConversationId(uuid);
     return uuid;
-  }, [conversationId, db, deviceId]);
+  }, [conversationId, db, deviceId, scope.activeAccountId]);
 
   const persist = useCallback((convId: string, message: ChatMessage) => {
     const now = new Date().toISOString();
@@ -141,13 +156,14 @@ export function useChat(
       text: message.text,
       verdictJson: message.verdict ? JSON.stringify(message.verdict) : null,
       createdAt: now,
+      accountId: scope.activeAccountId,
     });
     // A new message makes the conversation the most recently active one, and
     // the sidebar sorts on exactly this column.
-    touchConversation(db, convId, now);
+    touchConversation(db, convId, now, scope);
     // Last, so it only fires once the rows are actually there.
     onPersisted?.();
-  }, [db, onPersisted]);
+  }, [db, onPersisted, scope]);
 
   const ask = useCallback(
     (question: string) => {
@@ -224,7 +240,7 @@ export function useChat(
       // the question just persisted above: `lastMessages` reads it straight
       // back out of the database, and without this filter it would appear
       // twice — once as history, once as the question itself.
-      const history: HistoryTurn[] = lastMessages(db, convId, HISTORY_WINDOW)
+      const history: HistoryTurn[] = lastMessages(db, convId, HISTORY_WINDOW, scope)
         .filter(m => m.uuid !== userMessage.id)
         .map(m => ({ role: m.role, text: m.text }));
 
@@ -259,7 +275,7 @@ export function useChat(
         setPending(false);
       })();
     },
-    [context, provider, ensureConversation, persist, db],
+    [context, provider, ensureConversation, persist, db, scope],
   );
 
   const send = useCallback(() => ask(draft), [ask, draft]);
@@ -276,6 +292,6 @@ export function useChat(
 }
 
 /** Conversations for a sidebar or history list — active (non-trashed) ones, most recent first. */
-export function listConversationsForSidebar(db: SqlDriver) {
-  return listActiveConversations(db);
+export function listConversationsForSidebar(db: SqlDriver, scope: LocalAccountScope = { activeAccountId: null }) {
+  return listActiveConversations(db, scope);
 }
