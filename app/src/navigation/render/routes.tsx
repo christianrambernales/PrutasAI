@@ -230,13 +230,17 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
       return (
         <AccountScreen
           email={account.account.email}
+          userId={account.account.userId}
           busy={account.account.busy}
           error={account.account.error}
           resetMessage={account.account.resetMessage}
+          confirmationPendingEmail={account.account.confirmationPendingEmail}
           onSignIn={(email, password) => void account.signIn(email, password)}
           onForgotPassword={email => void account.forgotPassword(email)}
           onCreateAccount={() => push({ name: 'signup' })}
           onSignOut={() => { void account.signOut(); }}
+          onResendConfirmation={email => void account.resendConfirmation(email)}
+          onContinueOffline={account.continueOffline}
         />
       );
     case 'signup':
@@ -244,8 +248,12 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
         <SignUpScreen
           busy={account.account.busy}
           error={account.account.error}
+          confirmationPendingEmail={account.account.confirmationPendingEmail}
+          noticeMessage={account.account.resetMessage}
           onSignUp={(email, password) => void account.signUp(email, password)}
           onGoToSignIn={back}
+          onResendConfirmation={email => void account.resendConfirmation(email)}
+          onContinueOffline={account.continueOffline}
         />
       );
     case 'capture':

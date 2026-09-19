@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Pressable, StyleSheet, TextInput } from 'react-native';
 import {
   AppText, Button, Col, COLORS, RADIUS, Section, SPACING, useT,
@@ -7,14 +7,54 @@ import {
 export interface SignUpScreenProps {
   busy: boolean;
   error: string | null;
+  confirmationPendingEmail?: string | null;
+  noticeMessage?: string | null;
   onSignUp: (email: string, password: string) => void;
   onGoToSignIn: () => void;
+  onResendConfirmation?: (email?: string) => void;
+  onContinueOffline?: () => void;
 }
 
 export function SignUpScreen(props: SignUpScreenProps) {
   const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  if (props.confirmationPendingEmail) {
+    return (
+      <Section gap={SPACING.md}>
+        <AppText variant="xl">{t.checkYourEmail}</AppText>
+        <AppText variant="sm" color={COLORS.textSecondary}>
+          {t.checkYourEmailDetail(props.confirmationPendingEmail)}
+        </AppText>
+
+        {props.noticeMessage ? (
+          <AppText variant="sm" color={COLORS.primary}>{props.noticeMessage}</AppText>
+        ) : null}
+
+        {props.error ? (
+          <AppText variant="sm" color={COLORS.error}>{props.error}</AppText>
+        ) : null}
+
+        <Button
+          label={props.busy ? t.resendingConfirmation : t.resendConfirmation}
+          onPress={() => {
+            if (!props.busy && props.onResendConfirmation) {
+              props.onResendConfirmation(props.confirmationPendingEmail!);
+            }
+          }}
+        />
+
+        <Button
+          variant="secondary"
+          label={t.continueOffline}
+          onPress={() => {
+            if (props.onContinueOffline) props.onContinueOffline();
+          }}
+        />
+      </Section>
+    );
+  }
 
   return (
     <Section gap={SPACING.md}>

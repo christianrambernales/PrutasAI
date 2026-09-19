@@ -64,3 +64,46 @@ test('an error is shown', () => {
   const text = JSON.stringify(tree.toJSON());
   expect(text).toContain('Email already registered');
 });
+
+test('renders confirmation-pending view with check your email, resend and continue offline actions', () => {
+  const onResendConfirmation = jest.fn();
+  const onContinueOffline = jest.fn();
+  const tree = render(
+    <SignUpScreen
+      busy={false}
+      error={null}
+      confirmationPendingEmail="grower@example.test"
+      onSignUp={jest.fn()}
+      onGoToSignIn={jest.fn()}
+      onResendConfirmation={onResendConfirmation}
+      onContinueOffline={onContinueOffline}
+    />,
+  );
+
+  const text = JSON.stringify(tree.toJSON());
+  expect(text).toContain('Check your email');
+  expect(text).toContain('grower@example.test');
+
+  press(tree, 'Resend confirmation email');
+  expect(onResendConfirmation).toHaveBeenCalledWith('grower@example.test');
+
+  press(tree, 'Continue offline');
+  expect(onContinueOffline).toHaveBeenCalledTimes(1);
+});
+
+test('busy state shows resending label and prevents double resend', () => {
+  const onResendConfirmation = jest.fn();
+  const tree = render(
+    <SignUpScreen
+      busy={true}
+      error={null}
+      confirmationPendingEmail="grower@example.test"
+      onSignUp={jest.fn()}
+      onGoToSignIn={jest.fn()}
+      onResendConfirmation={onResendConfirmation}
+    />,
+  );
+
+  press(tree, 'Resending…');
+  expect(onResendConfirmation).not.toHaveBeenCalled();
+});
