@@ -55,6 +55,15 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 2. A signed-in QA identity can sync and restore only its own eligible records; unauthorized and offline failures preserve local data.
 3. Migration order, grants, RLS policies, service-role boundaries, and QA evidence are documented.
 
+**Plans:** 7/7 plans complete
+- [x] 03-01-PLAN.md — Implement confirmation-aware authentication, safe bilingual errors, session restore, and non-destructive sign-out.
+- [x] 03-02-PLAN.md — Complete neutral password recovery with secure Android/web deep-link handling and password update UI.
+- [x] 03-03-PLAN.md — Add and register local SQLite account partitioning plus explicit sync/retry state repositories.
+- [x] 03-04-PLAN.md — Wire account scope, explicit unowned claiming, sync pause/resume, and truthful account status through the app.
+- [x] 03-05-PLAN.md — Implement privacy-safe owner-scoped drains, deterministic restore, needs-attention routing, and real retry scheduling.
+- [x] 03-06-PLAN.md — Add the remote sync-contract migration and atomic service-role ownership enforcement with adversarial tests.
+- [x] 03-07-PLAN.md — Document and record migration rehearsal, two-account QA, and evidence-scope protocols without mutating QA.
+
 ### Phase 4: Complete Product Flows
 **Goal:** Finish navigation and the complete offline, future-diagnostic, and cloud-assisted product journeys.
 **Requirements:** FLOW-01, FLOW-02, FLOW-04, FLOW-05, FLOW-06
