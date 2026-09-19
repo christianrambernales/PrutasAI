@@ -8,7 +8,7 @@
 import type { RateLimitBinding } from '../limits.js';
 import { checkLimits } from '../limits.js';
 import type { ApiResult, RequestContext } from '../http.js';
-import { validateScan } from '../validate.js';
+import { validateScan, isOwnerConflict } from '../validate.js';
 
 export interface InsertableScan {
   user_id: string;
@@ -22,6 +22,8 @@ export interface InsertableScan {
   bbox_json: unknown;
   manifest_version: number | null;
   created_at: string;
+  updated_at?: string;
+  deleted_at?: string | null;
   lat: number | null;
   lon: number | null;
 }
@@ -35,6 +37,8 @@ export interface ScanDeps {
   limiter: RateLimitBinding;
   /** Returns the user id the token belongs to, or null if it does not verify. */
   verifyToken(token: string): Promise<string | null>;
+  /** Checks current owner of the scan row if it exists. Null indicates first upload. */
+  ownerOfScan?(id: string): Promise<string | null>;
   insertScan(row: InsertableScan): Promise<void>;
 }
 
@@ -88,8 +92,22 @@ export async function handleScans(
   if (!check.ok) return json(400, { error: check.error });
   const row = check.value;
 
+  // Check current owner if existing-owner lookup is configured
+  if (deps.ownerOfScan) {
+    let currentOwner: string | null;
+    try {
+      currentOwner = await deps.ownerOfScan(row.uuid);
+    } catch (cause) {
+      console.error('scans: ownerOfScan failed', cause);
+      return json(502, { error: 'upstream unavailable' });
+    }
+    if (currentOwner !== null && currentOwner !== userId) {
+      return json(403, { error: 'not your scan' });
+    }
+  }
+
   try {
-    await deps.insertScan({
+    const insertPayload: InsertableScan = {
       user_id: userId,
       id: row.uuid,
       device_id: ctx.deviceId,
@@ -107,8 +125,19 @@ export async function handleScans(
       created_at: row.created_at,
       lat: coarse(row.lat),
       lon: coarse(row.lon),
-    });
+    };
+    if (row.updated_at !== undefined) {
+      insertPayload.updated_at = row.updated_at;
+    }
+    if (row.deleted_at !== undefined) {
+      insertPayload.deleted_at = row.deleted_at;
+    }
+
+    await deps.insertScan(insertPayload);
   } catch (cause) {
+    if (isOwnerConflict(cause)) {
+      return json(403, { error: 'not your scan' });
+    }
     // Never echo the cause in the response: it can carry the connection
     // string. Server-side logging is fine — it's what tells apart a
     // validation bug from a database outage from the outside.

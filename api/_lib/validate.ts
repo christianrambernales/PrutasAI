@@ -8,6 +8,8 @@
 export interface ScanRow {
   uuid: string;
   created_at: string;
+  updated_at?: string;
+  deleted_at?: string | null;
   image_uri?: string;
   fruit_key?: string;
   fruit_conf?: number;
@@ -24,7 +26,7 @@ export type Validation =
   | { ok: false; error: string };
 
 const ALLOWED = new Set([
-  'uuid', 'created_at', 'image_uri', 'fruit_key', 'fruit_conf',
+  'uuid', 'created_at', 'updated_at', 'deleted_at', 'image_uri', 'fruit_key', 'fruit_conf',
   'variety_key', 'variety_conf', 'bbox_json', 'manifest_version', 'lat', 'lon',
 ]);
 
@@ -34,6 +36,29 @@ const MAX_TEXT = 512;
 
 function fail(error: string): Validation {
   return { ok: false, error };
+}
+
+export class OwnershipConflictError extends Error {
+  constructor(message = 'ownership conflict') {
+    super(message);
+    this.name = 'OwnershipConflictError';
+  }
+}
+
+export function isOwnerConflict(cause: unknown): boolean {
+  if (cause instanceof OwnershipConflictError) return true;
+  if (cause instanceof Error) {
+    const msg = cause.message.toLowerCase();
+    if (
+      msg.includes('ownership conflict') ||
+      msg.includes('not your') ||
+      msg.includes('owner mismatch') ||
+      msg.includes('parent ownership conflict')
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function validateScan(input: unknown): Validation {
@@ -47,6 +72,18 @@ export function validateScan(input: unknown): Validation {
   if (typeof body.uuid !== 'string' || !UUID.test(body.uuid)) return fail('uuid must be a UUID');
   if (typeof body.created_at !== 'string' || Number.isNaN(Date.parse(body.created_at))) {
     return fail('created_at must be ISO-8601');
+  }
+
+  if (body.updated_at !== undefined) {
+    if (typeof body.updated_at !== 'string' || Number.isNaN(Date.parse(body.updated_at))) {
+      return fail('updated_at must be ISO-8601');
+    }
+  }
+
+  if (body.deleted_at !== undefined && body.deleted_at !== null) {
+    if (typeof body.deleted_at !== 'string' || Number.isNaN(Date.parse(body.deleted_at))) {
+      return fail('deleted_at must be ISO-8601 or null');
+    }
   }
 
   for (const key of ['fruit_key', 'variety_key'] as const) {

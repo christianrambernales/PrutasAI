@@ -3,6 +3,7 @@ import { handleConversations } from '../_lib/handlers/conversations.js';
 import { bearerToken, clientIp, deviceIdOf, send } from '../_lib/http.js';
 import { createRateStore } from '../_lib/rateStore.js';
 import { createSupabaseRateClient, serviceClient } from '../_lib/supabase.js';
+import { OwnershipConflictError } from '../_lib/validate.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return send(res, { status: 405, body: { error: 'method not allowed' } });
@@ -31,8 +32,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return data?.user_id ?? null;
       },
       async upsertConversation(row) {
-        const { error } = await supabase.from('conversation').upsert(row, { onConflict: 'id', ignoreDuplicates: false });
-        if (error) throw new Error(error.message);
+        const { error } = await supabase.rpc('upsert_conversation_atomic', {
+          p_id: row.id,
+          p_user_id: row.user_id,
+          p_title: row.title,
+          p_created_at: row.created_at,
+          p_updated_at: row.updated_at,
+          p_deleted_at: row.deleted_at,
+        });
+        if (error) {
+          if (
+            error.message?.includes('ownership conflict') ||
+            error.code === '23505' ||
+            error.code === 'P0001'
+          ) {
+            throw new OwnershipConflictError('ownership conflict: conversation owned by another account');
+          }
+          throw new Error(error.message);
+        }
       },
     },
     req.body,

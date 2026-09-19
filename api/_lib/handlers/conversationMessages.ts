@@ -18,6 +18,7 @@
 import type { RateLimitBinding } from '../limits.js';
 import { checkLimits } from '../limits.js';
 import type { ApiResult, RequestContext } from '../http.js';
+import { isOwnerConflict } from '../validate.js';
 
 export interface InsertableMessage {
   user_id: string;
@@ -164,6 +165,13 @@ export async function handleConversationMessages(
       created_at: row.created_at,
     });
   } catch (cause) {
+    if (isOwnerConflict(cause)) {
+      const msg = cause instanceof Error ? cause.message.toLowerCase() : '';
+      if (msg.includes('parent') || msg.includes('conversation')) {
+        return json(403, { error: 'not your conversation' });
+      }
+      return json(403, { error: 'not your message' });
+    }
     console.error('conversationMessages: insertMessage failed', cause);
     return json(502, { error: 'upstream unavailable' });
   }
