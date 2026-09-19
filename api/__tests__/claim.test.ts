@@ -56,11 +56,14 @@ test('calling claim multiple times fails closed with 410 without writing', async
 
 test('an auth-service outage is a 502 that does not echo the cause', async () => {
   const d = deps('user-1');
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   d.verifyToken.mockRejectedValueOnce(new Error('postgres://user:hunter2@db.internal'));
   const result = await handleClaim(d, CTX);
 
   expect(result.status).toBe(502);
   expect(JSON.stringify(result.body)).not.toContain('hunter2');
+  expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('hunter2');
+  errorSpy.mockRestore();
 });
 
 test('a request over the limit is refused with Retry-After, before verifyToken is ever called', async () => {

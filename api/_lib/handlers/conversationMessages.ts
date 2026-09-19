@@ -127,8 +127,8 @@ export async function handleConversationMessages(
   let userId: string | null;
   try {
     userId = await deps.verifyToken(ctx.accessToken);
-  } catch (cause) {
-    console.error('conversationMessages: verifyToken failed', cause);
+  } catch {
+    console.error('conversationMessages: verifyToken failed');
     return json(502, { error: 'upstream unavailable' });
   }
   if (userId === null) return json(401, { error: 'authentication required' });
@@ -142,8 +142,8 @@ export async function handleConversationMessages(
   try {
     conversationOwner = await deps.ownerOfConversation(row.conversation_id);
     messageOwner = await deps.ownerOfMessage(row.uuid);
-  } catch (cause) {
-    console.error('conversationMessages: ownership lookup failed', cause);
+  } catch {
+    console.error('conversationMessages: ownership lookup failed');
     return json(502, { error: 'upstream unavailable' });
   }
   if (conversationOwner !== null && conversationOwner !== userId) {
@@ -172,7 +172,7 @@ export async function handleConversationMessages(
       }
       return json(403, { error: 'not your message' });
     }
-    console.error('conversationMessages: insertMessage failed', cause);
+    console.error('conversationMessages: insertMessage failed');
     return json(502, { error: 'upstream unavailable' });
   }
 

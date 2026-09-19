@@ -119,6 +119,7 @@ describe('Scans Ownership & Security', () => {
 
   test('dependency failure sanitization: internal details never leaked', async () => {
     const leakMessage = 'postgres://admin:supersecret@db-cluster.internal:5432/prutas timed out';
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const deps = mockScanDeps({
       insertScan: async () => {
         throw new Error(leakMessage);
@@ -131,6 +132,9 @@ describe('Scans Ownership & Security', () => {
     expect(result.body).toEqual({ error: 'upstream unavailable' });
     expect(JSON.stringify(result.body)).not.toContain('supersecret');
     expect(JSON.stringify(result.body)).not.toContain('db-cluster');
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('supersecret');
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('db-cluster');
+    errorSpy.mockRestore();
   });
 });
 
@@ -233,6 +237,7 @@ describe('Conversations Ownership & Security', () => {
   });
 
   test('dependency failure does not leak internal error info', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const deps = mockConvDeps({
       ownerOfConversation: async () => {
         throw new Error('Supabase RPC failure password=12345');
@@ -244,6 +249,8 @@ describe('Conversations Ownership & Security', () => {
     expect(result.status).toBe(502);
     expect(result.body).toEqual({ error: 'upstream unavailable' });
     expect(JSON.stringify(result.body)).not.toContain('password');
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('password');
+    errorSpy.mockRestore();
   });
 });
 
@@ -348,6 +355,7 @@ describe('Conversation Messages Ownership & Security', () => {
   });
 
   test('dependency failure sanitization: no leak of database error', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const deps = mockMsgDeps({
       insertMessage: async () => {
         throw new Error('Connection lost to auth.users with key=sk_service_secret');
@@ -359,6 +367,8 @@ describe('Conversation Messages Ownership & Security', () => {
     expect(result.status).toBe(502);
     expect(result.body).toEqual({ error: 'upstream unavailable' });
     expect(JSON.stringify(result.body)).not.toContain('sk_service_secret');
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('sk_service_secret');
+    errorSpy.mockRestore();
   });
 });
 

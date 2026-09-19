@@ -76,10 +76,9 @@ export async function handleScans(
   let userId: string | null;
   try {
     userId = await deps.verifyToken(ctx.accessToken);
-  } catch (cause) {
-    // Same rule as the storage failure below: log the cause, never echo it.
-    // An auth outage is an upstream failure, not a bad request.
-    console.error('scans: verifyToken failed', cause);
+  } catch {
+    // Do not log an upstream error object: it can contain connection details or tokens.
+    console.error('scans: verifyToken failed');
     return json(502, { error: 'upstream unavailable' });
   }
   if (userId === null) return json(401, { error: 'authentication required' });
@@ -97,8 +96,8 @@ export async function handleScans(
     let currentOwner: string | null;
     try {
       currentOwner = await deps.ownerOfScan(row.uuid);
-    } catch (cause) {
-      console.error('scans: ownerOfScan failed', cause);
+    } catch {
+      console.error('scans: ownerOfScan failed');
       return json(502, { error: 'upstream unavailable' });
     }
     if (currentOwner !== null && currentOwner !== userId) {
@@ -138,10 +137,8 @@ export async function handleScans(
     if (isOwnerConflict(cause)) {
       return json(403, { error: 'not your scan' });
     }
-    // Never echo the cause in the response: it can carry the connection
-    // string. Server-side logging is fine — it's what tells apart a
-    // validation bug from a database outage from the outside.
-    console.error('scans: insertScan failed', cause);
+    // Never log or echo the cause: it can carry connection details or tokens.
+    console.error('scans: insertScan failed');
     return json(502, { error: 'upstream unavailable' });
   }
 

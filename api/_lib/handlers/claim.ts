@@ -40,8 +40,8 @@ export async function handleClaim(deps: ClaimDeps, ctx: ClaimContext): Promise<A
   let userId: string | null;
   try {
     userId = await deps.verifyToken(ctx.accessToken);
-  } catch (cause) {
-    console.error('claim: verifyToken failed', cause);
+  } catch {
+    console.error('claim: verifyToken failed');
     return { status: 502, body: { error: 'upstream unavailable' } };
   }
   if (userId === null) return { status: 401, body: { error: 'authentication required' } };
