@@ -78,6 +78,19 @@ test('rejects a legacy unqualified direct execute grant for an owner-bound RPC',
   });
 });
 
+for (const [label, signatureWhitespace] of [
+  ['space', ' '],
+  ['newline', '\n  '],
+]) {
+  test(`rejects a direct execute grant with ${label} before the signature`, () => {
+    withTempMigrations(tempMigrations => {
+      mutate0007(tempMigrations, sql => `${sql}\ngrant execute on function public.upsert_scan_atomic${signatureWhitespace}(uuid, uuid, text, text, text, real, text, real, jsonb, int, timestamptz, timestamptz, timestamptz, real, real) to authenticated;\n`);
+
+      assert.throws(() => validateMigrations(tempMigrations), /authenticated execute grant/i);
+    });
+  });
+}
+
 for (const [name, signature] of Object.entries(functionSignatures)) {
   for (const role of ['authenticated', 'anon']) {
     test(`rejects ${role} execute access for ${name} owner-bound RPC`, () => {

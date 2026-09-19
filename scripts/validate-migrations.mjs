@@ -38,7 +38,7 @@ function validateOwnerBoundFunctionPrivileges(sql) {
     }
 
     const grants = [...normalizedSql.matchAll(new RegExp(
-      `grant execute on function ${escapeRegex(functionName)}(?:\\([^;]*?\\))? to ([^;]+);`,
+      `grant execute on function ${escapeRegex(functionName)}\\s*(?:\\([^;]*?\\))?\\s+to ([^;]+);`,
       'g',
     ))].map(match => match[1].split(',').map(role => role.trim()));
 
