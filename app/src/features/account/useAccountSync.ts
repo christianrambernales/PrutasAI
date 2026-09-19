@@ -1,9 +1,10 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
 import {
-  currentAccessToken, currentUser, resetPassword,
-  restoreSession, resendConfirmation,
+  currentAccessToken, currentUser, resetPassword, requestPasswordReset,
+  restoreSession, resendConfirmation, updateUserPassword,
   signIn as signInRequest, signOut, signUp as signUpRequest,
 } from '../../core/auth/session';
+import { setupRecoveryListener } from '../../core/auth/recovery';
 import { authErrorMessage, type AuthErrorKey } from '../../core/auth/authErrors';
 import { restoreScans } from '../../core/auth/restore';
 import { restoreConversations } from '../../core/auth/restoreConversations';
@@ -57,6 +58,8 @@ export interface AccountSync {
   continueOffline: () => void;
   forgotPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  setNewPassword: (password: string) => Promise<{ ok: boolean; errorKey?: AuthErrorKey }>;
+  clearRecovery: () => void;
 }
 
 export function useAccountSync(input: AccountSyncInput): AccountSync {
@@ -75,6 +78,14 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     resetMessage: null,
     confirmationPendingEmail: null,
   });
+
+  // Recovery deep link listener: routes to resetPassword when valid recovery link arrives
+  useEffect(() => {
+    const unsubscribe = setupRecoveryListener(() => {
+      push({ name: 'resetPassword' });
+    });
+    return unsubscribe;
+  }, [push]);
 
   // Read once on mount: a valid stored session restores silently.
   // Expired or revoked session notifies once and returns to signed-out offline mode.
@@ -299,10 +310,46 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
   }, [back]);
 
   const forgotPassword = useCallback(async (email: string) => {
-    setAccount(a => ({ ...a, resetMessage: null }));
-    await resetPassword(email);
-    setAccount(a => ({ ...a, resetMessage: t.resetEmailSent }));
+    setAccount(a => ({ ...a, resetMessage: null, error: null, errorKey: null }));
+    let outcome: { ok: boolean; errorKey?: AuthErrorKey } | undefined;
+    if (typeof requestPasswordReset === 'function') outcome = await requestPasswordReset(email);
+    if (!outcome && typeof resetPassword === 'function') outcome = await resetPassword(email);
+    if (!outcome) outcome = { ok: true };
+    if (!outcome.ok) {
+      const errorKey = outcome.errorKey ?? 'unknown';
+      const msg = authErrorMessage(errorKey, t);
+      setAccount(a => ({
+        ...a,
+        resetMessage: null,
+        error: msg,
+        errorKey,
+      }));
+      return;
+    }
+    setAccount(a => ({
+      ...a,
+      resetMessage: t.resetEmailSent,
+      error: null,
+      errorKey: null,
+    }));
   }, [t]);
+
+  const setNewPassword = useCallback(async (password: string) => {
+    setAccount(a => ({ ...a, busy: true, error: null, errorKey: null }));
+    const outcome = await updateUserPassword(password);
+    if (!outcome.ok) {
+      const errorKey = outcome.errorKey ?? 'unknown';
+      const msg = authErrorMessage(errorKey, t);
+      setAccount(a => ({ ...a, busy: false, error: msg, errorKey }));
+      return { ok: false, errorKey };
+    }
+    setAccount(a => ({ ...a, busy: false, error: null, errorKey: null }));
+    return { ok: true };
+  }, [t]);
+
+  const clearRecovery = useCallback(() => {
+    setAccount(a => ({ ...a, error: null, errorKey: null }));
+  }, []);
 
   const signOutOfAccount = useCallback(async () => {
     setAccount(a => ({ ...a, busy: true }));
@@ -336,5 +383,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     continueOffline,
     forgotPassword,
     signOut: signOutOfAccount,
+    setNewPassword,
+    clearRecovery,
   };
 }

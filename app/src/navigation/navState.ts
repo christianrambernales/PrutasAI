@@ -18,7 +18,8 @@ export type Route =
   | { name: 'locationPicker' }
   | { name: 'account' }
   | { name: 'signup' }
-  | { name: 'trash' };
+  | { name: 'trash' }
+  | { name: 'resetPassword' };
 
 export interface NavState {
   tab: TabKey;

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Sign-up, sign-in, session restore and sign-out.
  * Supabase Auth handles password hashing, tokens and refresh.
  * Provider errors are sanitized through mapAuthError before reaching any caller.
@@ -213,5 +213,33 @@ export async function currentAccessToken(): Promise<string> {
     return data.session?.access_token ?? '';
   } catch {
     return '';
+  }
+}
+
+export { requestPasswordReset, type RequestPasswordResetOutcome } from './recovery';
+
+export type UpdatePasswordOutcome =
+  | { ok: true }
+  | { ok: false; errorKey: AuthErrorKey };
+
+/**
+ * Updates the password for the current authenticated recovery session.
+ * Maps provider errors safely without exposing technical details.
+ */
+export async function updateUserPassword(password: string): Promise<UpdatePasswordOutcome> {
+  const supabase = supabaseClient();
+  if (!supabase) return { ok: false, errorKey: 'service_unavailable' };
+
+  try {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      return { ok: false, errorKey: mapAuthError(error) };
+    }
+    if (!data.user) {
+      return { ok: false, errorKey: 'unknown' };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, errorKey: mapAuthError(err) };
   }
 }

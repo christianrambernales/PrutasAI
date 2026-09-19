@@ -256,6 +256,20 @@ const EN = {
   continueOffline: 'Continue offline',
   signInAgain: 'Sign in again',
 
+  // reset password
+  titleResetPassword: 'Reset password',
+  newPasswordLabel: 'New password',
+  confirmPasswordLabel: 'Confirm password',
+  setNewPassword: 'Set new password',
+  updatingPassword: 'Updating password…',
+  passwordMismatch: 'Passwords do not match.',
+  passwordResetSuccessTitle: 'Password updated',
+  passwordResetSuccessDetail:
+    'Your password has been changed successfully. You can now sign in with your new password.',
+  passwordResetFailed: 'Unable to reset password. Please request a new reset link.',
+  cancel: 'Cancel',
+  done: 'Done',
+
   // auth errors
   authErrorInvalidCredentials: 'The email or password you entered is incorrect.',
   authErrorEmailNotConfirmed: 'Please check your email and confirm your account before signing in.',
@@ -507,6 +521,20 @@ const FIL: Dictionary = {
   confirmationResent: 'Naipadala na muli ang kumpirmasyon sa email.',
   continueOffline: 'Magpatuloy nang offline',
   signInAgain: 'Mag-sign in ulit',
+
+  // reset password
+  titleResetPassword: 'I-reset ang password',
+  newPasswordLabel: 'Bagong password',
+  confirmPasswordLabel: 'Kumpirmahin ang password',
+  setNewPassword: 'Itakda ang bagong password',
+  updatingPassword: 'Ina-update ang password…',
+  passwordMismatch: 'Hindi tugma ang mga password.',
+  passwordResetSuccessTitle: 'Na-update ang password',
+  passwordResetSuccessDetail:
+    'Matagumpay na napalitan ang iyong password. Maaari ka nang mag-sign in gamit ang iyong bagong password.',
+  passwordResetFailed: 'Hindi ma-reset ang password. Humiling muli ng bagong reset link.',
+  cancel: 'Kanselahin',
+  done: 'Tapos na',
 
   // auth errors
   authErrorInvalidCredentials: 'Mali ang inilagay na email o password.',

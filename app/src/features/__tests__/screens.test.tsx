@@ -13,6 +13,10 @@ import { MonitoringScreen } from '../monitoring/MonitoringScreen';
 import { ResultScreen } from '../result/ResultScreen';
 import { SettingsScreen } from '../settings/SettingsScreen';
 import { VarietyInfoScreen } from '../varietyInfo/VarietyInfoScreen';
+import { ResetPasswordScreen } from '../account/ResetPasswordScreen';
+import { routeTitle, RouteBody } from '../../navigation/render/routes';
+import { makeShell } from '../../testing/shellFixture';
+import { strings } from '../../ui/i18n/strings';
 import * as preview from '../../preview/previewContent';
 
 function render(element: React.ReactElement): ReactTestRenderer {
@@ -400,4 +404,147 @@ test('the navigator mounts on the home tab', () => {
   expect(content).toContain('PrutasAI');
   expect(content).toContain('Scan a fruit');
   expect(content).toContain('Home');
+});
+
+test('ResetPasswordScreen renders inputs and cancel button', () => {
+  const tree = render(
+    <ResetPasswordScreen
+      busy={false}
+      error={null}
+      onSubmitNewPassword={async () => ({ ok: true })}
+      onCancel={noop}
+      onDone={noop}
+    />,
+  );
+  const content = texts(tree);
+  expect(content).toContain('Reset password');
+  expect(content).toContain('New password');
+  expect(content).toContain('Confirm password');
+  expect(content).toContain('Set new password');
+  expect(content).toContain('Cancel');
+});
+
+test('ResetPasswordScreen validates weak password and does not submit', async () => {
+  const onSubmit = jest.fn(async () => ({ ok: true }));
+  const tree = render(
+    <ResetPasswordScreen
+      busy={false}
+      error={null}
+      onSubmitNewPassword={onSubmit}
+    />,
+  );
+  const newPassInput = tree.root.find(n => n.props.accessibilityLabel === 'New password');
+  const confirmInput = tree.root.find(n => n.props.accessibilityLabel === 'Confirm password');
+  const submitBtn = tree.root.find(n => n.props.label === 'Set new password');
+
+  act(() => {
+    newPassInput.props.onChangeText('123');
+    confirmInput.props.onChangeText('123');
+  });
+  await act(async () => {
+    submitBtn.props.onPress();
+  });
+
+  expect(onSubmit).not.toHaveBeenCalled();
+  const content = texts(tree);
+  expect(content).toContain('Password is too weak');
+});
+
+test('ResetPasswordScreen validates password mismatch and does not submit', async () => {
+  const onSubmit = jest.fn(async () => ({ ok: true }));
+  const tree = render(
+    <ResetPasswordScreen
+      busy={false}
+      error={null}
+      onSubmitNewPassword={onSubmit}
+    />,
+  );
+  const newPassInput = tree.root.find(n => n.props.accessibilityLabel === 'New password');
+  const confirmInput = tree.root.find(n => n.props.accessibilityLabel === 'Confirm password');
+  const submitBtn = tree.root.find(n => n.props.label === 'Set new password');
+
+  act(() => {
+    newPassInput.props.onChangeText('password123');
+    confirmInput.props.onChangeText('password999');
+  });
+  await act(async () => {
+    submitBtn.props.onPress();
+  });
+
+  expect(onSubmit).not.toHaveBeenCalled();
+  const content = texts(tree);
+  expect(content).toContain('Passwords do not match');
+});
+
+test('ResetPasswordScreen does not claim success when update fails', async () => {
+  const onSubmit = jest.fn(async () => ({ ok: false, errorKey: 'service_unavailable' }));
+  const tree = render(
+    <ResetPasswordScreen
+      busy={false}
+      error={null}
+      onSubmitNewPassword={onSubmit}
+    />,
+  );
+  const newPassInput = tree.root.find(n => n.props.accessibilityLabel === 'New password');
+  const confirmInput = tree.root.find(n => n.props.accessibilityLabel === 'Confirm password');
+  const submitBtn = tree.root.find(n => n.props.label === 'Set new password');
+
+  act(() => {
+    newPassInput.props.onChangeText('valid-password');
+    confirmInput.props.onChangeText('valid-password');
+  });
+  await act(async () => {
+    await submitBtn.props.onPress();
+  });
+
+  expect(onSubmit).toHaveBeenCalledWith('valid-password');
+  const content = texts(tree);
+  expect(content).not.toContain('Password updated');
+});
+
+test('ResetPasswordScreen displays completion UI only after provider accepts update', async () => {
+  const onSubmit = jest.fn(async () => ({ ok: true }));
+  const onDone = jest.fn();
+  const tree = render(
+    <ResetPasswordScreen
+      busy={false}
+      error={null}
+      onSubmitNewPassword={onSubmit}
+      onDone={onDone}
+    />,
+  );
+  const newPassInput = tree.root.find(n => n.props.accessibilityLabel === 'New password');
+  const confirmInput = tree.root.find(n => n.props.accessibilityLabel === 'Confirm password');
+  const submitBtn = tree.root.find(n => n.props.label === 'Set new password');
+
+  act(() => {
+    newPassInput.props.onChangeText('valid-password');
+    confirmInput.props.onChangeText('valid-password');
+  });
+  await act(async () => {
+    await submitBtn.props.onPress();
+  });
+
+  expect(onSubmit).toHaveBeenCalledWith('valid-password');
+  const content = texts(tree);
+  expect(content).toContain('Password updated');
+  expect(content).toContain('Done');
+
+  const doneBtn = tree.root.find(n => n.props.label === 'Done');
+  act(() => {
+    doneBtn.props.onPress();
+  });
+  expect(onDone).toHaveBeenCalledTimes(1);
+});
+
+test('routeTitle returns bilingual titles for resetPassword route', () => {
+  expect(routeTitle({ name: 'resetPassword' }, strings('EN'), [])).toBe('Reset password');
+  expect(routeTitle({ name: 'resetPassword' }, strings('FIL'), [])).toBe('I-reset ang password');
+});
+
+test('RouteBody renders ResetPasswordScreen for resetPassword route', () => {
+  const shell = makeShell();
+  const tree = render(<RouteBody shell={shell} route={{ name: 'resetPassword' }} />);
+  const content = texts(tree);
+  expect(content).toContain('Set new password');
 });
