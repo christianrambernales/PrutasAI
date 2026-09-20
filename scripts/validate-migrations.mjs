@@ -76,8 +76,24 @@ function stripSqlComments(sql) {
     }
 
     if (character === '/' && nextCharacter === '*') {
-      const commentEnd = sql.indexOf('*/', index + 2);
-      index = commentEnd === -1 ? sql.length : commentEnd + 2;
+      let depth = 1;
+      index += 2;
+
+      // PostgreSQL permits nested block comments. Continue until the matching
+      // outer terminator so comment text cannot split a protected routine
+      // identifier and hide an unsafe GRANT from the normalized parser.
+      while (index < sql.length && depth > 0) {
+        if (sql[index] === '/' && sql[index + 1] === '*') {
+          depth += 1;
+          index += 2;
+        } else if (sql[index] === '*' && sql[index + 1] === '/') {
+          depth -= 1;
+          index += 2;
+        } else {
+          index += 1;
+        }
+      }
+
       result += ' ';
       continue;
     }

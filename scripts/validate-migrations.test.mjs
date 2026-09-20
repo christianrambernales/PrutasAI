@@ -92,6 +92,8 @@ const directGrantForms = [
   ['comment after schema dot', ({ functionName, parameters }) => `public . /* verifier */ ${functionName}${parameters}`],
   ['comment before signature', ({ functionName, parameters }) => `public.${functionName} /* verifier */ ${parameters}`],
   ['comments around schema, name, and signature', ({ functionName, parameters }) => `public /* schema */ . /* name */ ${functionName} /* signature */ ${parameters}`],
+  ['nested block comments around schema, dot, name, and signature', ({ functionName, parameters }) =>
+    `public/* outer /* schema */ outer */./* outer /* dot */ outer */${functionName}/* outer /* signature */ outer */${parameters}`],
 ];
 
 const unsafeRoleForms = [
