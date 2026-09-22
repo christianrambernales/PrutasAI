@@ -55,7 +55,7 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 2. A signed-in QA identity can sync and restore only its own eligible records; unauthorized and offline failures preserve local data.
 3. Migration order, grants, RLS policies, service-role boundaries, and QA evidence are documented.
 
-**Plans:** 7/7 plans complete
+**Plans:** 7/8 plans complete
 - [x] 03-01-PLAN.md — Implement confirmation-aware authentication, safe bilingual errors, session restore, and non-destructive sign-out.
 - [x] 03-02-PLAN.md — Complete neutral password recovery with secure Android/web deep-link handling and password update UI.
 - [x] 03-03-PLAN.md — Add and register local SQLite account partitioning plus explicit sync/retry state repositories.
@@ -63,6 +63,9 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 - [x] 03-05-PLAN.md — Implement privacy-safe owner-scoped drains, deterministic restore, needs-attention routing, and real retry scheduling.
 - [x] 03-06-PLAN.md — Add the remote sync-contract migration and atomic service-role ownership enforcement with adversarial tests.
 - [x] 03-07-PLAN.md — Document and record migration rehearsal, two-account QA, and evidence-scope protocols without mutating QA.
+- [ ] 03-08-PLAN.md — Perform only explicitly authorized disposable/restored migration rehearsal and authenticated Account A/B/anonymous PostgREST plus API QA closure; no summary exists until direct evidence is captured.
+
+**Closure status:** **Remediation required.** The local 0007 source contract now revokes direct PUBLIC/anon/authenticated execution of the owner-bound SECURITY DEFINER RPCs and grants only `service_role`; local grant regression and focused ownership checks pass. This is not remote proof: disposable migration rehearsal is **Blocked** and authenticated two-account/anonymous PostgREST plus API QA is **Not tested**. Phase 4 remains blocked until that authorized evidence exists.
 
 ### Phase 4: Complete Product Flows
 **Goal:** Finish navigation and the complete offline, future-diagnostic, and cloud-assisted product journeys.
@@ -72,6 +75,21 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 2. Capture without models produces a truthful result, saves locally, appears in history, and supports monitoring.
 3. Conversations support continuation, rename, recovery, and permanent deletion according to documented retention behavior.
 4. Loading, empty, unavailable, offline, and error states are visible and actionable throughout the flows.
+
+**Plans:** 13 plans
+- [ ] 04-12-PLAN.md — Fail closed unless separate Phase 3 evidence and closure artifacts establish every D-17 prerequisite.
+- [ ] 04-01-PLAN.md — Prove persisted onboarding entry and deterministic Back navigation through TDD.
+- [ ] 04-02-PLAN.md — Furnish bilingual onboarding, Phase 4 copy, and the Home journey launcher.
+- [ ] 04-03-PLAN.md — Add non-destructive post-onboarding offline/account mode changes.
+- [ ] 04-04-PLAN.md — Add the durable scoped local monitoring migration and repository through TDD.
+- [ ] 04-05-PLAN.md — Derive the observation-only Day 1/5/10 timeline through TDD.
+- [ ] 04-06-PLAN.md — Make camera, gallery, and checkpoint capture target-aware and recoverable through TDD.
+- [ ] 04-07-PLAN.md — Complete truthful no-model result and History reopen flows with the persisted monitoring handoff.
+- [ ] 04-08-PLAN.md — Complete blank-first Chat entry and visible saved-conversation discovery.
+- [ ] 04-13-PLAN.md — Complete the scoped Day 1/5/10 monitoring controller, photo lifecycle, routing, and observation UI.
+- [ ] 04-10-PLAN.md — Furnish the exhaustive current tab/detail route and five-state behavior matrix.
+- [ ] 04-11-PLAN.md — Complete offline conversation naming, Trash recovery, and confirmed permanent deletion.
+- [ ] 04-09-PLAN.md — Run the final scoped automated/runtime evidence gate across all 13 plans and preserve the Phase 3 evidence boundary.
 
 ### Phase 5: Assistant, Climate, and Safety
 **Goal:** Verify grounded guidance, climate evidence, and guarded assistant behavior across supported languages and failure states.

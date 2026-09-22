@@ -1,72 +1,89 @@
 draft_metadata:
-  project: PrutasAI
-  purpose: Source registry for disease-remedy research draft
   status: draft_only
-  retrieved_at: '2026-09-16'
-  production_merge_allowed: false
+  retrieved_at: '2026-09-20'
 sources:
 - id: PH_BAFS_MANGO_GAP_2025
-  title: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009
-  publisher: Department of Agriculture, Bureau of Agriculture and Fisheries Standards
+  authority: Department of Agriculture, Bureau of Agriculture and Fisheries Standards
+  title: Explanatory Manual for Good Agricultural Practices for Mango
   url: https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
-  retrieved_at: '2026-09-16'
-  sections:
-  - 'Annex II, printed pp. 110-112: Anthracnose, Scab, Sooty mold, Diplodia/stem-end rot'
-  - 'Section III, printed p. 54: post-harvest hot water treatments'
-  evidence_role: Primary Philippine government source for mango disease symptoms and management.
+  page_or_section: Annex II, PDF pp. 119-121; printed pp. 110-112
+  scope: Philippines; mango anthracnose, scab, sooty mold, Diplodia/stem-end rot, cultural and sanitation management
+  retrieved_at: '2026-09-20'
 - id: PH_BPI_PAPAYA_GUIDE
+  authority: Department of Agriculture, Bureau of Plant Industry
   title: Papaya Production Guide
-  publisher: Department of Agriculture, Bureau of Plant Industry
   url: https://library.buplant.da.gov.ph/images/1641884692Papaya%20%20Production%20Guide.pdf
-  retrieved_at: '2026-09-16'
-  sections:
-  - Important Insect Pests and Diseases > Phytophthora Rot
-  evidence_role: Primary Philippine government source for papaya Phytophthora rot symptoms and cultural control.
-- id: PH_PCAARRD_HIYEAST
+  page_or_section: Important Insect Pests and Diseases; Phytophthora Rot and Brown Spot sections
+  scope: Philippines; papaya disease symptoms and non-chemical controls
+  retrieved_at: '2026-09-20'
+- id: PH_PCAARRD_BANANA_HIYEAST
+  authority: DOST-PCAARRD
   title: BioCon agent HiYEAST controls postharvest diseases in crops
-  publisher: DOST-PCAARRD
   url: https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops
-  retrieved_at: '2026-09-16'
-  sections:
-  - HiYEAST Dh results and banana application instructions
-  evidence_role: Philippine research-agency evidence for banana anthracnose/crown rot and an experimental yeast biocontrol.
-    Source states further trials are needed and the product is not commercially available.
-- id: US_UH_BANANA_ROTS_PD54
-  title: Postharvest Rots of Banana, Plant Disease PD-54
-  publisher: University of Hawai‘i at Mānoa, College of Tropical Agriculture and Human Resources
-  url: https://www.ctahr.hawaii.edu/oc/freepubs/pdf/PD-54.pdf
-  retrieved_at: '2026-09-16'
-  sections:
-  - Primary symptoms
-  - Integrated management practices
-  evidence_role: Extension source used for banana anthracnose and crown-rot symptoms and non-chemical postharvest management
-    where Philippine symptom detail was limited.
-- id: PH_AGRIS_PAPAYA_ANTHRACNOSE_2021
-  title: Identification and characterization of Colletotrichum brevisporum and C. truncatum causing papaya anthracnose in
-    the Philippines
-  publisher: Journal of Plant Diseases and Protection record indexed by FAO AGRIS
+  page_or_section: Banana crown rot and anthracnose; experimental HiYEAST discussion
+  scope: Philippines; banana post-harvest anthracnose and crown rot. Experimental product is not commercially available.
+  retrieved_at: '2026-09-20'
+- id: PH_UPLB_PAPAYA_ANTHRACNOSE
+  authority: UPLB-linked Philippine research indexed by FAO AGRIS
+  title: Identification and characterization of Colletotrichum brevisporum and C. truncatum causing papaya anthracnose in the Philippines
   url: https://agris.fao.org/search/en/providers/122535/records/65df0a077c7033e84beca4fe
-  retrieved_at: '2026-09-16'
-  sections:
-  - Abstract
-  evidence_role: Peer-reviewed supporting evidence that papaya anthracnose occurs in the Philippines and description of lesions
-    in Philippine fruit samples.
-- id: US_UH_PAPAYA_ANTHRACNOSE
-  title: 'Papaya: Spots on Fruit, Anthracnose'
-  publisher: University of Hawai‘i at Mānoa, College of Tropical Agriculture and Human Resources
-  url: https://cms.ctahr.hawaii.edu/uhmgpd/Diagnose/Fruits/Papaya/Spots-on-fruit
-  retrieved_at: '2026-09-16'
-  sections:
-  - Anthracnose > Symptom
-  - Anthracnose > Control
-  evidence_role: Extension source for non-chemical anthracnose management and hot-water treatment.
-- id: US_UH_PAPAYA_POWDERY_MILDEW
-  title: 'Papaya: Powdery Spots on Fruit and Leaves'
-  publisher: University of Hawai‘i at Mānoa, College of Tropical Agriculture and Human Resources
-  url: https://cms.ctahr.hawaii.edu/uhmgpd/Diagnose/Fruits/Papaya/Powdery-spots-on-fruit-and-leaves
-  retrieved_at: '2026-09-16'
-  sections:
-  - Powdery Mildew > Symptom
-  - Powdery Mildew > Control
-  evidence_role: Non-Philippine extension source for papaya powdery mildew. Geographic transfer requires Philippine expert
-    review.
+  page_or_section: Abstract
+  scope: Philippines; confirms papaya anthracnose and fruit lesion characteristics
+  retrieved_at: '2026-09-20'
+- id: PH_PCAARRD_MANGO_PEST_DISEASE
+  authority: DOST-PCAARRD
+  title: Pinakamahusay na pamamaraan ng pangangasiwa sa mangga para sa mas mataas na kalidad at produksyon, isinusulong ng PCAARRD
+  url: https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/pinakamahusay-na-pamamaraan-ng-pangangasiwa-sa-mangga-para-sa-mas-mataas-na-kalidad-at-produksyon-isinusulong-ng-pcaarrd
+  page_or_section: Disease discussion
+  scope: Philippines; notes anthracnose, blossom blight, scab and stem-end rot in mango
+  retrieved_at: '2026-09-20'
+- id: PH_FPA_REGISTERED_PESTICIDES_2026_07
+  authority: Philippine Fertilizer and Pesticide Authority
+  title: Registered pesticide products as of July 31, 2026
+  url: https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+  page_or_section: Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483
+  scope: Official FPA registration evidence including product, crop, target, rate, PHI/re-entry where listed. Not treated as a complete product
+    label.
+  retrieved_at: '2026-09-20'
+- id: PH_FPA_REGISTRATION_RULE
+  authority: Philippine Fertilizer and Pesticide Authority
+  title: FPA Advisory No. 2024-001
+  url: https://fpa.da.gov.ph/advisory-1/
+  page_or_section: Registration warning and PD 1144 discussion
+  scope: Philippine regulatory requirement that pesticides be duly registered and used according to registered conditions
+  retrieved_at: '2026-09-20'
+- id: EXT_UH_BANANA_ROTS_PD54
+  authority: University of Hawai‘i CTAHR
+  title: Postharvest Rots of Banana, Plant Disease PD-54
+  url: https://www.ctahr.hawaii.edu/oc/freepubs/pdf/PD-54.pdf
+  page_or_section: Primary symptoms and integrated management practices
+  scope: Non-Philippine extension support for banana anthracnose and crown rot; requires Philippine expert confirmation
+  retrieved_at: '2026-09-20'
+- id: EXT_UOG_BANANA_RUST
+  authority: University of Guam
+  title: Diseases of cultivated crops in Pacific Island countries
+  url: https://www.uog.edu/_resources/files/extension/publications/Pacific_Islands_Diseases_1997.pdf
+  page_or_section: Banana, Uredo musae, Rust
+  scope: Non-Philippine Pacific extension support for banana leaf rust symptoms; requires Philippine expert confirmation
+  retrieved_at: '2026-09-20'
+- id: EXT_UF_PAPAYA_DISEASES
+  authority: University of Florida IFAS Extension
+  title: Papaya Growing in the Florida Home Landscape
+  url: https://ask.ifas.ufl.edu/publication/MG054
+  page_or_section: 'Diseases: anthracnose, powdery mildew, Phytophthora blight'
+  scope: Non-Philippine extension support; requires Philippine expert confirmation
+  retrieved_at: '2026-09-20'
+- id: EXT_UF_MANGO_DISEASES
+  authority: University of Florida IFAS Extension
+  title: Mango Growing in the Florida Home Landscape
+  url: https://edis.ifas.ufl.edu/publication/mg216
+  page_or_section: 'Disease section: anthracnose, powdery mildew, scab'
+  scope: Non-Philippine extension support for mango powdery mildew symptoms and cultural context; requires Philippine expert confirmation
+  retrieved_at: '2026-09-20'
+- id: EXT_UCD_MANGO_POSTHARVEST
+  authority: UC Davis Postharvest Research and Extension Center
+  title: Mango
+  url: https://postharvest.ucdavis.edu/produce-facts-sheets/mango
+  page_or_section: Pathological disorders and control strategies
+  scope: Non-Philippine post-harvest supporting evidence; requires Philippine expert confirmation
+  retrieved_at: '2026-09-20'

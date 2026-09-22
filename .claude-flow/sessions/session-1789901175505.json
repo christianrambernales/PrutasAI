@@ -1,0 +1,21 @@
+{
+  "id": "session-1789901175505",
+  "startedAt": "2026-09-20T10:46:15.505Z",
+  "cwd": "C:\\Users\\chris\\OneDrive\\Documents\\PROG\\THESIS\\PrustasAI",
+  "context": {
+    "lastMatchedPatterns": [
+      "task-260920-9o6",
+      "insight-1789878216279-rv09"
+    ]
+  },
+  "metrics": {
+    "edits": 8,
+    "commands": 0,
+    "tasks": 0,
+    "errors": 0
+  },
+  "updatedAt": "2026-09-20T11:32:30.350Z",
+  "restoredAt": "2026-09-20T11:32:29.216Z",
+  "endedAt": "2026-09-20T14:31:51.144Z",
+  "duration": 13535639
+}

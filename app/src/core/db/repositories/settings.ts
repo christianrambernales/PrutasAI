@@ -1,5 +1,6 @@
 import type { SqlDriver } from '../driver';
 import type { AppState, Language, SavedLocation } from '../../../state/appState';
+import { normalizeCoarseLocation } from '../../geo/geocoding';
 
 export const SETTING_KEYS = {
   language: 'app_language',
@@ -75,11 +76,11 @@ export function loadSettings(driver: SqlDriver): Partial<AppState> {
         typeof parsed.latitude === 'number' &&
         typeof parsed.longitude === 'number'
       ) {
-        settings.savedLocation = {
+        settings.savedLocation = normalizeCoarseLocation({
           label: parsed.label,
           latitude: parsed.latitude,
           longitude: parsed.longitude,
-        };
+        });
       }
     } catch {
       // Ignore corrupt JSON
@@ -112,6 +113,15 @@ export function saveSetting(driver: SqlDriver, key: string, value: unknown): voi
   } else if (typeof value === 'boolean' || typeof value === 'number') {
     setSetting(driver, dbKey, String(value));
   } else if (typeof value === 'object') {
-    setSetting(driver, dbKey, JSON.stringify(value));
+    const stored = dbKey === SETTING_KEYS.savedLocation
+      && 'label' in value
+      && 'latitude' in value
+      && 'longitude' in value
+      && typeof value.label === 'string'
+      && typeof value.latitude === 'number'
+      && typeof value.longitude === 'number'
+      ? normalizeCoarseLocation(value as SavedLocation)
+      : value;
+    setSetting(driver, dbKey, JSON.stringify(stored));
   }
 }

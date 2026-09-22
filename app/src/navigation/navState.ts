@@ -6,13 +6,17 @@
 
 export type TabKey = 'home' | 'climate' | 'chat' | 'history';
 
+export type CaptureTarget = 
+  | { type: 'baseline' } 
+  | { type: 'checkpoint'; sessionId: string; dayNumber: 5 | 10 };
+
 export type Route =
-  | { name: 'capture' }
+  | { name: 'capture'; target?: CaptureTarget }
   /** A photo the user just took, before any pipeline has run on it. */
-  | { name: 'captureResult'; photoUri: string }
+  | { name: 'captureResult'; scanId: string; photoUri: string; view?: 'summary' | 'photo' }
   | { name: 'result'; scanId: string }
   | { name: 'varietyInfo'; fruitKey: string }
-  | { name: 'monitoring'; sessionId: string }
+  | { name: 'monitoring'; sessionId: string; dayNumber?: 5 | 10; stagedPhotoUri?: string }
   | { name: 'settings' }
   | { name: 'modelStatus' }
   | { name: 'locationPicker' }

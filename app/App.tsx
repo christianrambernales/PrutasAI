@@ -1,14 +1,15 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { prepareAppDatabase } from './src/core/db/appDatabase';
-import { AppText, COLORS, ErrorBoundary, SPACING, useT } from './src/ui';
+import type { SqlDriver } from './src/core/db/driver';
+import { AppText, Button, COLORS, ErrorBoundary, SPACING, strings, useT } from './src/ui';
 
 type Startup =
   | { status: 'opening' }
-  | { status: 'ready' }
+  | { status: 'ready'; driver: SqlDriver }
   | { status: 'failed'; detail: string }
   | { status: 'notIsolated' };
 
@@ -50,34 +51,37 @@ function browserBlocksDatabase(): boolean {
  */
 export default function App() {
   const [startup, setStartup] = useState<Startup>({ status: 'opening' });
+  const startupAttempt = useRef(0);
 
   const start = useCallback(() => {
+    const attempt = ++startupAttempt.current;
     if (browserBlocksDatabase()) {
       setStartup({ status: 'notIsolated' });
-      return () => {};
+      return;
     }
 
     setStartup({ status: 'opening' });
-    let cancelled = false;
     prepareAppDatabase().then(
-      () => !cancelled && setStartup({ status: 'ready' }),
+      driver => attempt === startupAttempt.current && setStartup({ status: 'ready', driver }),
       (error: unknown) =>
-        !cancelled &&
+        attempt === startupAttempt.current &&
         setStartup({ status: 'failed', detail: error instanceof Error ? error.message : String(error) }),
     );
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  useEffect(() => start(), [start]);
+  useEffect(() => {
+    start();
+    return () => {
+      startupAttempt.current += 1;
+    };
+  }, [start]);
 
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
       {startup.status === 'ready' ? (
         <ErrorBoundary>
-          <AppNavigator />
+          <AppNavigator db={startup.driver} />
         </ErrorBoundary>
       ) : (
         <Startup startup={startup} onRetry={start} />
@@ -95,6 +99,10 @@ export default function App() {
  */
 function Startup({ startup, onRetry }: { startup: Exclude<Startup, { status: 'ready' }>, onRetry: () => void }) {
   const t = useT();
+  const fil = strings('FIL');
+  const [showDetail, setShowDetail] = useState(false);
+
+  useEffect(() => setShowDetail(false), [startup.status]);
 
   return (
     <View
@@ -124,9 +132,10 @@ function Startup({ startup, onRetry }: { startup: Exclude<Startup, { status: 're
           <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
             {t.notIsolatedBody}
           </AppText>
-          <AppText variant="sm" color={COLORS.primary} center style={{ marginTop: SPACING.xl }} onPress={onRetry}>
-            {t.tryAgain}
+          <AppText variant="xs" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
+            {fil.notIsolatedTitle}
           </AppText>
+          <View style={{ marginTop: SPACING.xl }}><Button label={t.tryAgain} onPress={onRetry} /></View>
         </>
       ) : (
         <>
@@ -136,14 +145,22 @@ function Startup({ startup, onRetry }: { startup: Exclude<Startup, { status: 're
           <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
             {t.startupFailedBody}
           </AppText>
-          <AppText variant="sm" color={COLORS.primary} center style={{ marginTop: SPACING.xl }} onPress={onRetry}>
-            {t.tryAgain}
+          <AppText variant="xs" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
+            {fil.startupFailedTitle} — {fil.startupFailedBody}
           </AppText>
-          {/* The raw message. Unreadable to a grower, but it is the difference
-              between a bug report that can be acted on and "it went white". */}
-          <AppText variant="xs" color={COLORS.textLight} center style={{ marginTop: SPACING.lg }}>
-            {startup.detail}
-          </AppText>
+          <View style={{ marginTop: SPACING.xl }}><Button label={t.tryAgain} onPress={onRetry} /></View>
+          <View style={{ marginTop: SPACING.sm }}>
+            <Button
+              label={showDetail ? t.hideTechnicalDetails : t.showTechnicalDetails}
+              variant="secondary"
+              onPress={() => setShowDetail(value => !value)}
+            />
+          </View>
+          {showDetail ? (
+            <AppText variant="xs" color={COLORS.textLight} center style={{ marginTop: SPACING.lg }}>
+              {startup.detail}
+            </AppText>
+          ) : null}
         </>
       )}
     </View>

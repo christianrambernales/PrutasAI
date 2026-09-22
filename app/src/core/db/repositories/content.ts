@@ -190,6 +190,19 @@ function parseSourceCitation(citation: string): { citation: string; detail: stri
   return { citation: citation.trim(), detail: '' };
 }
 
+function linkedSource(row: {
+  source_citation: string | null;
+  source_retrieved_at: string | null;
+}): Source | null {
+  if (!row.source_citation) return null;
+  const { citation, detail } = parseSourceCitation(row.source_citation);
+  return {
+    citation,
+    detail,
+    retrievedLabel: row.source_retrieved_at ? `retrieved ${row.source_retrieved_at}` : '',
+  };
+}
+
 export function listSourcesByFruit(driver: SqlDriver): Record<string, Source[]> {
   const fruits = listFruits(driver);
   const sourcesByFruit: Record<string, Source[]> = {};
@@ -242,7 +255,13 @@ export function listAllDiseasesByFruit(driver: SqlDriver): Record<string, import
     name_fil: string;
     description_en: string | null;
     description_fil: string | null;
-  }>('SELECT key, fruit_key, name_en, name_fil, description_en, description_fil FROM disease ORDER BY key');
+    source_citation: string | null;
+    source_retrieved_at: string | null;
+  }>(`SELECT d.key, d.fruit_key, d.name_en, d.name_fil, d.description_en, d.description_fil,
+             s.citation AS source_citation, s.retrieved_at AS source_retrieved_at
+        FROM disease d
+        LEFT JOIN source s ON s.id = d.source_id
+       ORDER BY d.key`);
 
   const remedyRows = driver.all<{
     key: string;
@@ -252,7 +271,13 @@ export function listAllDiseasesByFruit(driver: SqlDriver): Record<string, import
     instruction_en: string | null;
     instruction_fil: string | null;
     is_prevention: number;
-  }>('SELECT key, disease_key, name_en, name_fil, instruction_en, instruction_fil, is_prevention FROM remedy ORDER BY is_prevention DESC, key');
+    source_citation: string | null;
+    source_retrieved_at: string | null;
+  }>(`SELECT r.key, r.disease_key, r.name_en, r.name_fil, r.instruction_en, r.instruction_fil,
+             r.is_prevention, s.citation AS source_citation, s.retrieved_at AS source_retrieved_at
+        FROM remedy r
+        LEFT JOIN source s ON s.id = r.source_id
+       ORDER BY r.is_prevention DESC, r.key`);
 
   const remediesByDisease: Record<string, import('../../../features/viewModels').RemedySummary[]> = {};
   for (const r of remedyRows) {
@@ -264,6 +289,7 @@ export function listAllDiseasesByFruit(driver: SqlDriver): Record<string, import
       instructionEn: r.instruction_en,
       instructionFil: r.instruction_fil,
       isPrevention: r.is_prevention === 1,
+      source: linkedSource(r),
     });
   }
 
@@ -276,6 +302,7 @@ export function listAllDiseasesByFruit(driver: SqlDriver): Record<string, import
       descriptionEn: d.description_en,
       descriptionFil: d.description_fil,
       remedies: remediesByDisease[d.key] ?? [],
+      source: linkedSource(d),
     });
   }
 
@@ -327,4 +354,3 @@ export function listRemediesByDisease(driver: SqlDriver, diseaseKey: string): Re
       sourceId: r.source_id,
     }));
 }
-

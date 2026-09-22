@@ -1,283 +1,607 @@
 # PrutasAI Disease–Remedy Review Packet
 
-Purpose: expert review of draft-only disease and management claims before any production use.
+All rows are pending review by a qualified Philippine agriculturist or plant pathologist.
 
-Decision choices for every item: Approval / Revision / Rejection
+Important: Day 1, Day 5, and Day 10 are visual monitoring checkpoints. They must not be used as pesticide reapplication timing.
 
-## R01. Mango — Anthracnose
+## R01. Papaya — Anthracnose — leaf and fruit
 
-Claim being proposed: Possible signs include irregular brown spots on young leaves, distorted mature leaves with shot-hole-like damage, blackening and withering of flowers, and brown-to-black sunken fruit spots. Maintain light penetration and air circulation, remove disease-source trash, and bag fruits using appropriate materials to reduce field infection. Prune after harvest to improve ventilation and reduce canopy humidity. Maintain tree vigor with appropriate cultural practices. For post-harvest handling, the BAFS manual describes hot-water treatment. The disease-specific annex directs newly harvested mangoes to hot-water treatment, while Section III gives treatment schedules for mango handling.
+Proposed claim: Possible indicators include water-soaked spots that enlarge, darken, and become sunken on maturing fruit. Philippine research confirms papaya anthracnose caused by Colletotrichum species. Leaf involvement is retained because it is in the project applicability matrix, but the reviewed Philippine source is strongest for fruit.
 
-Exact source and page/section: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 — Annex II, printed p. 110; Section III, printed p. 54
+Source IDs: PH_UPLB_PAPAYA_ANTHRACNOSE, EXT_UF_PAPAYA_DISEASES
+Source details:
+- PH_UPLB_PAPAYA_ANTHRACNOSE: Identification and characterization of Colletotrichum brevisporum and C. truncatum causing papaya anthracnose in the Philippines | Abstract | https://agris.fao.org/search/en/providers/122535/records/65df0a077c7033e84beca4fe
+- EXT_UF_PAPAYA_DISEASES: Papaya Growing in the Florida Home Landscape | Diseases: anthracnose, powdery mildew, Phytophthora blight | https://ask.ifas.ufl.edu/publication/MG054
 
-Why it applies to this fruit: The cited source explicitly names Mango and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: both
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan ang hindi regular na kayumangging batik sa murang dahon, pagkabaluktot ng matatandang dahon na may tila butas-butas na pinsala, pag-itim at pagkalanta ng bulaklak, at lubog na kayumanggi hanggang itim na batik sa bunga. Prevention/management: Panatilihin ang pagpasok ng liwanag at pagdaloy ng hangin, alisin ang basurang maaaring pagmulan ng sakit, at balutin ang bunga gamit ang angkop na materyal upang mabawasan ang impeksiyon sa bukid. Magputol ng sanga pagkatapos ng anihan upang mapabuti ang bentilasyon at mabawasan ang halumigmig sa loob ng puno. Panatilihin ang sigla ng puno sa pamamagitan ng angkop na gawaing pangkultura. Para sa paghawak pagkatapos anihin, inilalarawan ng manwal ng BAFS ang hot-water treatment. Itinuturo ng annex para sa sakit na isailalim ang bagong aning mangga sa hot-water treatment, habang nasa Section III ang mga iskedyul ng paggamot para sa paghawak ng mangga.
-
-Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
-
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
-____________________________________________________________________________
-
-## R02. Mango — Mango scab
-
-Claim being proposed: Possible signs on young developing fruit include grayish-brown spots with dark irregular margins. Enlarging spots may crack and form fissured corky tissue. Panicles and pedicels may also be affected. Use sanitation and pruning to improve light penetration and air circulation. Remove disease-source trash and bag fruits with appropriate materials. Prune after harvest to improve ventilation and reduce humidity inside the canopy.
-
-Exact source and page/section: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 — Annex II, printed p. 111
-
-Why it applies to this fruit: The cited source explicitly names Mango and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: field
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan sa murang nabubuong bunga ang abong-kayumangging batik na may madilim at hindi regular na gilid. Kapag lumaki ang batik, maaaring magbitak at maging tila cork ang tisyu. Maaari ring maapektuhan ang panicle at pedicel. Prevention/management: Gumamit ng sanitasyon at pruning upang mapabuti ang pagpasok ng liwanag at pagdaloy ng hangin. Alisin ang basurang maaaring pagmulan ng sakit at balutin ang bunga gamit ang angkop na materyal. Mag-prune pagkatapos ng anihan upang mapabuti ang bentilasyon at mabawasan ang halumigmig sa loob ng canopy.
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf and fruit
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Possible indicators include water-soaked spots that enlarge, darken, and become sunken on maturing fruit. Philippine research confirms papaya anthracnose caused by Colletotrichum species. Leaf involvement is retained because it is in the project applicability matrix, but the reviewed Philippine source is strongest for fruit.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## R03. Mango — Sooty mold
+## R02. Papaya — Powdery mildew — leaf
 
-Claim being proposed: Possible signs include a black, velvety covering on leaves and fruit associated with honeydew from leafhoppers, scales, or mealybugs. Manage honeydew-producing insects, bag clean fruits with appropriate materials, and practice pruning. Pruning is documented as part of management.
+Proposed claim: Possible indicators include superficial white powdery growth on leaves, pale yellow areas, and later dead areas that may create a shot-hole appearance. The symptom description is from non-Philippine extension evidence.
 
-Exact source and page/section: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 — Annex II, printed p. 112
+Source IDs: PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UF_PAPAYA_DISEASES
+Source details:
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+- EXT_UF_PAPAYA_DISEASES: Papaya Growing in the Florida Home Landscape | Diseases: anthracnose, powdery mildew, Phytophthora blight | https://ask.ifas.ufl.edu/publication/MG054
 
-Why it applies to this fruit: The cited source explicitly names Mango and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: field
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan ang maitim at mala-pelus na sapin sa dahon at bunga na kaugnay ng honeydew mula sa leafhopper, scale insect, o mealybug. Prevention/management: Kontrolin ang mga insektong naglalabas ng honeydew, balutin ang malilinis na bunga gamit ang angkop na materyal, at magsagawa ng pruning. Nakadokumento ang pruning bilang bahagi ng pamamahala.
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Possible indicators include superficial white powdery growth on leaves, pale yellow areas, and later dead areas that may create a shot-hole appearance. The symptom description is from non-Philippine extension evidence.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## R04. Mango — Diplodia stem-end rot
+## R03. Papaya — Rust — leaf
 
-Claim being proposed: Possible signs include dark lesions starting at the pedicel end after harvest, spreading toward the opposite end under warm, moist conditions. Affected tissue may become dark-brown to purplish black, watery, and malodorous. Remove and destroy primary disease sources such as dead twigs, bark, and other plant trash. Harvest fruit with about 1 to 2 cm of stalk attached. Sanitation and careful harvest handling are documented.
+Proposed claim: Unavailable. No authoritative crop-specific symptom source was verified in this research pass.
 
-Exact source and page/section: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 — Annex II, printed p. 112
+Source IDs: none verified
+Source details:
+- No authoritative crop-specific source verified in this research pass.
 
-Why it applies to this fruit: The cited source explicitly names Mango and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: both
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan ang madilim na sugat na nagsisimula sa dulo ng pedicel pagkatapos anihin at lumalawak patungo sa kabilang dulo sa mainit at mahalumigmig na kondisyon. Maaaring maging dark-brown hanggang purplish black, matubig, at mabaho ang apektadong tisyu. Prevention/management: Alisin at sirain ang pangunahing pinagmumulan ng sakit gaya ng patay na sanga, balat, at iba pang plant debris. Anihin ang bunga na may humigit-kumulang 1 hanggang 2 cm na tangkay na nakakabit. Nakadokumento ang sanitasyon at maingat na pag-aani.
+Why it applies to this fruit: The relationship is retained only because the user-specified project matrix requires it; evidence is still missing.
+Plant part: leaf
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Unavailable. No authoritative crop-specific symptom source was verified in this research pass.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## R05. Banana — Banana anthracnose
+## R04. Papaya — Scab — fruit
 
-Claim being proposed: Possible signs include black or brown sunken peel spots of varying size. Lesions may contain salmon-colored spore masses, and affected fruit may ripen prematurely. Use field sanitation, careful fruit handling to avoid bruises and wounds, clean packinghouse water and equipment, and appropriate cool handling after harvest. Remove dead and dying banana tissues that can harbor the pathogen. PCAARRD reported laboratory and pot results for HiYEAST Dh against banana anthracnose. The same source says the product was not commercially available and further packinghouse/production-area trials were needed. Treat this as experimental evidence only.
+Proposed claim: Unavailable. No authoritative crop-specific papaya scab source was verified in this research pass.
 
-Exact source and page/section: PCAARRD HiYEAST article; UH CTAHR Postharvest Rots of Banana — PCAARRD: HiYEAST Dh results; UH CTAHR PD-54: Primary symptoms and integrated management
+Source IDs: none verified
+Source details:
+- No authoritative crop-specific source verified in this research pass.
 
-Why it applies to this fruit: The cited source explicitly names Banana and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: postharvest
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan ang lubog na itim o kayumangging batik sa balat ng bunga na iba-iba ang laki. Maaaring magkaroon ng kulay-salmon na kumpol ng spores sa sugat at maaaring maagang mahinog ang apektadong bunga. Prevention/management: Panatilihin ang sanitasyon sa bukid, iwasang mabugbog o masugatan ang bunga, panatilihing malinis ang tubig at kagamitan sa packinghouse, at gumamit ng angkop na malamig na paghawak pagkatapos anihin. Alisin ang patay at namamatay na tisyu ng saging na maaaring pamahayan ng pathogen. Iniulat ng PCAARRD ang laboratory at pot results ng HiYEAST Dh laban sa anthracnose ng saging. Sinasabi rin ng sanggunian na hindi pa ito commercially available at kailangan pa ng karagdagang packinghouse at production-area trials. Ituring lamang ito bilang experimental evidence.
+Why it applies to this fruit: The relationship is retained only because the user-specified project matrix requires it; evidence is still missing.
+Plant part: fruit
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Unavailable. No authoritative crop-specific papaya scab source was verified in this research pass.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## R06. Banana — Crown rot
+## R05. Papaya — Blight — leaf
 
-Claim being proposed: Possible signs include brown-to-black discoloration on the cut crown surface, sometimes followed by whitish mold and deeper dry black rot into the crown and finger necks. Severely affected fingers may detach. Use field sanitation, clean packinghouse water and equipment, careful de-handing and fruit handling, and appropriate cool handling after harvest. Remove dead plant tissues and packinghouse debris that can serve as pathogen sources. PCAARRD reported laboratory and pot results for HiYEAST Dh against banana crown rot. The source states that the product was not commercially available and further trials were needed.
+Proposed claim: The broad term is unresolved. The BPI guide documents Phytophthora rot with root, wilt, trunk-canker, and fruit-rot signs, while non-Philippine extension material uses the term Phytophthora blight for several diseases. This does not establish a leaf-only Philippine 'blight' entity.
 
-Exact source and page/section: PCAARRD HiYEAST article; UH CTAHR Postharvest Rots of Banana — PCAARRD: HiYEAST Dh results; UH CTAHR PD-54: Crown rot symptoms and integrated management
+Source IDs: PH_BPI_PAPAYA_GUIDE, EXT_UF_PAPAYA_DISEASES
+Source details:
+- PH_BPI_PAPAYA_GUIDE: Papaya Production Guide | Important Insect Pests and Diseases; Phytophthora Rot and Brown Spot sections | https://library.buplant.da.gov.ph/images/1641884692Papaya%20%20Production%20Guide.pdf
+- EXT_UF_PAPAYA_DISEASES: Papaya Growing in the Florida Home Landscape | Diseases: anthracnose, powdery mildew, Phytophthora blight | https://ask.ifas.ufl.edu/publication/MG054
 
-Why it applies to this fruit: The cited source explicitly names Banana and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: postharvest
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan ang kayumanggi hanggang itim na pagkulay sa pinutol na crown surface, na maaaring sundan ng maputing amag at mas malalim na tuyong itim na pagkabulok sa crown at leeg ng mga daliri ng saging. Maaaring matanggal ang mga daliri kapag malala ang pinsala. Prevention/management: Panatilihin ang sanitasyon sa bukid, malinis na tubig at kagamitan sa packinghouse, maingat na de-handing at paghawak ng bunga, at angkop na malamig na paghawak pagkatapos anihin. Alisin ang patay na plant tissue at debris sa packinghouse na maaaring pagmulan ng pathogen. Iniulat ng PCAARRD ang laboratory at pot results ng HiYEAST Dh laban sa crown rot ng saging. Sinasabi ng sanggunian na hindi pa commercially available ang produkto at kailangan pa ng karagdagang trials.
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: The broad term is unresolved. The BPI guide documents Phytophthora rot with root, wilt, trunk-canker, and fruit-rot signs, while non-Philippine extension material uses the term Phytophthora blight for several diseases. This does not establish a leaf-only Philippine 'blight' entity.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## R07. Papaya — Papaya anthracnose
+## R06. Papaya — Mold — fruit
 
-Claim being proposed: Philippine fruit samples were reported with brown-to-black, sunken, water-soaked lesions. Extension guidance also describes sunken fruit spots. Improve aeration, remove diseased fruits and plant parts, and harvest ripe fruit promptly. Humidity management and removal of infected material are documented in extension guidance. A University of Hawai‘i extension page describes immersing ripe fruit in 118°F water for 20 minutes. This non-Philippine treatment requires local expert review before any farmer-facing use.
+Proposed claim: Awareness only. 'Mold' is not treated as a confirmed disease identity. Look for visible fungal growth, spreading discoloration, softening, or decay and seek confirmation of the specific cause.
 
-Exact source and page/section: Philippine papaya anthracnose study indexed by FAO AGRIS; UH papaya anthracnose extension page — AGRIS abstract; UH page: Anthracnose > Symptom/Control
+Source IDs: none verified
+Source details:
+- No authoritative crop-specific source verified in this research pass.
 
-Why it applies to this fruit: The cited source explicitly names Papaya and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: both
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Sa mga sample ng bunga mula sa Pilipinas, naiulat ang lubog, water-soaked, kayumanggi hanggang itim na lesions. Inilalarawan din ng extension guidance ang lubog na batik sa bunga. Prevention/management: Pagbutihin ang daloy ng hangin, alisin ang may sakit na bunga at bahagi ng halaman, at anihin agad ang hinog na bunga. Nakadokumento sa extension guidance ang pamamahala ng halumigmig at pag-alis ng infected material. Inilalarawan ng University of Hawai‘i extension page ang paglubog ng hinog na bunga sa 118°F na tubig sa loob ng 20 minuto. Kailangan ng lokal na expert review bago ito gamitin sa farmer-facing guidance.
+Why it applies to this fruit: The relationship is retained only because the user-specified project matrix requires it; evidence is still missing.
+Plant part: fruit
+Awareness-only: yes
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Awareness only. 'Mold' is not treated as a confirmed disease identity. Look for visible fungal growth, spreading discoloration, softening, or decay and seek confirmation of the specific cause.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## R08. Papaya — Papaya powdery mildew
+## R07. Papaya — Rot — fruit
 
-Claim being proposed: Possible signs include powdery patches on the underside of leaves and powdery spots on immature fruit that may later leave gray scars or deform the fruit. Improve aeration between plants and remove and destroy heavily mildewed leaves. The extension source also suggests humidity management, including lower-rainfall growing conditions where applicable.
+Proposed claim: Awareness only. BPI documents Phytophthora rot, including fruit rot, with initially water-soaked affected areas that may later develop cottony surface growth and spores.
 
-Exact source and page/section: Papaya: Powdery Spots on Fruit and Leaves — Powdery Mildew > Symptom/Control
+Source IDs: PH_BPI_PAPAYA_GUIDE
+Source details:
+- PH_BPI_PAPAYA_GUIDE: Papaya Production Guide | Important Insect Pests and Diseases; Phytophthora Rot and Brown Spot sections | https://library.buplant.da.gov.ph/images/1641884692Papaya%20%20Production%20Guide.pdf
 
-Why it applies to this fruit: The cited source explicitly names Papaya and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: field
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan ang pulbos na patches sa ilalim ng dahon at pulbos na batik sa murang bunga na maaaring mag-iwan ng abong peklat o magdulot ng deformity habang lumalaki. Prevention/management: Pagbutihin ang daloy ng hangin sa pagitan ng mga halaman at alisin at sirain ang mga dahong malubhang may powdery mildew. Iminumungkahi rin ng extension source ang pamamahala ng halumigmig, kabilang ang mas mababang ulan na growing conditions kung naaangkop.
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: fruit
+Awareness-only: yes
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Awareness only. BPI documents Phytophthora rot, including fruit rot, with initially water-soaked affected areas that may later develop cottony surface growth and spores.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## R09. Papaya — Phytophthora rot
+## R08. Banana — Anthracnose — leaf and fruit
 
-Claim being proposed: Possible signs include root rot, wilt, trunk canker, and fruit rot. Affected areas may begin water-soaked and later develop cottony growth and spores on the surface. Do not replant in areas where the disease previously occurred. Remove and destroy fallen trunks and fruits. Maintain good field drainage. Good drainage and removal of infected fallen material are documented.
+Proposed claim: Philippine evidence supports banana anthracnose as a post-harvest fruit disease. Possible fruit signs include brown to black sunken peel spots. Leaf applicability remains in the project matrix but was not verified from the reviewed Philippine sources.
 
-Exact source and page/section: Papaya Production Guide — Important Insect Pests and Diseases > Phytophthora Rot
+Source IDs: PH_PCAARRD_BANANA_HIYEAST, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UH_BANANA_ROTS_PD54
+Source details:
+- PH_PCAARRD_BANANA_HIYEAST: BioCon agent HiYEAST controls postharvest diseases in crops | Banana crown rot and anthracnose; experimental HiYEAST discussion | https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+- EXT_UH_BANANA_ROTS_PD54: Postharvest Rots of Banana, Plant Disease PD-54 | Primary symptoms and integrated management practices | https://www.ctahr.hawaii.edu/oc/freepubs/pdf/PD-54.pdf
 
-Why it applies to this fruit: The cited source explicitly names Papaya and the specific disease/condition represented by this row. No cross-crop inference was used.
-
-Field or post-harvest: field
-
-Pesticide label support: No pesticide product claim is proposed. Product-specific Philippine label details were not verified for this row.
-
-Proposed Filipino translation: Symptoms: Kabilang sa mga posibleng palatandaan ang root rot, pagkalanta, canker sa puno, at fruit rot. Maaaring magsimula bilang water-soaked ang apektadong bahagi at kalaunan ay magkaroon ng cottony growth at spores sa ibabaw. Prevention/management: Huwag muling magtanim sa lugar na dati nang nagkaroon ng sakit. Alisin at sirain ang mga bumagsak na puno at bunga. Panatilihin ang maayos na drainage sa bukid. Nakadokumento ang maayos na drainage at pag-alis ng infected na bumagsak na materyal.
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf and fruit
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Philippine evidence supports banana anthracnose as a post-harvest fruit disease. Possible fruit signs include brown to black sunken peel spots. Leaf applicability remains in the project matrix but was not verified from the reviewed Philippine sources.
 
 Questions for reviewer:
-1. Does the disease relationship apply under Philippine production conditions and the varieties expected in PrutasAI?
-2. Are the symptom phrases specific enough for decision support without implying diagnosis?
-3. Are the non-chemical management claims technically correct and complete?
-4. Does the Filipino translation preserve uncertainty, scope, units, and restrictions?
-5. Should any claim be narrowed by variety, growth stage, field/post-harvest stage, or region?
-6. Is any omitted regulatory or pesticide-label evidence required before production use?
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-Reviewer decision: [ ] Approval  [ ] Revision  [ ] Rejection
-
-Reviewer comments:
-
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
 ____________________________________________________________________________
 
-## Draft summary
+## R09. Banana — Rust — leaf
 
-Supported fruit–disease relationships: 8
-Partially supported relationships: 1
-Unresolved terms: 5
-Insufficient-evidence relationships: 7
-Draft disease/remedy YAML rows: 9
-Pesticide product claims: 0
-Pesticide dosage claims: 0
-All draft rows require expert review: 9
+Proposed claim: The current FPA list contains banana 'rust' among target diseases for several chlorothalonil products. A non-Philippine Pacific extension source describes Uredo musae rust as pustules on both leaf surfaces, usually more numerous below, sometimes with short dark streaks.
 
-Sources used:
-- PH_BAFS_MANGO_GAP_2025: Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 — https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
-- PH_BPI_PAPAYA_GUIDE: Papaya Production Guide — https://library.buplant.da.gov.ph/images/1641884692Papaya%20%20Production%20Guide.pdf
-- PH_PCAARRD_HIYEAST: BioCon agent HiYEAST controls postharvest diseases in crops — https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops
-- US_UH_BANANA_ROTS_PD54: Postharvest Rots of Banana, Plant Disease PD-54 — https://www.ctahr.hawaii.edu/oc/freepubs/pdf/PD-54.pdf
-- PH_AGRIS_PAPAYA_ANTHRACNOSE_2021: Identification and characterization of Colletotrichum brevisporum and C. truncatum causing papaya anthracnose in the Philippines — https://agris.fao.org/search/en/providers/122535/records/65df0a077c7033e84beca4fe
-- US_UH_PAPAYA_ANTHRACNOSE: Papaya: Spots on Fruit, Anthracnose — https://cms.ctahr.hawaii.edu/uhmgpd/Diagnose/Fruits/Papaya/Spots-on-fruit
-- US_UH_PAPAYA_POWDERY_MILDEW: Papaya: Powdery Spots on Fruit and Leaves — https://cms.ctahr.hawaii.edu/uhmgpd/Diagnose/Fruits/Papaya/Powdery-spots-on-fruit-and-leaves
+Source IDs: PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UOG_BANANA_RUST
+Source details:
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+- EXT_UOG_BANANA_RUST: Diseases of cultivated crops in Pacific Island countries | Banana, Uredo musae, Rust | https://www.uog.edu/_resources/files/extension/publications/Pacific_Islands_Diseases_1997.pdf
 
-Claims excluded due to insufficient evidence are listed in the evidence matrix and were not emitted into the draft YAML.
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: The current FPA list contains banana 'rust' among target diseases for several chlorothalonil products. A non-Philippine Pacific extension source describes Uredo musae rust as pustules on both leaf surfaces, usually more numerous below, sometimes with short dark streaks.
 
-The package is appropriate only as a draft research artifact. It is not suitable for direct farmer guidance or production knowledge ingestion before expert review and repository-schema validation.
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
 
-This is a source-backed draft for expert review. It is not an approved agricultural dataset and must not be treated as final farmer guidance until reviewed and approved by a qualified agriculture expert.
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R10. Banana — Blight — leaf
+
+Proposed claim: Unavailable. Blight is too broad and no specific Philippine banana leaf disease matching this project term was verified.
+
+Source IDs: none verified
+Source details:
+- No authoritative crop-specific source verified in this research pass.
+
+Why it applies to this fruit: The relationship is retained only because the user-specified project matrix requires it; evidence is still missing.
+Plant part: leaf
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Unavailable. Blight is too broad and no specific Philippine banana leaf disease matching this project term was verified.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R11. Banana — Mold — fruit
+
+Proposed claim: Awareness only. The FPA list includes fungal crown mold as a post-harvest condition of banana. Generic fruit mold should not be presented as a confirmed diagnosis.
+
+Source IDs: PH_FPA_REGISTERED_PESTICIDES_2026_07
+Source details:
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: fruit
+Awareness-only: yes
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Awareness only. The FPA list includes fungal crown mold as a post-harvest condition of banana. Generic fruit mold should not be presented as a confirmed diagnosis.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R12. Banana — Rot — fruit
+
+Proposed claim: Awareness only. Crown rot is a documented post-harvest banana condition. Possible signs include brown-to-black discoloration of the cut crown surface progressing into deeper decay.
+
+Source IDs: PH_PCAARRD_BANANA_HIYEAST, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UH_BANANA_ROTS_PD54
+Source details:
+- PH_PCAARRD_BANANA_HIYEAST: BioCon agent HiYEAST controls postharvest diseases in crops | Banana crown rot and anthracnose; experimental HiYEAST discussion | https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+- EXT_UH_BANANA_ROTS_PD54: Postharvest Rots of Banana, Plant Disease PD-54 | Primary symptoms and integrated management practices | https://www.ctahr.hawaii.edu/oc/freepubs/pdf/PD-54.pdf
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: fruit
+Awareness-only: yes
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Awareness only. Crown rot is a documented post-harvest banana condition. Possible signs include brown-to-black discoloration of the cut crown surface progressing into deeper decay.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R13. Mango — Anthracnose — leaf and fruit
+
+Proposed claim: Possible indicators include irregular brown spots on young leaves, distorted mature leaves with shot-hole-like damage, blackening and withering of flowers, and brown-to-black sunken fruit spots.
+
+Source IDs: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07
+Source details:
+- PH_BAFS_MANGO_GAP_2025: Explanatory Manual for Good Agricultural Practices for Mango | Annex II, PDF pp. 119-121; printed pp. 110-112 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf and fruit
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Possible indicators include irregular brown spots on young leaves, distorted mature leaves with shot-hole-like damage, blackening and withering of flowers, and brown-to-black sunken fruit spots.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R14. Mango — Powdery mildew — leaf
+
+Proposed claim: Possible indicators include whitish powdery fungal growth on leaves. Non-Philippine extension evidence also notes lesions along leaf midribs or undersides that can darken as leaves mature.
+
+Source IDs: PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UF_MANGO_DISEASES
+Source details:
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+- EXT_UF_MANGO_DISEASES: Mango Growing in the Florida Home Landscape | Disease section: anthracnose, powdery mildew, scab | https://edis.ifas.ufl.edu/publication/mg216
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Possible indicators include whitish powdery fungal growth on leaves. Non-Philippine extension evidence also notes lesions along leaf midribs or undersides that can darken as leaves mature.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R15. Mango — Scab — fruit
+
+Proposed claim: Possible signs on young fruit include grayish-brown spots with dark irregular margins. Enlarging spots may crack and form fissured corky tissue.
+
+Source IDs: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07
+Source details:
+- PH_BAFS_MANGO_GAP_2025: Explanatory Manual for Good Agricultural Practices for Mango | Annex II, PDF pp. 119-121; printed pp. 110-112 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: fruit
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Possible signs on young fruit include grayish-brown spots with dark irregular margins. Enlarging spots may crack and form fissured corky tissue.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R16. Mango — Blight — leaf
+
+Proposed claim: The term is unresolved for the required leaf-only scope. Philippine mango sources use 'blossom blight' in connection with anthracnose and inflorescences, not as a separate leaf-only disease entity.
+
+Source IDs: PH_BAFS_MANGO_GAP_2025, PH_PCAARRD_MANGO_PEST_DISEASE
+Source details:
+- PH_BAFS_MANGO_GAP_2025: Explanatory Manual for Good Agricultural Practices for Mango | Annex II, PDF pp. 119-121; printed pp. 110-112 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+- PH_PCAARRD_MANGO_PEST_DISEASE: Pinakamahusay na pamamaraan ng pangangasiwa sa mangga para sa mas mataas na kalidad at produksyon, isinusulong ng PCAARRD | Disease discussion | https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/pinakamahusay-na-pamamaraan-ng-pangangasiwa-sa-mangga-para-sa-mas-mataas-na-kalidad-at-produksyon-isinusulong-ng-pcaarrd
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: leaf
+Awareness-only: no
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: The term is unresolved for the required leaf-only scope. Philippine mango sources use 'blossom blight' in connection with anthracnose and inflorescences, not as a separate leaf-only disease entity.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R17. Mango — Mold — fruit
+
+Proposed claim: Awareness only. Philippine mango guidance defines sooty mold as a black velvety covering on fruit and leaves associated with honeydew-producing insects. Generic mold should not be treated as a confirmed disease.
+
+Source IDs: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07
+Source details:
+- PH_BAFS_MANGO_GAP_2025: Explanatory Manual for Good Agricultural Practices for Mango | Annex II, PDF pp. 119-121; printed pp. 110-112 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: fruit
+Awareness-only: yes
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Awareness only. Philippine mango guidance defines sooty mold as a black velvety covering on fruit and leaves associated with honeydew-producing insects. Generic mold should not be treated as a confirmed disease.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## R18. Mango — Rot — fruit
+
+Proposed claim: Awareness only. Philippine mango guidance documents Diplodia/stem-end rot with dark lesions beginning at the pedicel end after harvest and progressing into watery dark-brown to purplish-black decay.
+
+Source IDs: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UCD_MANGO_POSTHARVEST
+Source details:
+- PH_BAFS_MANGO_GAP_2025: Explanatory Manual for Good Agricultural Practices for Mango | Annex II, PDF pp. 119-121; printed pp. 110-112 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+- PH_FPA_REGISTERED_PESTICIDES_2026_07: Registered pesticide products as of July 31, 2026 | Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483 | https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+- EXT_UCD_MANGO_POSTHARVEST: Mango | Pathological disorders and control strategies | https://postharvest.ucdavis.edu/produce-facts-sheets/mango
+
+Why it applies to this fruit: The cited evidence names this crop and condition, subject to the uncertainty note.
+Plant part: fruit
+Awareness-only: yes
+Pesticide label support: No verified recommendation found.
+Proposed Filipino wording: Draft translation pending expert review: Awareness only. Philippine mango guidance documents Diplodia/stem-end rot with dark lesions beginning at the pedicel end after harvest and progressing into watery dark-brown to purplish-black decay.
+
+Questions for reviewer:
+1. Is this crop–disease relationship correct for Philippine production and the plant part shown?
+2. Is the disease term specific enough, or should it map to a named pathogen/condition?
+3. Are the symptoms sufficiently discriminating for decision support without implying diagnosis?
+4. Are the prevention, cultural, and sanitation steps correct for Philippine conditions and intended varieties?
+5. Do the Day 1, Day 5, and Day 10 observation fields avoid implying pesticide timing?
+6. Is the Filipino wording accurate, natural, and equally cautious?
+7. Should any FPA regulatory lead be promoted only after obtaining and reviewing the complete current label?
+
+Reviewer decision: [ ] approved  [ ] approved_with_revision  [ ] rejected
+Reviewer notes:
+____________________________________________________________________________
+
+## Pesticide regulatory lead review
+
+None of the following is a treatment recommendation. Each requires the complete Philippine label before promotion.
+
+### Papaya — Powdery mildew — BENOLATE 50 WP
+- FPA registration number: 457-167-2551
+- Status evidence: Listed in FPA July 31, 2026 registry; expiry shown 09-Aug-27
+- Registrant: Agribase Chemicals, Inc.
+- Target: Papaya / Powdery mildew
+- Registry rate: 1-2 Tbsp/16 L water
+- PHI: Not stated in the reviewed FPA registry row
+- REI: Within 24 hours after spraying, entry only with appropriate PPE, as stated in FPA registry
+- Missing before recommendation: complete label verification for method, interval, maximum applications, full PPE, mixing/compatibility, and all crop/weather/harvest restrictions.
+- Reviewer action: obtain current label, compare registration number/formulation, verify every required field, then approve/revise/reject.
+
+### Banana — Anthracnose — IVATOP 550 SC
+- FPA registration number: 088-107-4167
+- Status evidence: Listed in FPA July 31, 2026 registry; expiry shown 25-Oct-26
+- Registrant: International Veterinary & Agrochemical (IVA), Inc.
+- Target: Banana / Anthracnose, pitmark and smoky fruit
+- Registry rate: 1 mL/L of water
+- PHI: 14 days
+- REI: Re-entry allowed after spray deposit dries, per registry wording
+- Missing before recommendation: complete label verification for method, interval, maximum applications, full PPE, mixing/compatibility, and all crop/weather/harvest restrictions.
+- Reviewer action: obtain current label, compare registration number/formulation, verify every required field, then approve/revise/reject.
+
+### Banana — Rust — LEADER 500 SC
+- FPA registration number: 603-118-5342
+- Status evidence: Listed in FPA July 31, 2026 registry; expiry shown 13-Sep-27
+- Registrant: Golden Farmers Agri Product Corporation
+- Target: Banana / Sigatoka, rust, freckles, helminthosporium leaf spot
+- Registry rate: 2 L/ha
+- PHI: Registry row shows 7-14 days
+- REI: Do not enter treated areas until spray deposit has dried
+- Missing before recommendation: complete label verification for method, interval, maximum applications, full PPE, mixing/compatibility, and all crop/weather/harvest restrictions.
+- Reviewer action: obtain current label, compare registration number/formulation, verify every required field, then approve/revise/reject.
+
+### Banana — Mold / Rot awareness — RAZPRO 450 EW
+- FPA registration number: 667-300-5994
+- Status evidence: Listed in FPA July 31, 2026 registry; expiry shown 17-Jan-29
+- Registrant: Zhengbang Crop Protection (Philippine) Inc.
+- Target: Banana / Fungal crown mold and crown rot
+- Registry rate: 32 mL/16 L water
+- PHI: 0 day
+- REI: Not stated in reviewed registry row
+- Missing before recommendation: complete label verification for method, interval, maximum applications, full PPE, mixing/compatibility, and all crop/weather/harvest restrictions.
+- Reviewer action: obtain current label, compare registration number/formulation, verify every required field, then approve/revise/reject.
+
+### Mango — Anthracnose — STK REGEV
+- FPA registration number: 527-480-4399
+- Status evidence: Listed in FPA July 31, 2026 registry; expiry shown 20-Jun-28
+- Registrant: Stockton Agrimor Philippines Inc.
+- Target: Mango / Anthracnose, panicle/blossom blight and stem-end rot
+- Registry rate: 100-125 mL product/200 L water
+- PHI: 14 days
+- REI: As soon as foliage dries up
+- Missing before recommendation: complete label verification for method, interval, maximum applications, full PPE, mixing/compatibility, and all crop/weather/harvest restrictions.
+- Reviewer action: obtain current label, compare registration number/formulation, verify every required field, then approve/revise/reject.
+
+### Mango — Scab — AGNEWTEK DIFENOXTROBIN 325 SC
+- FPA registration number: 762-486-7528
+- Status evidence: Listed in FPA July 31, 2026 registry; expiry shown 10-Jul-29
+- Registrant: Agnewtek Philippines Corporation
+- Target: Mango / Scab, anthracnose, stem-end rot
+- Registry rate: 150-200 mL/200 L drum
+- PHI: 14 days
+- REI: Do not enter until spray deposits have dried unless protective clothing is worn
+- Missing before recommendation: complete label verification for method, interval, maximum applications, full PPE, mixing/compatibility, and all crop/weather/harvest restrictions.
+- Reviewer action: obtain current label, compare registration number/formulation, verify every required field, then approve/revise/reject.
+
+### Mango — Powdery mildew — BENOMEX 50 WP
+- FPA registration number: 702-167-5617
+- Status evidence: Listed in FPA July 31, 2026 registry; expiry shown 09-Aug-27
+- Registrant: Nexchem Corporation
+- Target: Mango / Anthracnose, powdery mildew
+- Registry rate: 1-2 Tbsp/16 L water
+- PHI: Not stated in reviewed registry row
+- REI: Within 24 hours after spraying, entry only with appropriate PPE, as stated in registry
+- Missing before recommendation: complete label verification for method, interval, maximum applications, full PPE, mixing/compatibility, and all crop/weather/harvest restrictions.
+- Reviewer action: obtain current label, compare registration number/formulation, verify every required field, then approve/revise/reject.
+
+## Summary
+
+| Metric | Count |
+|---|---:|
+| Total crop–disease relationships | 18 |
+| Relationships with verified pesticide recommendations | 0 |
+| Relationships with no verified pesticide recommendation | 18 |
+| Awareness-only relationships | 6 |
+| Partially supported relationships | 3 |
+| Unresolved relationships | 4 |
+| Number of dosage claims in recommendation rows | 0 |
+| Number of product-label citations | 0 |
+| Rows requiring agriculturist review | 18 |
+
+Supported relationships: 9
+Insufficient-evidence relationships: 2
+FPA regulatory leads retained for label follow-up: 7
+
+“This is a source-backed draft for expert review. It is not an approved agricultural dataset. Pesticide products, dosages, monitoring guidance, and translations must not be treated as final farmer guidance until reviewed and approved by a qualified Philippine agriculture expert.”

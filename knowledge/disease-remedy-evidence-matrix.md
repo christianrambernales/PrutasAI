@@ -1,61 +1,694 @@
 # PrutasAI Disease–Remedy Evidence Matrix
 
-Status: Draft research artifact for agriculture-expert review. No production knowledge files were modified.
+Status: draft-only. Production taxonomy, SQL, migrations, and application code were not modified.
 
-## Fruit–disease research matrix
+Day 1, Day 5, and Day 10 are app observation checkpoints only. They are not pesticide reapplication intervals.
 
-| fruit | disease_key | evidence_status | field_or_postharvest | research finding |
-|---|---|---|---|---|
-| Banana | anthracnose | supported | postharvest | PCAARRD confirms banana anthracnose as a post-harvest disease; UH extension supplies symptom/management detail. |
-| Banana | powdery_mildew | insufficient_evidence | unresolved | No authoritative crop-specific evidence was located in the reviewed Philippine priority sources. |
-| Banana | rust | insufficient_evidence | unresolved | No authoritative crop-specific evidence was located in the reviewed priority sources. |
-| Banana | scab | insufficient_evidence | unresolved | No authoritative banana scab relationship was located in the reviewed priority sources. |
-| Banana | blight | unresolved_term | unresolved | Blight is too broad; no specific banana disease matching this candidate term was adopted. |
-| Banana | mold | unresolved_term | postharvest | Mold may appear as a sign of crown rot, but the broad term was not treated as a disease relationship. |
-| Banana | rot | supported | postharvest | Crown rot is specifically documented as a banana post-harvest disease. |
-| Mango | anthracnose | supported | both | DA-BAFS documents field symptoms and a major post-harvest problem. |
-| Mango | powdery_mildew | insufficient_evidence | unresolved | No mango powdery mildew disease entry was found in the reviewed DA-BAFS mango disease annex. |
-| Mango | rust | insufficient_evidence | unresolved | No source-defined mango rust relationship was adopted from the reviewed priority sources. |
-| Mango | scab | supported | field | DA-BAFS specifically documents mango scab. |
-| Mango | blight | unresolved_term | field | DA-BAFS describes blossom blight as damage caused by anthracnose, not as a separate disease row. |
-| Mango | mold | supported | field | DA-BAFS specifically documents sooty mold; generic 'mold' remains too broad. |
-| Mango | rot | supported | both | DA-BAFS specifically documents Diplodia/stem-end rot. |
-| Papaya | anthracnose | supported | both | A Philippine peer-reviewed study confirms papaya anthracnose; extension evidence supplies management detail. |
-| Papaya | powdery_mildew | partially_supported | field | Non-Philippine university extension evidence supports the relationship; Philippine-specific confirmation remains pending. |
-| Papaya | rust | insufficient_evidence | unresolved | No authoritative crop-specific evidence was located in the reviewed priority sources. |
-| Papaya | scab | insufficient_evidence | unresolved | No authoritative crop-specific evidence was located in the reviewed priority sources. |
-| Papaya | blight | unresolved_term | unresolved | The broad term overlaps with Phytophthora disease terminology in non-Philippine sources; BPI source reviewed here defines Phytophthora rot. |
-| Papaya | mold | unresolved_term | unresolved | The generic term is too broad and was not adopted as a disease row. |
-| Papaya | rot | supported | field | BPI Papaya Production Guide specifically documents Phytophthora rot. |
+## Applicability matrix
 
-## Structured evidence table
+| Fruit | Disease key | Plant part | Awareness only | Evidence status | Pesticide recommendation | Source IDs |
+|---|---|---|---:|---|---|---|
+| Papaya | anthracnose | leaf and fruit | no | supported | No verified recommendation found. | PH_UPLB_PAPAYA_ANTHRACNOSE, EXT_UF_PAPAYA_DISEASES |
+| Papaya | powdery_mildew | leaf | no | partially_supported | No verified recommendation found. | PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UF_PAPAYA_DISEASES |
+| Papaya | rust | leaf | no | insufficient_evidence | No verified recommendation found. | none verified |
+| Papaya | scab | fruit | no | insufficient_evidence | No verified recommendation found. | none verified |
+| Papaya | blight | leaf | no | unresolved_term | No verified recommendation found. | PH_BPI_PAPAYA_GUIDE, EXT_UF_PAPAYA_DISEASES |
+| Papaya | mold | fruit | yes | unresolved_term | No verified recommendation found. | none verified |
+| Papaya | rot | fruit | yes | supported | No verified recommendation found. | PH_BPI_PAPAYA_GUIDE |
+| Banana | anthracnose | leaf and fruit | no | supported | No verified recommendation found. | PH_PCAARRD_BANANA_HIYEAST, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UH_BANANA_ROTS_PD54 |
+| Banana | rust | leaf | no | partially_supported | No verified recommendation found. | PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UOG_BANANA_RUST |
+| Banana | blight | leaf | no | unresolved_term | No verified recommendation found. | none verified |
+| Banana | mold | fruit | yes | supported | No verified recommendation found. | PH_FPA_REGISTERED_PESTICIDES_2026_07 |
+| Banana | rot | fruit | yes | supported | No verified recommendation found. | PH_PCAARRD_BANANA_HIYEAST, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UH_BANANA_ROTS_PD54 |
+| Mango | anthracnose | leaf and fruit | no | supported | No verified recommendation found. | PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07 |
+| Mango | powdery_mildew | leaf | no | partially_supported | No verified recommendation found. | PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UF_MANGO_DISEASES |
+| Mango | scab | fruit | no | supported | No verified recommendation found. | PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07 |
+| Mango | blight | leaf | no | unresolved_term | No verified recommendation found. | PH_BAFS_MANGO_GAP_2025, PH_PCAARRD_MANGO_PEST_DISEASE |
+| Mango | mold | fruit | yes | supported | No verified recommendation found. | PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07 |
+| Mango | rot | fruit | yes | supported | No verified recommendation found. | PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UCD_MANGO_POSTHARVEST |
 
-| fruit | variety | disease_key | disease_name_en | disease_name_fil | disease_scope | field_or_postharvest | symptoms_en | symptoms_fil | prevention_en | prevention_fil | cultural_management_en | cultural_management_fil | biological_or_mechanical_control_en | biological_or_mechanical_control_fil | pesticide_product | active_ingredient | pesticide_target_crop | pesticide_target_disease | dosage | concentration | application_interval | preharvest_interval | safety_restrictions_en | safety_restrictions_fil | uncertainty_note_en | uncertainty_note_fil | source_id | source_url | source_title | source_page_or_section | retrieved_at | evidence_status | expert_review_status | reviewer_notes |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Mango |  | anthracnose | Anthracnose | Anthracnose | Specific fungal disease documented for mango | both | Possible signs include irregular brown spots on young leaves, distorted mature leaves with shot-hole-like damage, blackening and withering of flowers, and brown-to-black sunken fruit spots. | Kabilang sa mga posibleng palatandaan ang hindi regular na kayumangging batik sa murang dahon, pagkabaluktot ng matatandang dahon na may tila butas-butas na pinsala, pag-itim at pagkalanta ng bulaklak, at lubog na kayumanggi hanggang itim na batik sa bunga. | Maintain light penetration and air circulation, remove disease-source trash, and bag fruits using appropriate materials to reduce field infection. | Panatilihin ang pagpasok ng liwanag at pagdaloy ng hangin, alisin ang basurang maaaring pagmulan ng sakit, at balutin ang bunga gamit ang angkop na materyal upang mabawasan ang impeksiyon sa bukid. | Prune after harvest to improve ventilation and reduce canopy humidity. Maintain tree vigor with appropriate cultural practices. | Magputol ng sanga pagkatapos ng anihan upang mapabuti ang bentilasyon at mabawasan ang halumigmig sa loob ng puno. Panatilihin ang sigla ng puno sa pamamagitan ng angkop na gawaing pangkultura. | For post-harvest handling, the BAFS manual describes hot-water treatment. The disease-specific annex directs newly harvested mangoes to hot-water treatment, while Section III gives treatment schedules for mango handling. | Para sa paghawak pagkatapos anihin, inilalarawan ng manwal ng BAFS ang hot-water treatment. Itinuturo ng annex para sa sakit na isailalim ang bagong aning mangga sa hot-water treatment, habang nasa Section III ang mga iskedyul ng paggamot para sa paghawak ng mangga. |  |  |  |  |  |  |  |  | No pesticide product, dose, interval, or PHI is included because the cited source refers only to registered fungicides and does not provide a product-specific label for this crop-disease pair. | Walang isinamang partikular na produktong pestisidyo, dosis, pagitan ng aplikasyon, o PHI dahil pangkalahatang 'registered fungicides' lamang ang tinutukoy ng sanggunian at walang label na tiyak sa crop-disease pair na ito. | These signs are decision-support indicators only. Similar fruit or flower lesions may have other causes. Seek confirmation from an agriculturist or plant pathologist. | Mga palatandaang pantulong sa pagpapasya lamang ang mga ito. Maaaring may ibang sanhi ang kahawig na pinsala sa bunga o bulaklak. Humingi ng kumpirmasyon mula sa agriculturist o plant pathologist. | PH_BAFS_MANGO_GAP_2025 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf | Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 | Annex II, printed p. 110; Section III, printed p. 54 | 2026-09-16 | supported | pending | Confirm Filipino wording and whether the hot-water handling text should be linked directly to anthracnose in production. |
-| Mango |  | scab | Mango scab | Scab ng mangga | Specific fungal disease documented for mango | field | Possible signs on young developing fruit include grayish-brown spots with dark irregular margins. Enlarging spots may crack and form fissured corky tissue. Panicles and pedicels may also be affected. | Kabilang sa mga posibleng palatandaan sa murang nabubuong bunga ang abong-kayumangging batik na may madilim at hindi regular na gilid. Kapag lumaki ang batik, maaaring magbitak at maging tila cork ang tisyu. Maaari ring maapektuhan ang panicle at pedicel. | Use sanitation and pruning to improve light penetration and air circulation. Remove disease-source trash and bag fruits with appropriate materials. | Gumamit ng sanitasyon at pruning upang mapabuti ang pagpasok ng liwanag at pagdaloy ng hangin. Alisin ang basurang maaaring pagmulan ng sakit at balutin ang bunga gamit ang angkop na materyal. | Prune after harvest to improve ventilation and reduce humidity inside the canopy. | Mag-prune pagkatapos ng anihan upang mapabuti ang bentilasyon at mabawasan ang halumigmig sa loob ng canopy. |  |  |  |  |  |  |  |  |  |  | The source mentions spraying registered fungicides in scab-prone areas at the young-fruit stage, but no product-specific label details are supplied here, so no pesticide entry is proposed. | Binabanggit ng sanggunian ang pag-spray ng rehistradong fungicide sa scab-prone na lugar habang bata pa ang bunga, ngunit walang product-specific label details, kaya walang pestisidyong inilalagay sa draft. | Seek confirmation because fruit surface injuries and other diseases may resemble scab. | Humingi ng kumpirmasyon dahil maaaring magmukhang scab ang pinsala sa balat ng bunga at ibang sakit. | PH_BAFS_MANGO_GAP_2025 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf | Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 | Annex II, printed p. 111 | 2026-09-16 | supported | pending | Confirm whether the Filipino disease name should remain 'scab' for farmer-facing text. |
-| Mango |  | mold | Sooty mold | Sooty mold | Specific condition under the broad candidate term 'mold' | field | Possible signs include a black, velvety covering on leaves and fruit associated with honeydew from leafhoppers, scales, or mealybugs. | Kabilang sa mga posibleng palatandaan ang maitim at mala-pelus na sapin sa dahon at bunga na kaugnay ng honeydew mula sa leafhopper, scale insect, o mealybug. | Manage honeydew-producing insects, bag clean fruits with appropriate materials, and practice pruning. | Kontrolin ang mga insektong naglalabas ng honeydew, balutin ang malilinis na bunga gamit ang angkop na materyal, at magsagawa ng pruning. | Pruning is documented as part of management. | Nakadokumento ang pruning bilang bahagi ng pamamahala. |  |  |  |  |  |  |  |  |  |  | No pesticide product is proposed. | Walang produktong pestisidyo na iminungkahi. | The generic label 'mold' should not be shown to users as a diagnosis. This row applies only to source-defined sooty mold. | Hindi dapat ipakita ang pangkalahatang salitang 'mold' bilang diagnosis. Ang row na ito ay para lamang sa sooty mold na malinaw na tinukoy ng sanggunian. | PH_BAFS_MANGO_GAP_2025 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf | Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 | Annex II, printed p. 112 | 2026-09-16 | supported | pending | Confirm taxonomy decision: keep stable key 'mold' but display the specific disease name 'Sooty mold'. |
-| Mango |  | rot | Diplodia stem-end rot | Diplodia stem-end rot | Specific disease under the broad candidate term 'rot' | both | Possible signs include dark lesions starting at the pedicel end after harvest, spreading toward the opposite end under warm, moist conditions. Affected tissue may become dark-brown to purplish black, watery, and malodorous. | Kabilang sa mga posibleng palatandaan ang madilim na sugat na nagsisimula sa dulo ng pedicel pagkatapos anihin at lumalawak patungo sa kabilang dulo sa mainit at mahalumigmig na kondisyon. Maaaring maging dark-brown hanggang purplish black, matubig, at mabaho ang apektadong tisyu. | Remove and destroy primary disease sources such as dead twigs, bark, and other plant trash. Harvest fruit with about 1 to 2 cm of stalk attached. | Alisin at sirain ang pangunahing pinagmumulan ng sakit gaya ng patay na sanga, balat, at iba pang plant debris. Anihin ang bunga na may humigit-kumulang 1 hanggang 2 cm na tangkay na nakakabit. | Sanitation and careful harvest handling are documented. | Nakadokumento ang sanitasyon at maingat na pag-aani. |  |  |  |  |  |  |  |  |  |  | No pesticide product is proposed. | Walang produktong pestisidyo na iminungkahi. | The generic term 'rot' is too broad. This row applies only to source-defined Diplodia/stem-end rot. | Masyadong malawak ang salitang 'rot'. Ang row na ito ay para lamang sa Diplodia/stem-end rot na malinaw na tinukoy ng sanggunian. | PH_BAFS_MANGO_GAP_2025 | https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf | Code of Good Agricultural Practices (GAP) for Mango, Explanatory Manual, PNS/BAFPS 45:2009 | Annex II, printed p. 112 | 2026-09-16 | supported | pending | Confirm pathogen naming and farmer-facing Filipino term. |
-| Banana |  | anthracnose | Banana anthracnose | Anthracnose ng saging | Specific post-harvest disease documented for banana | postharvest | Possible signs include black or brown sunken peel spots of varying size. Lesions may contain salmon-colored spore masses, and affected fruit may ripen prematurely. | Kabilang sa mga posibleng palatandaan ang lubog na itim o kayumangging batik sa balat ng bunga na iba-iba ang laki. Maaaring magkaroon ng kulay-salmon na kumpol ng spores sa sugat at maaaring maagang mahinog ang apektadong bunga. | Use field sanitation, careful fruit handling to avoid bruises and wounds, clean packinghouse water and equipment, and appropriate cool handling after harvest. | Panatilihin ang sanitasyon sa bukid, iwasang mabugbog o masugatan ang bunga, panatilihing malinis ang tubig at kagamitan sa packinghouse, at gumamit ng angkop na malamig na paghawak pagkatapos anihin. | Remove dead and dying banana tissues that can harbor the pathogen. | Alisin ang patay at namamatay na tisyu ng saging na maaaring pamahayan ng pathogen. | PCAARRD reported laboratory and pot results for HiYEAST Dh against banana anthracnose. The same source says the product was not commercially available and further packinghouse/production-area trials were needed. Treat this as experimental evidence only. | Iniulat ng PCAARRD ang laboratory at pot results ng HiYEAST Dh laban sa anthracnose ng saging. Sinasabi rin ng sanggunian na hindi pa ito commercially available at kailangan pa ng karagdagang packinghouse at production-area trials. Ituring lamang ito bilang experimental evidence. |  |  |  |  |  |  |  |  | Do not present HiYEAST as a currently available farmer treatment. No pesticide label claim is included. | Huwag ipakita ang HiYEAST bilang kasalukuyang available na lunas para sa magsasaka. Walang pesticide label claim na isinama. | These signs are not a diagnosis. Confirm with an agriculturist or plant pathologist, especially when crown rot or other post-harvest rots are also possible. | Hindi diagnosis ang mga palatandaang ito. Magpakumpirma sa agriculturist o plant pathologist, lalo na kung posible rin ang crown rot o ibang post-harvest rot. | PH_PCAARRD_HIYEAST, US_UH_BANANA_ROTS_PD54 | https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops | PCAARRD HiYEAST article; UH CTAHR Postharvest Rots of Banana | PCAARRD: HiYEAST Dh results; UH CTAHR PD-54: Primary symptoms and integrated management | 2026-09-16 | supported | pending | Confirm whether external-extension symptom wording is suitable for Philippine cultivars. Experimental HiYEAST text must remain clearly non-commercial. |
-| Banana |  | rot | Crown rot | Crown rot ng saging | Specific post-harvest disease under the broad candidate term 'rot' | postharvest | Possible signs include brown-to-black discoloration on the cut crown surface, sometimes followed by whitish mold and deeper dry black rot into the crown and finger necks. Severely affected fingers may detach. | Kabilang sa mga posibleng palatandaan ang kayumanggi hanggang itim na pagkulay sa pinutol na crown surface, na maaaring sundan ng maputing amag at mas malalim na tuyong itim na pagkabulok sa crown at leeg ng mga daliri ng saging. Maaaring matanggal ang mga daliri kapag malala ang pinsala. | Use field sanitation, clean packinghouse water and equipment, careful de-handing and fruit handling, and appropriate cool handling after harvest. | Panatilihin ang sanitasyon sa bukid, malinis na tubig at kagamitan sa packinghouse, maingat na de-handing at paghawak ng bunga, at angkop na malamig na paghawak pagkatapos anihin. | Remove dead plant tissues and packinghouse debris that can serve as pathogen sources. | Alisin ang patay na plant tissue at debris sa packinghouse na maaaring pagmulan ng pathogen. | PCAARRD reported laboratory and pot results for HiYEAST Dh against banana crown rot. The source states that the product was not commercially available and further trials were needed. | Iniulat ng PCAARRD ang laboratory at pot results ng HiYEAST Dh laban sa crown rot ng saging. Sinasabi ng sanggunian na hindi pa commercially available ang produkto at kailangan pa ng karagdagang trials. |  |  |  |  |  |  |  |  | No pesticide label claim is included. Do not convert the experimental HiYEAST instructions into farmer guidance without expert and regulatory review. | Walang pesticide label claim na isinama. Huwag gawing farmer guidance ang experimental HiYEAST instructions nang walang expert at regulatory review. | The candidate term 'rot' is broad. This row applies only to crown rot. | Malawak ang candidate term na 'rot'. Ang row na ito ay para lamang sa crown rot. | PH_PCAARRD_HIYEAST, US_UH_BANANA_ROTS_PD54 | https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops | PCAARRD HiYEAST article; UH CTAHR Postharvest Rots of Banana | PCAARRD: HiYEAST Dh results; UH CTAHR PD-54: Crown rot symptoms and integrated management | 2026-09-16 | supported | pending | Confirm whether crown rot should be represented as its own production taxonomy item rather than only under generic 'rot'. |
-| Papaya |  | anthracnose | Papaya anthracnose | Anthracnose ng papaya | Specific disease documented in Philippine papaya fruit and extension references | both | Philippine fruit samples were reported with brown-to-black, sunken, water-soaked lesions. Extension guidance also describes sunken fruit spots. | Sa mga sample ng bunga mula sa Pilipinas, naiulat ang lubog, water-soaked, kayumanggi hanggang itim na lesions. Inilalarawan din ng extension guidance ang lubog na batik sa bunga. | Improve aeration, remove diseased fruits and plant parts, and harvest ripe fruit promptly. | Pagbutihin ang daloy ng hangin, alisin ang may sakit na bunga at bahagi ng halaman, at anihin agad ang hinog na bunga. | Humidity management and removal of infected material are documented in extension guidance. | Nakadokumento sa extension guidance ang pamamahala ng halumigmig at pag-alis ng infected material. | A University of Hawai‘i extension page describes immersing ripe fruit in 118°F water for 20 minutes. This non-Philippine treatment requires local expert review before any farmer-facing use. | Inilalarawan ng University of Hawai‘i extension page ang paglubog ng hinog na bunga sa 118°F na tubig sa loob ng 20 minuto. Kailangan ng lokal na expert review bago ito gamitin sa farmer-facing guidance. |  |  |  |  |  |  |  |  | No Philippine pesticide label claim is included. | Walang Philippine pesticide label claim na isinama. | The Philippine study confirms the disease relationship but is not a regulatory treatment source. Treatment guidance comes from a non-Philippine extension source and needs local expert confirmation. | Kinukumpirma ng Philippine study ang disease relationship ngunit hindi ito regulatory treatment source. Ang treatment guidance ay mula sa non-Philippine extension source at kailangan ng lokal na expert confirmation. | PH_AGRIS_PAPAYA_ANTHRACNOSE_2021, US_UH_PAPAYA_ANTHRACNOSE | https://agris.fao.org/search/en/providers/122535/records/65df0a077c7033e84beca4fe | Philippine papaya anthracnose study indexed by FAO AGRIS; UH papaya anthracnose extension page | AGRIS abstract; UH page: Anthracnose > Symptom/Control | 2026-09-16 | supported | pending | Confirm hot-water treatment suitability for local varieties and production conditions before use. |
-| Papaya |  | powdery_mildew | Papaya powdery mildew | Powdery mildew ng papaya | Specific fungal disease supported by non-Philippine extension evidence | field | Possible signs include powdery patches on the underside of leaves and powdery spots on immature fruit that may later leave gray scars or deform the fruit. | Kabilang sa mga posibleng palatandaan ang pulbos na patches sa ilalim ng dahon at pulbos na batik sa murang bunga na maaaring mag-iwan ng abong peklat o magdulot ng deformity habang lumalaki. | Improve aeration between plants and remove and destroy heavily mildewed leaves. | Pagbutihin ang daloy ng hangin sa pagitan ng mga halaman at alisin at sirain ang mga dahong malubhang may powdery mildew. | The extension source also suggests humidity management, including lower-rainfall growing conditions where applicable. | Iminumungkahi rin ng extension source ang pamamahala ng halumigmig, kabilang ang mas mababang ulan na growing conditions kung naaangkop. |  |  |  |  |  |  |  |  |  |  | The extension page mentions fungicide or sulfur, but no Philippine product label was verified. No pesticide recommendation is included. | Binabanggit ng extension page ang fungicide o sulfur, ngunit walang Philippine product label na na-verify. Walang pesticide recommendation na isinama. | Philippine-specific evidence was not located in the reviewed authoritative sources. Keep this relationship draft-only until a Philippine agriculture expert confirms local relevance. | Walang nahanap na Philippine-specific evidence sa mga authoritative source na nirepaso. Panatilihing draft-only ang relationship na ito hanggang makumpirma ng Philippine agriculture expert ang lokal na relevance. | US_UH_PAPAYA_POWDERY_MILDEW | https://cms.ctahr.hawaii.edu/uhmgpd/Diagnose/Fruits/Papaya/Powdery-spots-on-fruit-and-leaves | Papaya: Powdery Spots on Fruit and Leaves | Powdery Mildew > Symptom/Control | 2026-09-16 | partially_supported | pending | High priority: confirm occurrence and management under Philippine conditions before production inclusion. |
-| Papaya |  | rot | Phytophthora rot | Phytophthora rot ng papaya | Specific disease under the broad candidate term 'rot' | field | Possible signs include root rot, wilt, trunk canker, and fruit rot. Affected areas may begin water-soaked and later develop cottony growth and spores on the surface. | Kabilang sa mga posibleng palatandaan ang root rot, pagkalanta, canker sa puno, at fruit rot. Maaaring magsimula bilang water-soaked ang apektadong bahagi at kalaunan ay magkaroon ng cottony growth at spores sa ibabaw. | Do not replant in areas where the disease previously occurred. Remove and destroy fallen trunks and fruits. Maintain good field drainage. | Huwag muling magtanim sa lugar na dati nang nagkaroon ng sakit. Alisin at sirain ang mga bumagsak na puno at bunga. Panatilihin ang maayos na drainage sa bukid. | Good drainage and removal of infected fallen material are documented. | Nakadokumento ang maayos na drainage at pag-alis ng infected na bumagsak na materyal. |  |  |  |  |  |  |  |  |  |  | No pesticide product is proposed from this source. | Walang produktong pestisidyo na iminungkahi mula sa sangguniang ito. | The candidate term 'rot' is broad. This row applies only to source-defined Phytophthora rot. Seek confirmation because root, trunk, and fruit symptoms overlap with other problems. | Malawak ang candidate term na 'rot'. Ang row na ito ay para lamang sa Phytophthora rot na malinaw na tinukoy ng sanggunian. Humingi ng kumpirmasyon dahil maaaring magkapareho ang sintomas sa ugat, puno, at bunga sa ibang problema. | PH_BPI_PAPAYA_GUIDE | https://library.buplant.da.gov.ph/images/1641884692Papaya%20%20Production%20Guide.pdf | Papaya Production Guide | Important Insect Pests and Diseases > Phytophthora Rot | 2026-09-16 | supported | pending | Confirm Filipino terminology and whether field/post-harvest scope needs refinement. |
+## Explicit exclusions
 
-## Excluded or unresolved candidate relationships
+- Banana / powdery_mildew: Explicit project exclusion: powdery mildew does not apply to banana.
+- Banana / scab: Explicit project exclusion: scab does not apply to banana.
+- Mango / rust: Explicit project exclusion: rust does not apply to mango.
 
-Rows with insufficient_evidence or unresolved_term remain in the research matrix only. They are not emitted as disease/remedy YAML rows.
+## Detailed rows
 
-Specific exclusions include banana powdery mildew, rust, scab, blight, and generic mold; mango powdery mildew, rust, and standalone blight; and papaya rust, scab, standalone blight, and generic mold.
+### R01. Papaya — Anthracnose (leaf and fruit)
 
-## Pesticide evidence handling
+Evidence status: supported
+Awareness only: no
+Sources: PH_UPLB_PAPAYA_ANTHRACNOSE, EXT_UF_PAPAYA_DISEASES
 
-No pesticide product row is proposed. The reviewed Philippine government disease sources mention registered fungicides in some contexts, but no product-specific Philippine label was verified that supplied the exact crop, target disease, dose/concentration, interval, PHI, and safety restrictions required by this task.
+Symptoms EN: Possible indicators include water-soaked spots that enlarge, darken, and become sunken on maturing fruit. Philippine research confirms papaya anthracnose caused by Colletotrichum species. Leaf involvement is retained because it is in the project applicability matrix, but the reviewed Philippine source is strongest for fruit.
+Symptoms FIL: Draft translation pending expert review: Possible indicators include water-soaked spots that enlarge, darken, and become sunken on maturing fruit. Philippine research confirms papaya anthracnose caused by Colletotrichum species. Leaf involvement is retained because it is in the project applicability matrix, but the reviewed Philippine source is strongest for fruit.
 
-## Repository integration boundary
+Prevention EN: Improve aeration and remove diseased fruit and plant material. Avoid fruit injury during handling.
+Prevention FIL: Draft translation pending expert review: Improve aeration and remove diseased fruit and plant material. Avoid fruit injury during handling.
 
-The requested repository files were not available in the connected conversation/library search. The draft YAML therefore uses a self-contained neutral structure and must be mapped to the repository schema only after `knowledge/taxonomy.yaml`, `knowledge/sources.yaml`, `scripts/compile-knowledge.mjs`, and `.planning/phases/02-offline-data-and-persistence/02-02-PLAN.md` are inspected.
+Cultural management EN: Use sanitation and careful harvest/post-harvest handling.
+Cultural management FIL: Draft translation pending expert review: Use sanitation and careful harvest/post-harvest handling.
 
-## Required final statement
+Sanitation EN: Remove infected or decaying fruit and plant debris from contact with sound produce.
+Sanitation FIL: Draft translation pending expert review: Remove infected or decaying fruit and plant debris from contact with sound produce.
 
-This is a source-backed draft for expert review. It is not an approved agricultural dataset and must not be treated as final farmer guidance until reviewed and approved by a qualified agriculture expert.
+Day 1 EN: Record separate Day 1 reference photos of the affected leaf and fruit. Note existing lesion number, size, color, tissue collapse, visible growth, and fruit softness.
+Day 1 FIL: Kumuha ng hiwalay na Day 1 reference photo ng apektadong dahon at bunga. Itala ang bilang, laki, kulay ng lesions, tissue collapse, nakikitang growth, at lambot ng bunga.
+Day 5 EN: Compare with Day 1. Record new lesions, enlargement of existing lesions, increased discoloration, wilting, leaf drop, or fruit softening. Do not use improvement as proof of disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala ang bagong lesions, paglaki ng dating lesions, pagdami ng discoloration, pagkalanta, paglagas ng dahon, o paglambot ng bunga. Huwag gamitin ang pagbuti bilang patunay ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether visible spread stopped or continued. Seek expert confirmation if new tissue becomes affected or deterioration continues.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o nagpatuloy ang nakikitang pagkalat. Humingi ng expert confirmation kung may bagong tissue na naapektuhan o nagpapatuloy ang pagkasira.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: Because leaf-specific Philippine symptom evidence was not located, seek confirmation when leaf signs are the main finding.
+Uncertainty FIL: Draft translation pending expert review: Because leaf-specific Philippine symptom evidence was not located, seek confirmation when leaf signs are the main finding.
+
+### R02. Papaya — Powdery mildew (leaf)
+
+Evidence status: partially_supported
+Awareness only: no
+Sources: PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UF_PAPAYA_DISEASES
+
+Symptoms EN: Possible indicators include superficial white powdery growth on leaves, pale yellow areas, and later dead areas that may create a shot-hole appearance. The symptom description is from non-Philippine extension evidence.
+Symptoms FIL: Draft translation pending expert review: Possible indicators include superficial white powdery growth on leaves, pale yellow areas, and later dead areas that may create a shot-hole appearance. The symptom description is from non-Philippine extension evidence.
+
+Prevention EN: Remove heavily affected leaves and improve aeration around plants.
+Prevention FIL: Draft translation pending expert review: Remove heavily affected leaves and improve aeration around plants.
+
+Cultural management EN: Reduce dense foliage and conditions that keep the canopy humid where practical.
+Cultural management FIL: Draft translation pending expert review: Reduce dense foliage and conditions that keep the canopy humid where practical.
+
+Sanitation EN: Remove affected leaves from the immediate growing area instead of leaving them beside the plant.
+Sanitation FIL: Draft translation pending expert review: Remove affected leaves from the immediate growing area instead of leaving them beside the plant.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, and distribution of visible leaf lesions, powdery growth, pustules, browning, wilting, or leaf drop already present.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, at lokasyon ng nakikitang lesions, powdery growth, pustules, pag-brown, pagkalanta, o paglagas ng dahon na naroon na.
+Day 5 EN: Compare with Day 1. Record whether new affected leaves or lesions appeared, whether existing areas expanded, and whether wilting or leaf drop increased. Do not treat visual improvement as confirmation of the disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong apektadong dahon o lesions, kung lumaki ang dating apektadong bahagi, at kung dumami ang pagkalanta o paglagas. Huwag ituring ang pagbuti sa itsura bilang kumpirmasyon ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether spread stopped, remained similar, or increased. Seek expert confirmation if lesions continue expanding, new leaves become affected, or plant vigor declines.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto, nanatili, o dumami ang pagkalat. Humingi ng expert confirmation kung patuloy lumalaki ang lesions, may bagong apektadong dahon, o humihina ang halaman.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: FPA registration evidence supports papaya as a target crop for powdery mildew products, but the reviewed symptom and cultural-management text is non-Philippine and needs local expert confirmation.
+Uncertainty FIL: Draft translation pending expert review: FPA registration evidence supports papaya as a target crop for powdery mildew products, but the reviewed symptom and cultural-management text is non-Philippine and needs local expert confirmation.
+
+### R03. Papaya — Rust (leaf)
+
+Evidence status: insufficient_evidence
+Awareness only: no
+Sources: No authoritative crop-specific source verified
+
+Symptoms EN: Unavailable. No authoritative crop-specific symptom source was verified in this research pass.
+Symptoms FIL: Draft translation pending expert review: Unavailable. No authoritative crop-specific symptom source was verified in this research pass.
+
+Prevention EN: Unavailable.
+Prevention FIL: Draft translation pending expert review: Unavailable.
+
+Cultural management EN: Unavailable.
+Cultural management FIL: Draft translation pending expert review: Unavailable.
+
+Sanitation EN: Unavailable.
+Sanitation FIL: Draft translation pending expert review: Unavailable.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, and distribution of visible leaf lesions, powdery growth, pustules, browning, wilting, or leaf drop already present.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, at lokasyon ng nakikitang lesions, powdery growth, pustules, pag-brown, pagkalanta, o paglagas ng dahon na naroon na.
+Day 5 EN: Compare with Day 1. Record whether new affected leaves or lesions appeared, whether existing areas expanded, and whether wilting or leaf drop increased. Do not treat visual improvement as confirmation of the disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong apektadong dahon o lesions, kung lumaki ang dating apektadong bahagi, at kung dumami ang pagkalanta o paglagas. Huwag ituring ang pagbuti sa itsura bilang kumpirmasyon ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether spread stopped, remained similar, or increased. Seek expert confirmation if lesions continue expanding, new leaves become affected, or plant vigor declines.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto, nanatili, o dumami ang pagkalat. Humingi ng expert confirmation kung patuloy lumalaki ang lesions, may bagong apektadong dahon, o humihina ang halaman.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: The relationship is retained because it is required by the project applicability matrix. Philippine authoritative evidence still needs to be supplied or confirmed by the reviewer.
+Uncertainty FIL: Draft translation pending expert review: The relationship is retained because it is required by the project applicability matrix. Philippine authoritative evidence still needs to be supplied or confirmed by the reviewer.
+
+### R04. Papaya — Scab (fruit)
+
+Evidence status: insufficient_evidence
+Awareness only: no
+Sources: No authoritative crop-specific source verified
+
+Symptoms EN: Unavailable. No authoritative crop-specific papaya scab source was verified in this research pass.
+Symptoms FIL: Draft translation pending expert review: Unavailable. No authoritative crop-specific papaya scab source was verified in this research pass.
+
+Prevention EN: Unavailable.
+Prevention FIL: Draft translation pending expert review: Unavailable.
+
+Cultural management EN: Unavailable.
+Cultural management FIL: Draft translation pending expert review: Unavailable.
+
+Sanitation EN: Unavailable.
+Sanitation FIL: Draft translation pending expert review: Unavailable.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: Retained only because it is required by the project applicability matrix. Do not expose a diagnostic description until the exact condition is confirmed.
+Uncertainty FIL: Draft translation pending expert review: Retained only because it is required by the project applicability matrix. Do not expose a diagnostic description until the exact condition is confirmed.
+
+### R05. Papaya — Blight (leaf)
+
+Evidence status: unresolved_term
+Awareness only: no
+Sources: PH_BPI_PAPAYA_GUIDE, EXT_UF_PAPAYA_DISEASES
+
+Symptoms EN: The broad term is unresolved. The BPI guide documents Phytophthora rot with root, wilt, trunk-canker, and fruit-rot signs, while non-Philippine extension material uses the term Phytophthora blight for several diseases. This does not establish a leaf-only Philippine 'blight' entity.
+Symptoms FIL: Draft translation pending expert review: The broad term is unresolved. The BPI guide documents Phytophthora rot with root, wilt, trunk-canker, and fruit-rot signs, while non-Philippine extension material uses the term Phytophthora blight for several diseases. This does not establish a leaf-only Philippine 'blight' entity.
+
+Prevention EN: Do not assign disease-specific prevention until the reviewer identifies the exact source-defined blight condition.
+Prevention FIL: Draft translation pending expert review: Do not assign disease-specific prevention until the reviewer identifies the exact source-defined blight condition.
+
+Cultural management EN: Unavailable pending disease-term resolution.
+Cultural management FIL: Draft translation pending expert review: Unavailable pending disease-term resolution.
+
+Sanitation EN: Use general sanitation only as a non-diagnostic precaution.
+Sanitation FIL: Draft translation pending expert review: Use general sanitation only as a non-diagnostic precaution.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, and distribution of visible leaf lesions, powdery growth, pustules, browning, wilting, or leaf drop already present.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, at lokasyon ng nakikitang lesions, powdery growth, pustules, pag-brown, pagkalanta, o paglagas ng dahon na naroon na.
+Day 5 EN: Compare with Day 1. Record whether new affected leaves or lesions appeared, whether existing areas expanded, and whether wilting or leaf drop increased. Do not treat visual improvement as confirmation of the disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong apektadong dahon o lesions, kung lumaki ang dating apektadong bahagi, at kung dumami ang pagkalanta o paglagas. Huwag ituring ang pagbuti sa itsura bilang kumpirmasyon ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether spread stopped, remained similar, or increased. Seek expert confirmation if lesions continue expanding, new leaves become affected, or plant vigor declines.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto, nanatili, o dumami ang pagkalat. Humingi ng expert confirmation kung patuloy lumalaki ang lesions, may bagong apektadong dahon, o humihina ang halaman.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: The project term blight must be mapped to a specific Philippine disease before production use.
+Uncertainty FIL: Draft translation pending expert review: The project term blight must be mapped to a specific Philippine disease before production use.
+
+### R06. Papaya — Mold (fruit)
+
+Evidence status: unresolved_term
+Awareness only: yes
+Sources: No authoritative crop-specific source verified
+
+Symptoms EN: Awareness only. 'Mold' is not treated as a confirmed disease identity. Look for visible fungal growth, spreading discoloration, softening, or decay and seek confirmation of the specific cause.
+Symptoms FIL: Draft translation pending expert review: Awareness only. 'Mold' is not treated as a confirmed disease identity. Look for visible fungal growth, spreading discoloration, softening, or decay and seek confirmation of the specific cause.
+
+Prevention EN: Isolate affected fruit from sound fruit and keep handling areas clean and dry.
+Prevention FIL: Draft translation pending expert review: Isolate affected fruit from sound fruit and keep handling areas clean and dry.
+
+Cultural management EN: Use careful post-harvest handling to limit wounds and cross-contamination.
+Cultural management FIL: Draft translation pending expert review: Use careful post-harvest handling to limit wounds and cross-contamination.
+
+Sanitation EN: Remove visibly moldy or decaying fruit from the usable lot and clean contacted surfaces.
+Sanitation FIL: Draft translation pending expert review: Remove visibly moldy or decaying fruit from the usable lot and clean contacted surfaces.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: Specific mold identity is unresolved. Escalate to an agriculturist or plant pathologist.
+Uncertainty FIL: Draft translation pending expert review: Specific mold identity is unresolved. Escalate to an agriculturist or plant pathologist.
+
+### R07. Papaya — Rot (fruit)
+
+Evidence status: supported
+Awareness only: yes
+Sources: PH_BPI_PAPAYA_GUIDE
+
+Symptoms EN: Awareness only. BPI documents Phytophthora rot, including fruit rot, with initially water-soaked affected areas that may later develop cottony surface growth and spores.
+Symptoms FIL: Draft translation pending expert review: Awareness only. BPI documents Phytophthora rot, including fruit rot, with initially water-soaked affected areas that may later develop cottony surface growth and spores.
+
+Prevention EN: Maintain good field drainage and do not replant in areas where the documented disease previously occurred.
+Prevention FIL: Draft translation pending expert review: Maintain good field drainage and do not replant in areas where the documented disease previously occurred.
+
+Cultural management EN: Remove and destroy fallen infected trunks and fruits.
+Cultural management FIL: Draft translation pending expert review: Remove and destroy fallen infected trunks and fruits.
+
+Sanitation EN: Separate rotting fruit from sound fruit and remove fallen diseased material from the field.
+Sanitation FIL: Draft translation pending expert review: Separate rotting fruit from sound fruit and remove fallen diseased material from the field.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: The app should display this as fruit-rot awareness, not a diagnosis of Phytophthora rot, unless the specific condition is confirmed.
+Uncertainty FIL: Draft translation pending expert review: The app should display this as fruit-rot awareness, not a diagnosis of Phytophthora rot, unless the specific condition is confirmed.
+
+### R08. Banana — Anthracnose (leaf and fruit)
+
+Evidence status: supported
+Awareness only: no
+Sources: PH_PCAARRD_BANANA_HIYEAST, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UH_BANANA_ROTS_PD54
+
+Symptoms EN: Philippine evidence supports banana anthracnose as a post-harvest fruit disease. Possible fruit signs include brown to black sunken peel spots. Leaf applicability remains in the project matrix but was not verified from the reviewed Philippine sources.
+Symptoms FIL: Draft translation pending expert review: Philippine evidence supports banana anthracnose as a post-harvest fruit disease. Possible fruit signs include brown to black sunken peel spots. Leaf applicability remains in the project matrix but was not verified from the reviewed Philippine sources.
+
+Prevention EN: Use field sanitation and careful fruit handling to reduce wounds and contamination.
+Prevention FIL: Draft translation pending expert review: Use field sanitation and careful fruit handling to reduce wounds and contamination.
+
+Cultural management EN: Remove dead or dying banana tissue that may harbor post-harvest pathogens and maintain clean handling equipment.
+Cultural management FIL: Draft translation pending expert review: Remove dead or dying banana tissue that may harbor post-harvest pathogens and maintain clean handling equipment.
+
+Sanitation EN: Keep questionable fruit separate and clean packing/handling surfaces.
+Sanitation FIL: Draft translation pending expert review: Keep questionable fruit separate and clean packing/handling surfaces.
+
+Day 1 EN: Record separate Day 1 reference photos of the affected leaf and fruit. Note existing lesion number, size, color, tissue collapse, visible growth, and fruit softness.
+Day 1 FIL: Kumuha ng hiwalay na Day 1 reference photo ng apektadong dahon at bunga. Itala ang bilang, laki, kulay ng lesions, tissue collapse, nakikitang growth, at lambot ng bunga.
+Day 5 EN: Compare with Day 1. Record new lesions, enlargement of existing lesions, increased discoloration, wilting, leaf drop, or fruit softening. Do not use improvement as proof of disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala ang bagong lesions, paglaki ng dating lesions, pagdami ng discoloration, pagkalanta, paglagas ng dahon, o paglambot ng bunga. Huwag gamitin ang pagbuti bilang patunay ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether visible spread stopped or continued. Seek expert confirmation if new tissue becomes affected or deterioration continues.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o nagpatuloy ang nakikitang pagkalat. Humingi ng expert confirmation kung may bagong tissue na naapektuhan o nagpapatuloy ang pagkasira.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: The reviewed Philippine evidence is strongest for fruit. Seek expert confirmation before presenting leaf anthracnose guidance.
+Uncertainty FIL: Draft translation pending expert review: The reviewed Philippine evidence is strongest for fruit. Seek expert confirmation before presenting leaf anthracnose guidance.
+
+### R09. Banana — Rust (leaf)
+
+Evidence status: partially_supported
+Awareness only: no
+Sources: PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UOG_BANANA_RUST
+
+Symptoms EN: The current FPA list contains banana 'rust' among target diseases for several chlorothalonil products. A non-Philippine Pacific extension source describes Uredo musae rust as pustules on both leaf surfaces, usually more numerous below, sometimes with short dark streaks.
+Symptoms FIL: Draft translation pending expert review: The current FPA list contains banana 'rust' among target diseases for several chlorothalonil products. A non-Philippine Pacific extension source describes Uredo musae rust as pustules on both leaf surfaces, usually more numerous below, sometimes with short dark streaks.
+
+Prevention EN: Unavailable from a Philippine crop-disease management source in this research pass.
+Prevention FIL: Draft translation pending expert review: Unavailable from a Philippine crop-disease management source in this research pass.
+
+Cultural management EN: Unavailable pending Philippine expert confirmation of the exact rust entity.
+Cultural management FIL: Draft translation pending expert review: Unavailable pending Philippine expert confirmation of the exact rust entity.
+
+Sanitation EN: Avoid moving visibly affected plant material between fields until the condition is confirmed.
+Sanitation FIL: Draft translation pending expert review: Avoid moving visibly affected plant material between fields until the condition is confirmed.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, and distribution of visible leaf lesions, powdery growth, pustules, browning, wilting, or leaf drop already present.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, at lokasyon ng nakikitang lesions, powdery growth, pustules, pag-brown, pagkalanta, o paglagas ng dahon na naroon na.
+Day 5 EN: Compare with Day 1. Record whether new affected leaves or lesions appeared, whether existing areas expanded, and whether wilting or leaf drop increased. Do not treat visual improvement as confirmation of the disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong apektadong dahon o lesions, kung lumaki ang dating apektadong bahagi, at kung dumami ang pagkalanta o paglagas. Huwag ituring ang pagbuti sa itsura bilang kumpirmasyon ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether spread stopped, remained similar, or increased. Seek expert confirmation if lesions continue expanding, new leaves become affected, or plant vigor declines.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto, nanatili, o dumami ang pagkalat. Humingi ng expert confirmation kung patuloy lumalaki ang lesions, may bagong apektadong dahon, o humihina ang halaman.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: The exact Philippine pathogen/entity behind the FPA-list term rust was not established from the registration table. Expert confirmation is required.
+Uncertainty FIL: Draft translation pending expert review: The exact Philippine pathogen/entity behind the FPA-list term rust was not established from the registration table. Expert confirmation is required.
+
+### R10. Banana — Blight (leaf)
+
+Evidence status: unresolved_term
+Awareness only: no
+Sources: No authoritative crop-specific source verified
+
+Symptoms EN: Unavailable. Blight is too broad and no specific Philippine banana leaf disease matching this project term was verified.
+Symptoms FIL: Draft translation pending expert review: Unavailable. Blight is too broad and no specific Philippine banana leaf disease matching this project term was verified.
+
+Prevention EN: Unavailable.
+Prevention FIL: Draft translation pending expert review: Unavailable.
+
+Cultural management EN: Unavailable.
+Cultural management FIL: Draft translation pending expert review: Unavailable.
+
+Sanitation EN: Unavailable.
+Sanitation FIL: Draft translation pending expert review: Unavailable.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, and distribution of visible leaf lesions, powdery growth, pustules, browning, wilting, or leaf drop already present.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, at lokasyon ng nakikitang lesions, powdery growth, pustules, pag-brown, pagkalanta, o paglagas ng dahon na naroon na.
+Day 5 EN: Compare with Day 1. Record whether new affected leaves or lesions appeared, whether existing areas expanded, and whether wilting or leaf drop increased. Do not treat visual improvement as confirmation of the disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong apektadong dahon o lesions, kung lumaki ang dating apektadong bahagi, at kung dumami ang pagkalanta o paglagas. Huwag ituring ang pagbuti sa itsura bilang kumpirmasyon ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether spread stopped, remained similar, or increased. Seek expert confirmation if lesions continue expanding, new leaves become affected, or plant vigor declines.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto, nanatili, o dumami ang pagkalat. Humingi ng expert confirmation kung patuloy lumalaki ang lesions, may bagong apektadong dahon, o humihina ang halaman.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: Retain as a project placeholder only. A qualified reviewer must map it to a specific disease or reject the relationship.
+Uncertainty FIL: Draft translation pending expert review: Retain as a project placeholder only. A qualified reviewer must map it to a specific disease or reject the relationship.
+
+### R11. Banana — Mold (fruit)
+
+Evidence status: supported
+Awareness only: yes
+Sources: PH_FPA_REGISTERED_PESTICIDES_2026_07
+
+Symptoms EN: Awareness only. The FPA list includes fungal crown mold as a post-harvest condition of banana. Generic fruit mold should not be presented as a confirmed diagnosis.
+Symptoms FIL: Draft translation pending expert review: Awareness only. The FPA list includes fungal crown mold as a post-harvest condition of banana. Generic fruit mold should not be presented as a confirmed diagnosis.
+
+Prevention EN: Isolate visibly affected fruit and keep post-harvest handling areas clean.
+Prevention FIL: Draft translation pending expert review: Isolate visibly affected fruit and keep post-harvest handling areas clean.
+
+Cultural management EN: Avoid fruit injury and cross-contamination during handling.
+Cultural management FIL: Draft translation pending expert review: Avoid fruit injury and cross-contamination during handling.
+
+Sanitation EN: Remove affected crowns or fruit from the usable lot and clean contacted equipment and surfaces.
+Sanitation FIL: Draft translation pending expert review: Remove affected crowns or fruit from the usable lot and clean contacted equipment and surfaces.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: This row is awareness-only. The exact mold organism must be confirmed before disease-specific guidance.
+Uncertainty FIL: Draft translation pending expert review: This row is awareness-only. The exact mold organism must be confirmed before disease-specific guidance.
+
+### R12. Banana — Rot (fruit)
+
+Evidence status: supported
+Awareness only: yes
+Sources: PH_PCAARRD_BANANA_HIYEAST, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UH_BANANA_ROTS_PD54
+
+Symptoms EN: Awareness only. Crown rot is a documented post-harvest banana condition. Possible signs include brown-to-black discoloration of the cut crown surface progressing into deeper decay.
+Symptoms FIL: Draft translation pending expert review: Awareness only. Crown rot is a documented post-harvest banana condition. Possible signs include brown-to-black discoloration of the cut crown surface progressing into deeper decay.
+
+Prevention EN: Use field sanitation, clean handling water and equipment, and careful de-handing and fruit handling.
+Prevention FIL: Draft translation pending expert review: Use field sanitation, clean handling water and equipment, and careful de-handing and fruit handling.
+
+Cultural management EN: Remove dead tissues and post-harvest debris that may act as inoculum sources.
+Cultural management FIL: Draft translation pending expert review: Remove dead tissues and post-harvest debris that may act as inoculum sources.
+
+Sanitation EN: Separate affected fruit and clean equipment and surfaces that contacted decaying crowns.
+Sanitation FIL: Draft translation pending expert review: Separate affected fruit and clean equipment and surfaces that contacted decaying crowns.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: Display as rot awareness unless crown rot is specifically confirmed.
+Uncertainty FIL: Draft translation pending expert review: Display as rot awareness unless crown rot is specifically confirmed.
+
+### R13. Mango — Anthracnose (leaf and fruit)
+
+Evidence status: supported
+Awareness only: no
+Sources: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07
+
+Symptoms EN: Possible indicators include irregular brown spots on young leaves, distorted mature leaves with shot-hole-like damage, blackening and withering of flowers, and brown-to-black sunken fruit spots.
+Symptoms FIL: Draft translation pending expert review: Possible indicators include irregular brown spots on young leaves, distorted mature leaves with shot-hole-like damage, blackening and withering of flowers, and brown-to-black sunken fruit spots.
+
+Prevention EN: Maintain light penetration and air circulation, collect disease-source debris, and bag fruit with appropriate materials.
+Prevention FIL: Draft translation pending expert review: Maintain light penetration and air circulation, collect disease-source debris, and bag fruit with appropriate materials.
+
+Cultural management EN: Prune after harvest, maintain tree vigor, and manage canopy humidity.
+Cultural management FIL: Draft translation pending expert review: Prune after harvest, maintain tree vigor, and manage canopy humidity.
+
+Sanitation EN: Collect and remove disease-source debris and keep post-harvest handling areas clean.
+Sanitation FIL: Draft translation pending expert review: Collect and remove disease-source debris and keep post-harvest handling areas clean.
+
+Day 1 EN: Record separate Day 1 reference photos of the affected leaf and fruit. Note existing lesion number, size, color, tissue collapse, visible growth, and fruit softness.
+Day 1 FIL: Kumuha ng hiwalay na Day 1 reference photo ng apektadong dahon at bunga. Itala ang bilang, laki, kulay ng lesions, tissue collapse, nakikitang growth, at lambot ng bunga.
+Day 5 EN: Compare with Day 1. Record new lesions, enlargement of existing lesions, increased discoloration, wilting, leaf drop, or fruit softening. Do not use improvement as proof of disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala ang bagong lesions, paglaki ng dating lesions, pagdami ng discoloration, pagkalanta, paglagas ng dahon, o paglambot ng bunga. Huwag gamitin ang pagbuti bilang patunay ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether visible spread stopped or continued. Seek expert confirmation if new tissue becomes affected or deterioration continues.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o nagpatuloy ang nakikitang pagkalat. Humingi ng expert confirmation kung may bagong tissue na naapektuhan o nagpapatuloy ang pagkasira.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: These signs are decision-support indicators only. Similar lesions have other possible causes, so seek confirmation when symptoms are severe or atypical.
+Uncertainty FIL: Draft translation pending expert review: These signs are decision-support indicators only. Similar lesions have other possible causes, so seek confirmation when symptoms are severe or atypical.
+
+### R14. Mango — Powdery mildew (leaf)
+
+Evidence status: partially_supported
+Awareness only: no
+Sources: PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UF_MANGO_DISEASES
+
+Symptoms EN: Possible indicators include whitish powdery fungal growth on leaves. Non-Philippine extension evidence also notes lesions along leaf midribs or undersides that can darken as leaves mature.
+Symptoms FIL: Draft translation pending expert review: Possible indicators include whitish powdery fungal growth on leaves. Non-Philippine extension evidence also notes lesions along leaf midribs or undersides that can darken as leaves mature.
+
+Prevention EN: Prune crowded growth and maintain airflow and sunlight penetration.
+Prevention FIL: Draft translation pending expert review: Prune crowded growth and maintain airflow and sunlight penetration.
+
+Cultural management EN: Use canopy management and sanitation to reduce favorable humid microclimates and inoculum.
+Cultural management FIL: Draft translation pending expert review: Use canopy management and sanitation to reduce favorable humid microclimates and inoculum.
+
+Sanitation EN: Remove infected debris from around the tree.
+Sanitation FIL: Draft translation pending expert review: Remove infected debris from around the tree.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, and distribution of visible leaf lesions, powdery growth, pustules, browning, wilting, or leaf drop already present.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, at lokasyon ng nakikitang lesions, powdery growth, pustules, pag-brown, pagkalanta, o paglagas ng dahon na naroon na.
+Day 5 EN: Compare with Day 1. Record whether new affected leaves or lesions appeared, whether existing areas expanded, and whether wilting or leaf drop increased. Do not treat visual improvement as confirmation of the disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong apektadong dahon o lesions, kung lumaki ang dating apektadong bahagi, at kung dumami ang pagkalanta o paglagas. Huwag ituring ang pagbuti sa itsura bilang kumpirmasyon ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether spread stopped, remained similar, or increased. Seek expert confirmation if lesions continue expanding, new leaves become affected, or plant vigor declines.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto, nanatili, o dumami ang pagkalat. Humingi ng expert confirmation kung patuloy lumalaki ang lesions, may bagong apektadong dahon, o humihina ang halaman.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: FPA supports the mango-powdery-mildew crop-target relationship, but the symptom/cultural wording used here is non-Philippine and needs expert confirmation.
+Uncertainty FIL: Draft translation pending expert review: FPA supports the mango-powdery-mildew crop-target relationship, but the symptom/cultural wording used here is non-Philippine and needs expert confirmation.
+
+### R15. Mango — Scab (fruit)
+
+Evidence status: supported
+Awareness only: no
+Sources: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07
+
+Symptoms EN: Possible signs on young fruit include grayish-brown spots with dark irregular margins. Enlarging spots may crack and form fissured corky tissue.
+Symptoms FIL: Draft translation pending expert review: Possible signs on young fruit include grayish-brown spots with dark irregular margins. Enlarging spots may crack and form fissured corky tissue.
+
+Prevention EN: Maintain good light penetration and air circulation, use sanitation and pruning, collect disease-source debris, and bag fruit with appropriate materials.
+Prevention FIL: Draft translation pending expert review: Maintain good light penetration and air circulation, use sanitation and pruning, collect disease-source debris, and bag fruit with appropriate materials.
+
+Cultural management EN: Prune after harvest to improve ventilation and reduce canopy humidity.
+Cultural management FIL: Draft translation pending expert review: Prune after harvest to improve ventilation and reduce canopy humidity.
+
+Sanitation EN: Remove disease-source plant debris from the orchard.
+Sanitation FIL: Draft translation pending expert review: Remove disease-source plant debris from the orchard.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: Fruit injuries and other diseases can resemble scab. Seek expert confirmation for uncertain lesions.
+Uncertainty FIL: Draft translation pending expert review: Fruit injuries and other diseases can resemble scab. Seek expert confirmation for uncertain lesions.
+
+### R16. Mango — Blight (leaf)
+
+Evidence status: unresolved_term
+Awareness only: no
+Sources: PH_BAFS_MANGO_GAP_2025, PH_PCAARRD_MANGO_PEST_DISEASE
+
+Symptoms EN: The term is unresolved for the required leaf-only scope. Philippine mango sources use 'blossom blight' in connection with anthracnose and inflorescences, not as a separate leaf-only disease entity.
+Symptoms FIL: Draft translation pending expert review: The term is unresolved for the required leaf-only scope. Philippine mango sources use 'blossom blight' in connection with anthracnose and inflorescences, not as a separate leaf-only disease entity.
+
+Prevention EN: Do not assign blight-specific prevention until the disease entity is clarified.
+Prevention FIL: Draft translation pending expert review: Do not assign blight-specific prevention until the disease entity is clarified.
+
+Cultural management EN: Unavailable pending terminology review.
+Cultural management FIL: Draft translation pending expert review: Unavailable pending terminology review.
+
+Sanitation EN: Use general orchard sanitation only as a non-diagnostic precaution and seek expert identification.
+Sanitation FIL: Draft translation pending expert review: Use general orchard sanitation only as a non-diagnostic precaution and seek expert identification.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, and distribution of visible leaf lesions, powdery growth, pustules, browning, wilting, or leaf drop already present.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, at lokasyon ng nakikitang lesions, powdery growth, pustules, pag-brown, pagkalanta, o paglagas ng dahon na naroon na.
+Day 5 EN: Compare with Day 1. Record whether new affected leaves or lesions appeared, whether existing areas expanded, and whether wilting or leaf drop increased. Do not treat visual improvement as confirmation of the disease identity.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong apektadong dahon o lesions, kung lumaki ang dating apektadong bahagi, at kung dumami ang pagkalanta o paglagas. Huwag ituring ang pagbuti sa itsura bilang kumpirmasyon ng disease identity.
+Day 10 EN: Compare with Days 1 and 5. Record whether spread stopped, remained similar, or increased. Seek expert confirmation if lesions continue expanding, new leaves become affected, or plant vigor declines.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto, nanatili, o dumami ang pagkalat. Humingi ng expert confirmation kung patuloy lumalaki ang lesions, may bagong apektadong dahon, o humihina ang halaman.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: The reviewer must decide whether this project key should map to anthracnose-associated blossom blight, another specific disease, or be rejected.
+Uncertainty FIL: Draft translation pending expert review: The reviewer must decide whether this project key should map to anthracnose-associated blossom blight, another specific disease, or be rejected.
+
+### R17. Mango — Mold (fruit)
+
+Evidence status: supported
+Awareness only: yes
+Sources: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07
+
+Symptoms EN: Awareness only. Philippine mango guidance defines sooty mold as a black velvety covering on fruit and leaves associated with honeydew-producing insects. Generic mold should not be treated as a confirmed disease.
+Symptoms FIL: Draft translation pending expert review: Awareness only. Philippine mango guidance defines sooty mold as a black velvety covering on fruit and leaves associated with honeydew-producing insects. Generic mold should not be treated as a confirmed disease.
+
+Prevention EN: Manage honeydew-producing insects, bag clean fruit appropriately, and practice pruning.
+Prevention FIL: Draft translation pending expert review: Manage honeydew-producing insects, bag clean fruit appropriately, and practice pruning.
+
+Cultural management EN: Use pruning and orchard sanitation.
+Cultural management FIL: Draft translation pending expert review: Use pruning and orchard sanitation.
+
+Sanitation EN: Separate visibly mold-affected fruit and clean handling surfaces.
+Sanitation FIL: Draft translation pending expert review: Separate visibly mold-affected fruit and clean handling surfaces.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: This is a fruit-only awareness row. Sooty mold is the source-defined condition, but other molds require separate confirmation.
+Uncertainty FIL: Draft translation pending expert review: This is a fruit-only awareness row. Sooty mold is the source-defined condition, but other molds require separate confirmation.
+
+### R18. Mango — Rot (fruit)
+
+Evidence status: supported
+Awareness only: yes
+Sources: PH_BAFS_MANGO_GAP_2025, PH_FPA_REGISTERED_PESTICIDES_2026_07, EXT_UCD_MANGO_POSTHARVEST
+
+Symptoms EN: Awareness only. Philippine mango guidance documents Diplodia/stem-end rot with dark lesions beginning at the pedicel end after harvest and progressing into watery dark-brown to purplish-black decay.
+Symptoms FIL: Draft translation pending expert review: Awareness only. Philippine mango guidance documents Diplodia/stem-end rot with dark lesions beginning at the pedicel end after harvest and progressing into watery dark-brown to purplish-black decay.
+
+Prevention EN: Remove dead twigs, bark, and other disease-source debris. Harvest fruit with about 1 to 2 cm of stalk attached as described in the BAFS source.
+Prevention FIL: Draft translation pending expert review: Remove dead twigs, bark, and other disease-source debris. Harvest fruit with about 1 to 2 cm of stalk attached as described in the BAFS source.
+
+Cultural management EN: Use careful harvest and post-harvest handling to minimize injuries.
+Cultural management FIL: Draft translation pending expert review: Use careful harvest and post-harvest handling to minimize injuries.
+
+Sanitation EN: Separate rotting fruit from sound fruit and remove disease-source orchard debris.
+Sanitation FIL: Draft translation pending expert review: Separate rotting fruit from sound fruit and remove disease-source orchard debris.
+
+Day 1 EN: Record a clear Day 1 reference photo. Note the number, size, color, depth, softness, cracking, visible fungal growth, and location of affected fruit areas. Keep questionable fruit separate from sound fruit.
+Day 1 FIL: Kumuha ng malinaw na Day 1 reference photo. Itala ang bilang, laki, kulay, lalim, lambot, bitak, nakikitang fungal growth, at lokasyon ng apektadong bahagi ng bunga. Ihiwalay ang kahina-hinalang bunga sa maayos na bunga.
+Day 5 EN: Compare with Day 1. Record whether new spots appeared, existing spots enlarged or softened, discoloration deepened, or visible mold or rot spread. Remove fruit from the usable lot if deterioration is progressing.
+Day 5 FIL: Ihambing sa Day 1. Itala kung may bagong batik, lumaki o lumambot ang dating batik, lumalim ang discoloration, o kumalat ang mold o rot. Alisin sa usable lot ang bunga kung patuloy ang pagkasira.
+Day 10 EN: Compare with Days 1 and 5. Record whether deterioration stopped or progressed. Seek expert confirmation when lesions continue spreading, tissue becomes soft or watery, mold increases, or fruit quality is uncertain.
+Day 10 FIL: Ihambing sa Day 1 at Day 5. Itala kung huminto o lumala ang pagkasira. Humingi ng expert confirmation kung patuloy kumakalat ang lesions, lumalambot o nagiging watery ang tissue, dumarami ang mold, o hindi tiyak ang kalidad ng bunga.
+
+Pesticide: No verified recommendation found.
+Reason: No accessible Philippine product label was verified with the complete required use conditions and restrictions. FPA registration-table matches, where present, are recorded only as regulatory leads for reviewer follow-up.
+
+Uncertainty EN: Display as rot awareness unless the specific stem-end-rot condition is confirmed.
+Uncertainty FIL: Draft translation pending expert review: Display as rot awareness unless the specific stem-end-rot condition is confirmed.
+
+## FPA regulatory leads that are not treatment recommendations
+
+These records preserve exact FPA registry information for expert follow-up. They are not approved treatment rows because a complete Philippine product label with all required restrictions was not obtained.
+
+| Fruit | Condition | Product | FPA registration | Registry rate | Missing verification |
+|---|---|---|---|---|---|
+| Papaya | Powdery mildew | BENOLATE 50 WP | 457-167-2551 | 1-2 Tbsp/16 L water | Complete label, application method, interval, maximum applications, full PPE, mixing/compatibility and complete restrictions |
+| Banana | Anthracnose | IVATOP 550 SC | 088-107-4167 | 1 mL/L of water | Complete label, application method, interval, maximum applications, full PPE, mixing/compatibility and complete restrictions |
+| Banana | Rust | LEADER 500 SC | 603-118-5342 | 2 L/ha | Complete label, application method, interval, maximum applications, full PPE, mixing/compatibility and complete restrictions |
+| Banana | Mold / Rot awareness | RAZPRO 450 EW | 667-300-5994 | 32 mL/16 L water | Complete label, application method, interval, maximum applications, full PPE, mixing/compatibility and complete restrictions |
+| Mango | Anthracnose | STK REGEV | 527-480-4399 | 100-125 mL product/200 L water | Complete label, application method, interval, maximum applications, full PPE, mixing/compatibility and complete restrictions |
+| Mango | Scab | AGNEWTEK DIFENOXTROBIN 325 SC | 762-486-7528 | 150-200 mL/200 L drum | Complete label, application method, interval, maximum applications, full PPE, mixing/compatibility and complete restrictions |
+| Mango | Powdery mildew | BENOMEX 50 WP | 702-167-5617 | 1-2 Tbsp/16 L water | Complete label, application method, interval, maximum applications, full PPE, mixing/compatibility and complete restrictions |
+
+## Source registry
+
+### PH_BAFS_MANGO_GAP_2025
+- Authority: Department of Agriculture, Bureau of Agriculture and Fisheries Standards
+- Title: Explanatory Manual for Good Agricultural Practices for Mango
+- URL: https://bafs.da.gov.ph/wp-content/uploads/2025/05/2025_EM-GAP-Mango_compressed.pdf
+- Page/section: Annex II, PDF pp. 119-121; printed pp. 110-112
+- Scope: Philippines; mango anthracnose, scab, sooty mold, Diplodia/stem-end rot, cultural and sanitation management
+
+### PH_BPI_PAPAYA_GUIDE
+- Authority: Department of Agriculture, Bureau of Plant Industry
+- Title: Papaya Production Guide
+- URL: https://library.buplant.da.gov.ph/images/1641884692Papaya%20%20Production%20Guide.pdf
+- Page/section: Important Insect Pests and Diseases; Phytophthora Rot and Brown Spot sections
+- Scope: Philippines; papaya disease symptoms and non-chemical controls
+
+### PH_PCAARRD_BANANA_HIYEAST
+- Authority: DOST-PCAARRD
+- Title: BioCon agent HiYEAST controls postharvest diseases in crops
+- URL: https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/biocon-agent-hiyeast-controls-postharvest-diseases-in-crops
+- Page/section: Banana crown rot and anthracnose; experimental HiYEAST discussion
+- Scope: Philippines; banana post-harvest anthracnose and crown rot. Experimental product is not commercially available.
+
+### PH_UPLB_PAPAYA_ANTHRACNOSE
+- Authority: UPLB-linked Philippine research indexed by FAO AGRIS
+- Title: Identification and characterization of Colletotrichum brevisporum and C. truncatum causing papaya anthracnose in the Philippines
+- URL: https://agris.fao.org/search/en/providers/122535/records/65df0a077c7033e84beca4fe
+- Page/section: Abstract
+- Scope: Philippines; confirms papaya anthracnose and fruit lesion characteristics
+
+### PH_PCAARRD_MANGO_PEST_DISEASE
+- Authority: DOST-PCAARRD
+- Title: Pinakamahusay na pamamaraan ng pangangasiwa sa mangga para sa mas mataas na kalidad at produksyon, isinusulong ng PCAARRD
+- URL: https://www.pcaarrd.dost.gov.ph/index.php/quick-information-dispatch-qid-articles/pinakamahusay-na-pamamaraan-ng-pangangasiwa-sa-mangga-para-sa-mas-mataas-na-kalidad-at-produksyon-isinusulong-ng-pcaarrd
+- Page/section: Disease discussion
+- Scope: Philippines; notes anthracnose, blossom blight, scab and stem-end rot in mango
+
+### PH_FPA_REGISTERED_PESTICIDES_2026_07
+- Authority: Philippine Fertilizer and Pesticide Authority
+- Title: Registered pesticide products as of July 31, 2026
+- URL: https://mirrored.fpa-gov.ph/wp-content/uploads/2026/08/UPDATED-LIST-OF-REGISTERED-PRODUCTS-As-of-July-31-2026-PMID.pdf
+- Page/section: Relevant entries across PDF pp. 55, 88, 210, 241, 311, 337, 383, 401, 483
+- Scope: Official FPA registration evidence including product, crop, target, rate, PHI/re-entry where listed. Not treated as a complete product label.
+
+### PH_FPA_REGISTRATION_RULE
+- Authority: Philippine Fertilizer and Pesticide Authority
+- Title: FPA Advisory No. 2024-001
+- URL: https://fpa.da.gov.ph/advisory-1/
+- Page/section: Registration warning and PD 1144 discussion
+- Scope: Philippine regulatory requirement that pesticides be duly registered and used according to registered conditions
+
+### EXT_UH_BANANA_ROTS_PD54
+- Authority: University of Hawai‘i CTAHR
+- Title: Postharvest Rots of Banana, Plant Disease PD-54
+- URL: https://www.ctahr.hawaii.edu/oc/freepubs/pdf/PD-54.pdf
+- Page/section: Primary symptoms and integrated management practices
+- Scope: Non-Philippine extension support for banana anthracnose and crown rot; requires Philippine expert confirmation
+
+### EXT_UOG_BANANA_RUST
+- Authority: University of Guam
+- Title: Diseases of cultivated crops in Pacific Island countries
+- URL: https://www.uog.edu/_resources/files/extension/publications/Pacific_Islands_Diseases_1997.pdf
+- Page/section: Banana, Uredo musae, Rust
+- Scope: Non-Philippine Pacific extension support for banana leaf rust symptoms; requires Philippine expert confirmation
+
+### EXT_UF_PAPAYA_DISEASES
+- Authority: University of Florida IFAS Extension
+- Title: Papaya Growing in the Florida Home Landscape
+- URL: https://ask.ifas.ufl.edu/publication/MG054
+- Page/section: Diseases: anthracnose, powdery mildew, Phytophthora blight
+- Scope: Non-Philippine extension support; requires Philippine expert confirmation
+
+### EXT_UF_MANGO_DISEASES
+- Authority: University of Florida IFAS Extension
+- Title: Mango Growing in the Florida Home Landscape
+- URL: https://edis.ifas.ufl.edu/publication/mg216
+- Page/section: Disease section: anthracnose, powdery mildew, scab
+- Scope: Non-Philippine extension support for mango powdery mildew symptoms and cultural context; requires Philippine expert confirmation
+
+### EXT_UCD_MANGO_POSTHARVEST
+- Authority: UC Davis Postharvest Research and Extension Center
+- Title: Mango
+- URL: https://postharvest.ucdavis.edu/produce-facts-sheets/mango
+- Page/section: Pathological disorders and control strategies
+- Scope: Non-Philippine post-harvest supporting evidence; requires Philippine expert confirmation

@@ -18,6 +18,7 @@ import { routeTitle, RouteBody } from '../../navigation/render/routes';
 import { makeShell } from '../../testing/shellFixture';
 import { strings } from '../../ui/i18n/strings';
 import * as preview from '../../preview/previewContent';
+import { LanguageProvider } from '../../ui';
 
 function render(element: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -146,6 +147,38 @@ test('Variety info separates model classes from information-only strains', () =>
   expect(content).toContain('Information only');
   expect(content).toContain('MMSU Gold');
   expect(content).toContain('never');
+});
+
+test('Variety info uses Filipino as primary and keeps linked disease citations visible', () => {
+  const content = texts(render(
+    <LanguageProvider language="FIL">
+      <VarietyInfoScreen
+        fruit={preview.FRUITS[0]}
+        modelVarieties={preview.VARIETIES_BY_FRUIT.banana}
+        informationOnly={[]}
+        diseases={[{
+          key: 'anthracnose',
+          nameEn: 'Anthracnose',
+          nameFil: 'Antraknos',
+          descriptionEn: 'English detail',
+          descriptionFil: 'Detalye sa Filipino',
+          source: { citation: 'DA source', detail: 'Mango disease guide', retrievedLabel: 'retrieved 2026-09-17' },
+          remedies: [],
+        }]}
+        requirementsVerified={false}
+        requirements={[]}
+        sources={[]}
+        expandedVarietyKey="anthracnose"
+        onOpenVariety={noop}
+      />
+    </LanguageProvider>,
+  ));
+
+  expect(content.indexOf('Saging')).toBeLessThan(content.indexOf('Banana'));
+  expect(content.indexOf('Antraknos')).toBeLessThan(content.indexOf('Anthracnose'));
+  expect(content).toContain('Detalye sa Filipino');
+  expect(content).toContain('DA source');
+  expect(content).toContain('Mango disease guide');
 });
 
 test('Climate shows the verdict and one row per evidence parameter', () => {

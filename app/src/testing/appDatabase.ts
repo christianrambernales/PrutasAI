@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { openAppDatabase } from '../core/db/appDatabase';
+import { openAppDatabase, resetPreparedAppDatabase } from '../core/db/appDatabase';
 import { recordConsent } from '../core/db/consent';
 import type { SqlDriver } from '../core/db/driver';
 import { saveSetting, SETTING_KEYS } from '../core/db/repositories/settings';
@@ -17,6 +17,7 @@ let db: SqlDriver;
  */
 export function resetAppDatabase(): SqlDriver {
   (SQLite as unknown as { __resetDatabases: () => void }).__resetDatabases();
+  resetPreparedAppDatabase();
   db = openAppDatabase();
   return db;
 }

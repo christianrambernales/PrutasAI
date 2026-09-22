@@ -2,7 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import {
   AppText, Card, Chip, Col, COLORS, Divider, EmojiBadge, Icon, PressableRow,
-  RADIUS, Row, Section, SectionHeader, SPACING, useT,
+  RADIUS, Row, Section, SectionHeader, SPACING, useLanguage, useT,
 } from '../../ui';
 import type { FruitSummary, Source, VarietySummary } from '../viewModels';
 
@@ -28,7 +28,15 @@ export interface VarietyInfoScreenProps {
 
 export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
   const t = useT();
+  const language = useLanguage();
   const { fruit, modelVarieties, informationOnly, requirements, sources, expandedVarietyKey } = props;
+  const names = (en: string, fil: string) => language === 'FIL'
+    ? { primary: fil, alternate: en }
+    : { primary: en, alternate: fil };
+  const sourceLabel = (source: Source) => [source.citation, source.detail]
+    .filter(Boolean)
+    .join(' · ');
+  const fruitNames = names(fruit.nameEn, fruit.nameFil);
 
   return (
     <>
@@ -36,8 +44,10 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
         <Row gap={14}>
           <EmojiBadge emoji={fruit.emoji} size={64} />
           <Col gap={2} style={{ flex: 1 }}>
-            <AppText variant="xxl">{fruit.nameEn}</AppText>
-            <AppText variant="sm" color={COLORS.textSecondary}>{fruit.nameFil}</AppText>
+            <AppText variant="xxl">{fruitNames.primary}</AppText>
+            {fruitNames.alternate !== fruitNames.primary ? (
+              <AppText variant="sm" color={COLORS.textSecondary}>{fruitNames.alternate}</AppText>
+            ) : null}
             {fruit.key !== 'unknown' ? (
               <AppText variant="xs" color={COLORS.textLight}>
                 {t.modelClassesAndStrains(modelVarieties.length, informationOnly.length)}
@@ -60,10 +70,11 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
             <Col gap={SPACING.sm}>
           {modelVarieties.map(v => {
             const open = v.key === expandedVarietyKey;
+            const varietyNames = names(v.nameEn, v.nameFil);
             return (
               <PressableRow
                 key={v.key}
-                accessibilityLabel={v.nameEn}
+                accessibilityLabel={varietyNames.primary}
                 selected={open}
                 onPress={() => props.onOpenVariety(v.key)}
               >
@@ -73,8 +84,8 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
                       <AppText variant="xsSemi" color={COLORS.primary}>{v.mlClassIndex}</AppText>
                     </View>
                     <Col gap={2} style={{ flex: 1 }}>
-                      <AppText variant="mdSemi">{v.nameEn}</AppText>
-                      <AppText variant="xs" color={COLORS.textSecondary}>{v.note ?? v.nameFil}</AppText>
+                      <AppText variant="mdSemi">{varietyNames.primary}</AppText>
+                      <AppText variant="xs" color={COLORS.textSecondary}>{v.note ?? varietyNames.alternate}</AppText>
                     </Col>
                     <Icon name={open ? 'chevronDown' : 'chevronRight'} size={18} color={COLORS.textLight} />
                   </Row>
@@ -126,7 +137,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
             <Col gap={SPACING.sm}>
               {informationOnly.map(v => (
                 <Row key={v.key} justify="space-between">
-                  <AppText variant="smSemi">{v.nameEn}</AppText>
+                  <AppText variant="smSemi">{names(v.nameEn, v.nameFil).primary}</AppText>
                   <AppText variant="xs" color={COLORS.textLight}>→ {v.parentName}</AppText>
                 </Row>
               ))}
@@ -145,18 +156,21 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
           <Col gap={SPACING.sm}>
             {props.diseases.map(d => {
               const open = d.key === expandedVarietyKey; // we can reuse expandedVarietyKey or rename to expandedKey
+              const diseaseNames = names(d.nameEn, d.nameFil);
               return (
                 <PressableRow
                   key={d.key}
-                  accessibilityLabel={d.nameEn}
+                  accessibilityLabel={diseaseNames.primary}
                   selected={open}
                   onPress={() => props.onOpenVariety(d.key)}
                 >
                   <Card style={open ? { gap: SPACING.sm + 2 } : undefined}>
                     <Row gap={SPACING.md - 4}>
                       <Col gap={2} style={{ flex: 1 }}>
-                        <AppText variant="mdSemi">{d.nameEn}</AppText>
-                        <AppText variant="xs" color={COLORS.textSecondary}>{d.nameFil}</AppText>
+                        <AppText variant="mdSemi">{diseaseNames.primary}</AppText>
+                        {diseaseNames.alternate !== diseaseNames.primary ? (
+                          <AppText variant="xs" color={COLORS.textSecondary}>{diseaseNames.alternate}</AppText>
+                        ) : null}
                       </Col>
                       <Icon name={open ? 'chevronDown' : 'chevronRight'} size={18} color={COLORS.textLight} />
                     </Row>
@@ -164,18 +178,35 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
                       <>
                         <Divider />
                         <Col gap={SPACING.sm}>
-                          <AppText variant="sm">{d.descriptionEn || d.descriptionFil || t.noDescription}</AppText>
+                          <AppText variant="sm">
+                            {(language === 'FIL' ? d.descriptionFil : d.descriptionEn)
+                              || d.descriptionEn || d.descriptionFil || t.noDescription}
+                          </AppText>
+                          {d.source ? (
+                            <AppText variant="xs" color={COLORS.textLight}>
+                              {sourceLabel(d.source)}{d.source.retrievedLabel ? ` · ${d.source.retrievedLabel}` : ''}
+                            </AppText>
+                          ) : null}
                           {d.remedies.length === 0 ? (
                             <AppText variant="xs" color={COLORS.textSecondary}>{t.noApprovedRemedy}</AppText>
                           ) : (
-                            d.remedies.map(r => (
+                            d.remedies.map(r => {
+                              const remedyNames = names(r.nameEn, r.nameFil);
+                              return (
                               <Col key={r.key} gap={2}>
-                                <AppText variant="xsSemi">{r.nameEn} / {r.nameFil}</AppText>
+                                <AppText variant="xsSemi">{remedyNames.primary} / {remedyNames.alternate}</AppText>
                                 <AppText variant="xs" color={COLORS.textSecondary}>
-                                  {r.instructionEn || r.instructionFil || t.noDescription}
+                                  {(language === 'FIL' ? r.instructionFil : r.instructionEn)
+                                    || r.instructionEn || r.instructionFil || t.noDescription}
                                 </AppText>
+                                {r.source ? (
+                                  <AppText variant="xs" color={COLORS.textLight}>
+                                    {sourceLabel(r.source)}{r.source.retrievedLabel ? ` · ${r.source.retrievedLabel}` : ''}
+                                  </AppText>
+                                ) : null}
                               </Col>
-                            ))
+                              );
+                            })
                           )}
                         </Col>
                       </>

@@ -96,6 +96,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
           depth={depth}
           onOpenModelStatus={() => push({ name: 'modelStatus' })}
           onScanAgain={() => replace({ name: 'capture' })}
+          onOpenHistory={() => selectTab('history')}
         />
       );
     case 'result': {
@@ -122,6 +123,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
           }
           onOpenModelStatus={() => push({ name: 'modelStatus' })}
           onScanAgain={() => replace({ name: 'capture' })}
+          onOpenHistory={() => selectTab('history')}
         />
       );
     }

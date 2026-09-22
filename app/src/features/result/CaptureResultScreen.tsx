@@ -19,6 +19,7 @@ export interface CaptureResultScreenProps {
   record?: { title: string; detail: string; timeLabel: string };
   onOpenModelStatus: () => void;
   onScanAgain: () => void;
+  onOpenHistory: () => void;
 }
 
 /**
@@ -100,6 +101,7 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
       <Section gap={SPACING.sm}>
         <Button label="Open model status" icon="package" onPress={props.onOpenModelStatus} />
         <Button label="Scan again" icon="camera" variant="secondary" onPress={props.onScanAgain} />
+        <Button label={t.tabHistory} icon="history" variant="secondary" onPress={props.onOpenHistory} />
       </Section>
     </>
   );

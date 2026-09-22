@@ -16,9 +16,11 @@ Prerequisites are a verified backup/export, a separately tested restore into the
 | 4 | `0004_conversations.sql` | `8702f759830f054e1e124d6f2684931ce30c98df4e284956476464fbcd08b48d` |
 | 5 | `0005_conversation_policy_hardening.sql` | `9c6478475ac75b81fac621c760c35ab33e62ff5432f072fc4a3a90599f0de6e4` |
 | 6 | `0006_scan_policy_hardening.sql` | `6be3f67fcb7e81a1ccc36bfac2d66c748ac34d5b8cabb1b726eeed794ec86285` |
-| 7 | `0007_owner_bound_sync_contract.sql` | `eb9d05ea8073a3b5d9d12a054c475be96621616da0998e9de1c16c4621af732e` |
+| 7 | `0007_owner_bound_sync_contract.sql` | `5af802a347e0dd715977da5464825242a346cd8afae444a773b11c9c0a7fd546` |
 
 Recompute before execution with `Get-FileHash -Algorithm SHA256 supabase/migrations/000*.sql`. Stop on any mismatch.
+
+The `0007` value above is a repository-source hash update for the service-role-only RPC grant remediation. It is not evidence of a Supabase migration rehearsal or remote application.
 
 ## Disposable rehearsal
 

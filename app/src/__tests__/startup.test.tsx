@@ -43,7 +43,11 @@ describe('Startup', () => {
     
     const text = textOf(tree!.root);
     expect(text).toContain('The app could not open its database');
-    expect(text).toContain('Simulated startup failure');
+    expect(text).toContain('Hindi mabuksan ng app ang database nito');
+    expect(text).not.toContain('Simulated startup failure');
+
+    press(tree!, 'Show technical details');
+    expect(textOf(tree!.root)).toContain('Simulated startup failure');
     
     let promiseResolve2: (value: unknown) => void;
     // Set up second attempt to hang until we check it
