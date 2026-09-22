@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   currentAccessToken, currentUser, resetPassword, requestPasswordReset,
   restoreSession, resendConfirmation, updateUserPassword,
@@ -40,6 +40,7 @@ export interface AccountState {
   unownedClaimPending: { scans: number; conversations: number } | null;
   syncCounts: { pending: number; needsAttention: number; conflicts: number };
   lastSuccessfulSyncAt: string | null;
+  syncMode: 'offline' | 'account';
 }
 
 export interface AccountSyncInput {
@@ -68,7 +69,7 @@ export interface AccountSync {
   clearRecovery: () => void;
   claimUnowned: () => Promise<void>;
   declineUnowned: () => Promise<void>;
-  setCloudSyncEnabled: (enabled: boolean) => void;
+  handleChooseMode: (mode: SyncMode) => void;
   syncNow: () => Promise<void>;
   removeLocalDeviceCopy: () => Promise<void>;
 }
@@ -94,6 +95,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     unownedClaimPending: null,
     syncCounts: { pending: 0, needsAttention: 0, conflicts: 0 },
     lastSuccessfulSyncAt: null,
+    syncMode: getSyncMode(db) === 'offline' ? 'offline' : 'account',
   });
   const syncEpoch = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,6 +151,8 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
             email: null,
             accessToken: '',
             confirmationPendingEmail: null,
+            cloudSyncEnabled: false,
+            syncMode: 'offline',
           }));
           return;
         }
@@ -159,6 +163,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       setAccount(a => ({
         ...a, userId: user.id, email: user.email, accessToken,
         cloudSyncEnabled: getSyncMode(db) !== 'offline',
+        syncMode: getSyncMode(db) === 'offline' ? 'offline' : 'account',
       }));
     })();
   }, []);
@@ -192,6 +197,8 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
         email: null,
         accessToken: '',
         confirmationPendingEmail: null,
+        cloudSyncEnabled: false,
+        syncMode: 'offline',
       }));
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -230,12 +237,22 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     };
   }, [account.accessToken, account.cloudSyncEnabled, account.unownedClaimPending, account.userId, dataVersion, db]);
 
-  const setCloudSyncEnabled = useCallback((enabled: boolean) => {
-    if (!enabled) syncEpoch.current += 1;
-    setSyncMode(db, enabled ? 'account' : 'offline');
-    onSyncModeChange(enabled ? 'account' : 'offline');
-    setAccount(a => ({ ...a, cloudSyncEnabled: enabled }));
-  }, [db, onSyncModeChange]);
+  const handleChooseMode = useCallback((mode: SyncMode) => {
+    if (mode === 'account') {
+      if (!consented) {
+        onAccountRequested();
+        return;
+      }
+      setSyncMode(db, 'account');
+      onSyncModeChange('account');
+      setAccount(a => ({ ...a, cloudSyncEnabled: true, syncMode: 'account' }));
+    } else {
+      syncEpoch.current += 1;
+      setSyncMode(db, 'offline');
+      onSyncModeChange('offline');
+      setAccount(a => ({ ...a, cloudSyncEnabled: false, syncMode: 'offline' }));
+    }
+  }, [consented, db, onAccountRequested, onSyncModeChange]);
 
   const openAccount = useCallback(() => {
     if (!consented) {
@@ -274,6 +291,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
         lastSuccessfulSyncAt: uploadedScans.failed === 0 && uploadedConversations.failed === 0 && !report.restoreFailed
           ? new Date().toISOString()
           : null,
+        syncMode: 'account',
       });
       bumpData();
 
@@ -320,6 +338,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
           accessToken: outcome.accessToken,
           busy: false,
           cloudSyncEnabled: true,
+          syncMode: 'account',
           unownedClaimPending: { scans: unownedScans, conversations: unownedConversations },
         }));
         return;
@@ -478,6 +497,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       unownedClaimPending: null,
       syncCounts: { pending: 0, needsAttention: 0, conflicts: 0 },
       lastSuccessfulSyncAt: null,
+      syncMode: 'offline',
     });
   }, [db, notify, onSyncModeChange, t]);
 
@@ -539,7 +559,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     clearRecovery,
     claimUnowned,
     declineUnowned,
-    setCloudSyncEnabled,
+    handleChooseMode,
     syncNow,
     removeLocalDeviceCopy,
   };

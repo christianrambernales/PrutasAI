@@ -407,3 +407,45 @@ test('clearRecovery clears error and errorKey', async () => {
   expect(h.value.account.error).toBeNull();
   expect(h.value.account.errorKey).toBeNull();
 });
+
+test('switching mode to offline pauses sync and preserves local data and credentials', async () => {
+  session.restoreSession.mockResolvedValue({
+    status: 'valid',
+    userId: 'u1',
+    email: 'grower@example.com',
+    accessToken: 'valid-tok',
+  });
+  const h = mount();
+  await act(async () => { await Promise.resolve(); });
+
+  act(() => { h.value.handleChooseMode('offline'); });
+
+  expect(getSyncMode(db)).toBe('offline');
+  expect(h.onSyncModeChange).toHaveBeenCalledWith('offline');
+  expect(h.value.account.cloudSyncEnabled).toBe(false);
+  expect(h.value.account.syncMode).toBe('offline');
+  expect(h.value.account.userId).toBe('u1');
+  expect(h.value.account.accessToken).toBe('valid-tok');
+});
+
+test('switching mode to account without consent requests consent instead of replaying full onboarding', () => {
+  const { setSyncMode } = require('../../../core/db/syncMode');
+  setSyncMode(db, 'offline');
+  const h = mount({ consented: false });
+  act(() => { h.value.handleChooseMode('account'); });
+
+  expect(h.onAccountRequested).toHaveBeenCalledTimes(1);
+  expect(getSyncMode(db)).not.toBe('account');
+  expect(h.value.account.cloudSyncEnabled).not.toBe(true);
+});
+
+test('switching mode to account with consent updates mode instantly', () => {
+  const h = mount({ consented: true });
+  act(() => { h.value.handleChooseMode('account'); });
+
+  expect(h.onAccountRequested).not.toHaveBeenCalled();
+  expect(getSyncMode(db)).toBe('account');
+  expect(h.onSyncModeChange).toHaveBeenCalledWith('account');
+  expect(h.value.account.cloudSyncEnabled).toBe(true);
+  expect(h.value.account.syncMode).toBe('account');
+});
