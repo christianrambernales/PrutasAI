@@ -27,8 +27,8 @@ export interface SettingsScreenProps {
   onOpenHistory: () => void;
   onOpenAccount: () => void;
   onOpenTrash: () => void;
-  syncMode: 'offline' | 'account' | null;
-  onSetSyncMode: (mode: 'offline' | 'account') => void;
+  syncMode?: 'offline' | 'account' | null;
+  onSetSyncMode?: (mode: 'offline' | 'account') => void;
 }
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -91,7 +91,7 @@ export function SettingsScreen(props: SettingsScreenProps) {
               <Segmented
                 options={[t.welcomeOfflineTitle, 'Cloud Sync']}
                 value={props.syncMode === 'offline' ? t.welcomeOfflineTitle : 'Cloud Sync'}
-                onChange={(val) => props.onSetSyncMode(val === t.welcomeOfflineTitle ? 'offline' : 'account')}
+                onChange={(val) => props.onSetSyncMode?.(val === t.welcomeOfflineTitle ? 'offline' : 'account')}
               />
             }
           />
