@@ -14,14 +14,14 @@ test('creates the content and user tables', () => {
 
 test('reports the resulting schema version', () => {
   const db = createTestDriver();
-  expect(migrate(db)).toBe(6);
+  expect(migrate(db)).toBe(7);
 });
 
 test('is idempotent', () => {
   const db = createTestDriver();
   migrate(db);
   expect(() => migrate(db)).not.toThrow();
-  expect(migrate(db)).toBe(6);
+  expect(migrate(db)).toBe(7);
 });
 
 test('adds lat/lon to scan, idempotently', () => {
@@ -46,7 +46,7 @@ test('rejects a variety whose fruit does not exist', () => {
 test('migrates to version 3 and creates the conversation tables', () => {
   const db = createTestDriver();
   const version = migrate(db);
-  expect(version).toBe(6);
+  expect(version).toBe(7);
 
   db.exec("INSERT INTO conversation (uuid, title, device_id, created_at, updated_at) VALUES ('c1', 'Hello', 'dev-1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z')");
   db.exec("INSERT INTO conversation_message (uuid, conversation_id, role, text, created_at) VALUES ('m1', 'c1', 'user', 'hi', '2026-08-30T00:00:01.000Z')");
@@ -95,7 +95,7 @@ test('a failing migration leaves neither its schema mutation nor version row', (
   
   // Version 7 should not be in schema_version
   const row = db.get<{ version: number }>('SELECT MAX(version) AS version FROM schema_version');
-  expect(row?.version).toBe(6);
+  expect(row?.version).toBe(7);
 });
 
 test('migration 006 upgrades schema v5, preserves rows and photos, backfills metadata and creates indexes', () => {
@@ -128,7 +128,7 @@ test('migration 006 upgrades schema v5, preserves rows and photos, backfills met
 
   // Now run full migration up to v6
   const finalVersion = migrate(db);
-  expect(finalVersion).toBe(6);
+  expect(finalVersion).toBe(7);
 
   // Verify scan table columns & backfill
   const scanCols = db.all<{ name: string }>('PRAGMA table_info(scan)').map(c => c.name);
@@ -204,4 +204,32 @@ test('migration 006 upgrades schema v5, preserves rows and photos, backfills met
   expect(indexNames).toContain('idx_conversation_account_updated');
   expect(indexNames).toContain('idx_conversation_account_sync');
   expect(indexNames).toContain('idx_conversation_message_account_sync');
+});
+
+test('migration 007 creates monitoring tables, prohibits ML columns, and failed-v7 rolls back', () => {
+  const db = createTestDriver();
+  const v6Migrations = MIGRATIONS.filter(m => m.version <= 6);
+  migrate(db, v6Migrations);
+
+  const badV7 = [
+    ...v6Migrations,
+    { version: 7, sql: 'CREATE TABLE monitoring_session (id TEXT); INSERT INTO dummy_non_existent VALUES (1);' }
+  ];
+  expect(() => migrate(db, badV7)).toThrow();
+  let names = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table'").map(r => r.name);
+  expect(names).not.toContain('monitoring_session');
+
+  migrate(db); // Will run real v7
+  names = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table'").map(r => r.name);
+  expect(names).toContain('monitoring_session');
+  expect(names).toContain('monitoring_checkpoint');
+
+  const sessionCols = db.all<{ name: string }>('PRAGMA table_info(monitoring_session)').map(c => c.name);
+  const checkpointCols = db.all<{ name: string }>('PRAGMA table_info(monitoring_checkpoint)').map(c => c.name);
+  const allCols = [...sessionCols, ...checkpointCols];
+
+  const prohibited = ['diagnosis', 'disease', 'severity', 'percentage', 'confidence', 'trend'];
+  for (const p of prohibited) {
+    expect(allCols).not.toContain(p);
+  }
 });
