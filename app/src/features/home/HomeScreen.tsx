@@ -26,6 +26,8 @@ export interface HomeScreenProps {
   onOpenSettings: () => void;
   onOpenClimate: () => void;
   onViewAllScans: () => void;
+  onOpenChat?: () => void;
+  onOpenMonitoring?: () => void;
 }
 
 export function HomeScreen(props: HomeScreenProps) {
@@ -81,19 +83,44 @@ export function HomeScreen(props: HomeScreenProps) {
       </Section>
 
       <Section>
-        <Col gap={SPACING.md} style={{ backgroundColor: COLORS.primary, borderRadius: RADIUS.lg, padding: SPACING.lg - 4, ...SHADOWS.md }}>
-          <Row gap={14}>
-            <Col gap={SPACING.xs + 2} style={{ flex: 1 }}>
-              <AppText variant="xl" color={COLORS.surface}>{t.scanHeadline}</AppText>
-              <AppText variant="sm" color="rgba(255,255,255,0.78)">
-                {t.scanBlurb}
-              </AppText>
-            </Col>
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="camera" size={26} color={COLORS.surface} />
-            </View>
+        <Col gap={SPACING.md}>
+          {/* Primary Action: Scan */}
+          <Col gap={SPACING.xs + 2} style={{ backgroundColor: COLORS.primary, borderRadius: RADIUS.lg, padding: SPACING.lg - 4, ...SHADOWS.md }}>
+            <Row gap={14}>
+              <Col gap={SPACING.xs + 2} style={{ flex: 1 }}>
+                <AppText variant="xl" color={COLORS.surface}>{t.homeActionScan}</AppText>
+                <AppText variant="sm" color="rgba(255,255,255,0.78)">
+                  {t.scanBlurb}
+                </AppText>
+              </Col>
+              <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="camera" size={26} color={COLORS.surface} />
+              </View>
+            </Row>
+            <Button label={t.openCamera} icon="camera" variant="accent" onPress={props.onScan} />
+          </Col>
+
+          {/* Secondary Actions: History, Chat, Monitoring */}
+          <Row gap={SPACING.sm} align="stretch">
+            <PressableRow onPress={props.onViewAllScans} accessibilityLabel={t.homeActionHistory} style={{ flex: 1 }}>
+              <Card style={{ alignItems: 'center', padding: SPACING.sm + 2, gap: SPACING.xs }}>
+                <Icon name="history" size={24} color={COLORS.primary} />
+                <AppText variant="smSemi" color={COLORS.primary}>{t.homeActionHistory}</AppText>
+              </Card>
+            </PressableRow>
+            <PressableRow onPress={props.onOpenChat} accessibilityLabel={t.homeActionChat} style={{ flex: 1 }}>
+              <Card style={{ alignItems: 'center', padding: SPACING.sm + 2, gap: SPACING.xs }}>
+                <Icon name="chat" size={24} color={COLORS.primary} />
+                <AppText variant="smSemi" color={COLORS.primary}>{t.homeActionChat}</AppText>
+              </Card>
+            </PressableRow>
+            <PressableRow onPress={props.onOpenMonitoring} accessibilityLabel={t.homeActionMonitoring} style={{ flex: 1 }}>
+              <Card style={{ alignItems: 'center', padding: SPACING.sm + 2, gap: SPACING.xs }}>
+                <Icon name="trendingDown" size={24} color={COLORS.primary} />
+                <AppText variant="smSemi" color={COLORS.primary}>{t.homeActionMonitoring}</AppText>
+              </Card>
+            </PressableRow>
           </Row>
-          <Button label={t.openCamera} icon="camera" variant="accent" onPress={props.onScan} />
         </Col>
       </Section>
 

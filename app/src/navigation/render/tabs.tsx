@@ -108,6 +108,14 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           onOpenSettings={() => push({ name: 'settings' })}
           onOpenClimate={() => selectTab('climate')}
           onViewAllScans={() => selectTab('history')}
+          onOpenChat={() => selectTab('chat')}
+          onOpenMonitoring={() => {
+            if (allScans.length > 0) {
+              push({ name: 'monitoring', sessionId: allScans[0].id });
+            } else {
+              selectTab('history');
+            }
+          }}
         />
       );
     case 'climate':

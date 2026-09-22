@@ -47,3 +47,48 @@ test('the settings route renders without mounting the navigator', () => {
 test('the trash route renders its empty state', () => {
   expect(renderRoute({ name: 'trash' })).toContain('Trash is empty');
 });
+
+test('Home screen renders all prominent actions', () => {
+  const tree = render('home');
+  expect(tree).toContain('Scan a fruit');
+  expect(tree).toContain('History');
+  expect(tree).toContain('Assistant Chat');
+  expect(tree).toContain('Monitoring');
+});
+
+test('onOpenChat routes to the blank chat tab', () => {
+  let tree!: ReactTestRenderer;
+  const shell = makeShell();
+  shell.nav.selectTab = jest.fn();
+  act(() => { tree = renderer.create(<TabBody shell={shell} tab="home" />); });
+  
+  const chatBtn = tree.root.findAll(node => node.props.accessibilityLabel === 'Assistant Chat')[0];
+  act(() => { chatBtn.props.onPress(); });
+  expect(shell.nav.selectTab).toHaveBeenCalledWith('chat');
+});
+
+test('onOpenMonitoring routes to latest scan monitoring session', () => {
+  let tree!: ReactTestRenderer;
+  const shell = makeShell();
+  shell.nav.push = jest.fn();
+  shell.data.allScans = [{ id: 'scan-1', emoji: '🍌', title: 'Banana', status: 'healthy', detail: 'test', timeLabel: 'Now' }];
+  
+  act(() => { tree = renderer.create(<TabBody shell={shell} tab="home" />); });
+  
+  const monitorBtn = tree.root.findAll(node => node.props.accessibilityLabel === 'Monitoring')[0];
+  act(() => { monitorBtn.props.onPress(); });
+  expect(shell.nav.push).toHaveBeenCalledWith({ name: 'monitoring', sessionId: 'scan-1' });
+});
+
+test('onOpenMonitoring falls back to history when no scans exist', () => {
+  let tree!: ReactTestRenderer;
+  const shell = makeShell();
+  shell.nav.selectTab = jest.fn();
+  shell.data.allScans = [];
+  
+  act(() => { tree = renderer.create(<TabBody shell={shell} tab="home" />); });
+  
+  const monitorBtn = tree.root.findAll(node => node.props.accessibilityLabel === 'Monitoring')[0];
+  act(() => { monitorBtn.props.onPress(); });
+  expect(shell.nav.selectTab).toHaveBeenCalledWith('history');
+});

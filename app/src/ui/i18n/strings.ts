@@ -37,6 +37,8 @@ const EN = {
   changeLanguage: 'Change language',
   settings: 'Settings',
   tryAgain: 'Try again',
+  showTechnicalDetails: 'Show technical details',
+  hideTechnicalDetails: 'Hide technical details',
   change: 'Change',
   rereadRegistry: 'Re-read the registry',
   refreshClimate: 'Refresh climate',
@@ -302,6 +304,59 @@ const EN = {
   restore: 'Restore',
   deleteForever: 'Delete permanently',
   daysLeft: (n: number) => `${n} ${n === 1 ? 'day' : 'days'} left`,
+
+  // phase 4 onboarding
+  onboardingContinueToMode: 'Continue to mode selection',
+  onboardingReviewConsent: 'Review consent',
+  onboardingFinishSetup: 'Finish setup and go to Home',
+  
+  // home actions
+  homeActionScan: 'Scan a fruit',
+  homeActionHistory: 'History',
+  homeActionChat: 'Assistant Chat',
+  homeActionMonitoring: 'Monitoring',
+
+  // capture/result
+  captureSavingLocally: 'Saving photo locally',
+  resultAnalysisUnavailable: 'Analysis unavailable',
+  resultNotAnalyzed: 'Not analyzed',
+  resultActionReviewPhoto: 'Review local photo',
+  resultActionBrowseGuidance: 'Browse local guidance',
+  resultActionStartMonitoring: 'Start observation monitoring',
+  
+  // chat
+  chatConversations: 'Conversations',
+  chatMoveToTrash: 'Move to Trash',
+  chatConfirmDeleteBody: 'Are you sure you want to permanently delete this conversation? This action cannot be undone.',
+  
+  // monitoring
+  monitoringDay1: 'Day 1',
+  monitoringDay5: 'Day 5',
+  monitoringDay10: 'Day 10',
+  monitoringScheduled: 'Scheduled',
+  monitoringActual: 'Actual',
+  monitoringDue: 'Due',
+  monitoringIncomplete: 'Incomplete',
+  monitoringCompleted: 'Completed',
+  monitoringCompletedLate: 'Completed late',
+  
+  // observations
+  observationBetter: 'Better',
+  observationAboutSame: 'About the same',
+  observationWorse: 'Worse',
+  observationUnsure: 'Unsure',
+  
+  // missing fields
+  missingPhoto: 'Photo not added',
+  missingNote: 'Note not added',
+  missingObservation: 'Observation needed',
+  
+  // trend
+  trendUnavailable: 'Overall trend unavailable',
+  
+  // offline/error
+  offlineSavedLocally: 'Offline — saved on this device',
+  localErrorGeneric: 'We could not complete that action. Your saved data is still on this device. Try again or go back.',
 };
 
 type Dictionary = typeof EN;
@@ -325,6 +380,8 @@ const FIL: Dictionary = {
   changeLanguage: 'Palitan ang wika',
   settings: 'Mga Setting',
   tryAgain: 'Subukan ulit',
+  showTechnicalDetails: 'Ipakita ang teknikal na detalye',
+  hideTechnicalDetails: 'Itago ang teknikal na detalye',
   change: 'Palitan',
   rereadRegistry: 'Basahin ulit ang registry',
   refreshClimate: 'I-refresh ang panahon',
@@ -583,6 +640,59 @@ const FIL: Dictionary = {
   restore: 'Ibalik',
   deleteForever: 'Tanggalin nang permanente',
   daysLeft: (n: number) => `${n} ${n === 1 ? 'araw' : 'araw'} na lang`,
+
+  // phase 4 onboarding
+  onboardingContinueToMode: 'Magpatuloy sa pagpili ng mode',
+  onboardingReviewConsent: 'Suriin ang pahintulot',
+  onboardingFinishSetup: 'Tapusin ang setup at pumunta sa Home',
+
+  // home actions
+  homeActionScan: 'I-scan ang prutas',
+  homeActionHistory: 'Kasaysayan',
+  homeActionChat: 'Usapan sa Katuwang',
+  homeActionMonitoring: 'Pagsubaybay',
+
+  // capture/result
+  captureSavingLocally: 'Sine-save ang larawan sa device',
+  resultAnalysisUnavailable: 'Hindi available ang pagsusuri',
+  resultNotAnalyzed: 'Hindi nasuri',
+  resultActionReviewPhoto: 'Suriin ang lokal na larawan',
+  resultActionBrowseGuidance: 'Mag-browse ng lokal na gabay',
+  resultActionStartMonitoring: 'Simulan ang pagmamasid',
+  
+  // chat
+  chatConversations: 'Mga usapan',
+  chatMoveToTrash: 'Ilipat sa Basurahan',
+  chatConfirmDeleteBody: 'Sigurado ka bang gusto mong permanenteng burahin ang usapang ito? Hindi na ito maibabalik.',
+  
+  // monitoring
+  monitoringDay1: 'Araw 1',
+  monitoringDay5: 'Araw 5',
+  monitoringDay10: 'Araw 10',
+  monitoringScheduled: 'Nakatakda',
+  monitoringActual: 'Aktwal',
+  monitoringDue: 'Dapat na',
+  monitoringIncomplete: 'Hindi kumpleto',
+  monitoringCompleted: 'Nakumpleto',
+  monitoringCompletedLate: 'Nakumpleto nang huli',
+
+  // observations
+  observationBetter: 'Bumuti',
+  observationAboutSame: 'Walang pinagbago',
+  observationWorse: 'Lumala',
+  observationUnsure: 'Hindi sigurado',
+
+  // missing fields
+  missingPhoto: 'Walang larawang idinagdag',
+  missingNote: 'Walang tala na idinagdag',
+  missingObservation: 'Kailangan ng obserbasyon',
+
+  // trend
+  trendUnavailable: 'Hindi available ang kabuuang pagbabago',
+
+  // offline/error
+  offlineSavedLocally: 'Offline — naka-save sa device',
+  localErrorGeneric: 'Hindi namin makumpleto ang aksyon. Nasa device pa rin ang iyong naka-save na data. Subukan muli o bumalik.',
 };
 
 const DICTIONARIES: Record<Language, Dictionary> = { EN, FIL };

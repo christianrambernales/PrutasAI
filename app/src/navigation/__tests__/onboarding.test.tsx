@@ -45,3 +45,85 @@ test('D-01: completion exposes initialNav at Home (gates pass by returning null)
   act(() => { tree = renderer.create(<OnboardingGate {...BASE} />); });
   expect(tree.toJSON()).toBeNull();
 });
+
+test('D-01: LanguagePickScreen exposes correct CTA and handles loading/error', async () => {
+  let rejectSave: (e: Error) => void = () => {};
+  let resolveSave: () => void = () => {};
+  const mockOnPick = jest.fn(() => new Promise<void>((resolve, reject) => {
+    resolveSave = resolve;
+    rejectSave = reject;
+  }));
+
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = renderer.create(<OnboardingGate {...BASE} languagePicked={false} onPickLanguage={mockOnPick} />); });
+
+  expect(textOf(tree.root)).toContain('Step 1 of 3: Language');
+  
+  // Select English
+  const englishBtn = tree.root.findAll(node => node.props.label === 'English')[0];
+  await act(async () => { englishBtn.props.onPress(); });
+
+  // Submit
+  const ctaBtn = tree.root.findAll(node => node.props.label === 'Continue to mode selection')[0];
+  await act(async () => { ctaBtn.props.onPress(); });
+  
+  // Loading state
+  const loadingBtn = tree.root.findAll(node => node.props.label === 'Saving...')[0];
+  expect(loadingBtn.props.disabled).toBe(true);
+
+  // Error injection
+  await act(async () => { rejectSave(new Error('Network error')); });
+  
+  // Error state and retry
+  expect(textOf(tree.root)).toContain('Failed to save');
+  const retryBtn = tree.root.findAll(node => node.props.label === 'Retry')[0];
+  
+  // Try again
+  await act(async () => { retryBtn.props.onPress(); });
+  await act(async () => { resolveSave(); });
+});
+
+test('D-02: WelcomeScreen exposes correct CTAs and handles error', async () => {
+  let rejectSave: (e: Error) => void = () => {};
+  let resolveSave: () => void = () => {};
+  const mockOnAccount = jest.fn(() => new Promise<void>((resolve, reject) => {
+    resolveSave = resolve;
+    rejectSave = reject;
+  }));
+
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = renderer.create(<OnboardingGate {...BASE} syncMode={null} consented={false} onChooseAccount={mockOnAccount} />); });
+
+  expect(textOf(tree.root)).toContain('Step 2 of 3: Mode');
+  
+  // Select Account
+  const accountBtn = tree.root.findAll(node => typeof node.props.label === 'string' && node.props.label.includes('account'))[0];
+  await act(async () => { accountBtn.props.onPress(); });
+
+  // Submit
+  const ctaBtn = tree.root.findAll(node => node.props.label === 'Review consent')[0];
+  await act(async () => { ctaBtn.props.onPress(); });
+  
+  await act(async () => { rejectSave(new Error('Failed!')); });
+  expect(textOf(tree.root)).toContain('Failed to save');
+});
+
+test('D-02: ConsentScreen exposes exact CTAs and handles error', async () => {
+  let rejectSave: (e: Error) => void = () => {};
+  let resolveSave: () => void = () => {};
+  const mockOnAcknowledge = jest.fn(() => new Promise<void>((resolve, reject) => {
+    resolveSave = resolve;
+    rejectSave = reject;
+  }));
+
+  let tree!: ReactTestRenderer;
+  await act(async () => { tree = renderer.create(<OnboardingGate {...BASE} syncMode="account" consented={false} onAcknowledgeConsent={mockOnAcknowledge} />); });
+
+  expect(textOf(tree.root)).toContain('Step 3 of 3: Consent');
+  
+  const ctaBtn = tree.root.findAll(node => node.props.label === 'Finish setup and go to Home')[0];
+  await act(async () => { ctaBtn.props.onPress(); });
+  
+  await act(async () => { rejectSave(new Error('Failed!')); });
+  expect(textOf(tree.root)).toContain('Failed to save');
+});
