@@ -217,3 +217,26 @@ test('signing in keeps unowned stored conversations and messages out of the acco
   expect(pendingMessages(db, 50, { activeAccountId: 'u1' })).toEqual([]);
   expect(db.get<{ account_id: string | null }>('SELECT account_id FROM conversation WHERE uuid = ?', ['c1'])?.account_id).toBeNull();
 });
+
+test('mode toggles in Settings do not replay onboarding and preserve data', async () => {
+  seedSyncMode('account');
+  mockSession.email = 'grower@example.test';
+  mockSession.accessToken = 'good-token';
+
+  const tree = await render();
+  await act(async () => {});
+
+  press(tree, 'Settings');
+
+  // Try switching to offline mode
+  await act(async () => { press(tree, 'Use offline'); });
+
+  expect(getSyncMode(db)).toBe('offline');
+  expect(textOf(tree.root)).not.toContain('What PrutasAI sends'); // Not replaying onboarding consent
+
+  // Switch back to account. Note: We changed 'Account' to 'Cloud Sync' in SettingsScreen segmented control.
+  await act(async () => { press(tree, 'Cloud Sync'); });
+
+  expect(getSyncMode(db)).toBe('account');
+  expect(textOf(tree.root)).not.toContain('What PrutasAI sends'); // Not replaying onboarding
+});

@@ -211,6 +211,8 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
           onOpenHistory={() => selectTab('history')}
           onOpenAccount={account.openAccount}
           onOpenTrash={() => push({ name: 'trash' })}
+          syncMode={account.account.syncMode}
+          onSetSyncMode={account.handleChooseMode}
         />
       );
     case 'modelStatus':
@@ -246,11 +248,11 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
           onSignOut={() => { void account.signOut(); }}
           onResendConfirmation={email => void account.resendConfirmation(email)}
           onContinueOffline={account.continueOffline}
-          cloudSyncEnabled={account.account.cloudSyncEnabled}
+          syncMode={account.account.syncMode}
           unownedClaimPending={account.account.unownedClaimPending}
           onClaimUnowned={() => void account.claimUnowned()}
           onDeclineUnowned={() => void account.declineUnowned()}
-          onSetCloudSyncEnabled={account.setCloudSyncEnabled}
+          onSetSyncMode={account.handleChooseMode}
           syncCounts={account.account.syncCounts}
           lastSuccessfulSyncAt={account.account.lastSuccessfulSyncAt}
           onSyncNow={() => void account.syncNow()}

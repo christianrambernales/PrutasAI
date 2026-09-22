@@ -27,6 +27,8 @@ export interface SettingsScreenProps {
   onOpenHistory: () => void;
   onOpenAccount: () => void;
   onOpenTrash: () => void;
+  syncMode: 'offline' | 'account' | null;
+  onSetSyncMode: (mode: 'offline' | 'account') => void;
 }
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -81,6 +83,17 @@ export function SettingsScreen(props: SettingsScreenProps) {
             detail={props.accountLabel}
             right={<Icon name="chevronRight" size={18} color={COLORS.textLight} />}
             onPress={props.onOpenAccount}
+          />
+          <GroupRow
+            icon="cloud"
+            title={t.cloudSyncEnabled === 'Cloud sync is on' || t.welcomeOfflineTitle === 'Use offline' ? 'Sync mode' : 'Modo ng pag-sync'}
+            right={
+              <Segmented
+                options={[t.welcomeOfflineTitle, 'Cloud Sync']}
+                value={props.syncMode === 'offline' ? t.welcomeOfflineTitle : 'Cloud Sync'}
+                onChange={(val) => props.onSetSyncMode(val === t.welcomeOfflineTitle ? 'offline' : 'account')}
+              />
+            }
           />
         </Group>
       </Section>

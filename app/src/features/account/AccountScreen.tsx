@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, TextInput } from 'react-native';
 import {
   AppText, Button, Col, COLORS, RADIUS, Section, SPACING, useT,
@@ -17,11 +17,11 @@ export interface AccountScreenProps {
   onSignOut: () => void;
   onResendConfirmation?: (email?: string) => void;
   onContinueOffline?: () => void;
-  cloudSyncEnabled?: boolean;
+  syncMode?: 'offline' | 'account' | null;
   unownedClaimPending?: { scans: number; conversations: number } | null;
   onClaimUnowned?: () => void;
   onDeclineUnowned?: () => void;
-  onSetCloudSyncEnabled?: (enabled: boolean) => void;
+  onSetSyncMode?: (mode: 'offline' | 'account') => void;
   syncCounts?: { pending: number; needsAttention: number; conflicts: number };
   lastSuccessfulSyncAt?: string | null;
   onSyncNow?: () => void;
@@ -38,7 +38,7 @@ export function AccountScreen(props: AccountScreenProps) {
       <Section gap={SPACING.md}>
         <AppText variant="md">{t.signedInAs(props.email)}</AppText>
         <AppText variant="sm" color={COLORS.textSecondary}>
-          {props.cloudSyncEnabled === false ? t.cloudSyncPaused : t.cloudSyncEnabled}
+          {props.syncMode === 'offline' ? t.cloudSyncPaused : t.cloudSyncEnabled}
         </AppText>
         <AppText variant="sm" color={COLORS.textSecondary}>
           {t.syncQueueStatus(
@@ -62,12 +62,12 @@ export function AccountScreen(props: AccountScreenProps) {
         ) : null}
         <Button
           variant="secondary"
-          label={props.cloudSyncEnabled === false ? t.resumeCloudSync : t.pauseCloudSync}
-          onPress={() => props.onSetCloudSyncEnabled?.(props.cloudSyncEnabled === false)}
+          label={props.syncMode === 'offline' ? t.resumeCloudSync : t.pauseCloudSync}
+          onPress={() => props.onSetSyncMode?.(props.syncMode === 'offline' ? 'account' : 'offline')}
         />
         <Button
           label={t.syncNow}
-          onPress={props.cloudSyncEnabled === false || props.unownedClaimPending
+          onPress={props.syncMode === 'offline' || props.unownedClaimPending
             ? undefined
             : () => props.onSyncNow?.()}
         />
