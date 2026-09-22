@@ -24,24 +24,42 @@ test('there is no current route while a tab root is showing', () => {
   expect(currentRoute(initialNav)).toBeNull();
 });
 
-test('going back pops the top route', () => {
+test('D-04: Detail Back pops exactly one route', () => {
   let state = navReducer(initialNav, { type: 'push', route: { name: 'settings' } });
   state = navReducer(state, { type: 'push', route: { name: 'modelStatus' } });
   expect(currentRoute(navReducer(state, { type: 'back' }))).toEqual({ name: 'settings' });
 });
 
-test('going back at a tab root leaves the state untouched', () => {
+test('D-04: Home root unchanged, platform delegates via canGoBack false', () => {
   expect(navReducer(initialNav, { type: 'back' })).toBe(initialNav);
+  expect(canGoBack(initialNav)).toBe(false);
+});
+
+test('D-04: non-Home root Back selects Home', () => {
+  const state = navReducer(initialNav, { type: 'selectTab', tab: 'climate' });
+  expect(navReducer(state, { type: 'back' })).toEqual(initialNav);
+});
+
+test('D-04: repeated Back without cycles returns to Home then exits', () => {
+  let state = navReducer(initialNav, { type: 'selectTab', tab: 'climate' });
+  state = navReducer(state, { type: 'push', route: { name: 'settings' } });
+  
+  // First back pops settings
+  state = navReducer(state, { type: 'back' });
+  expect(state).toEqual({ tab: 'climate', stack: [] });
+  
+  // Second back returns to home
+  state = navReducer(state, { type: 'back' });
+  expect(state).toEqual(initialNav);
+  
+  // Third back does nothing
+  state = navReducer(state, { type: 'back' });
+  expect(state).toBe(initialNav);
 });
 
 test('switching tabs drops any pushed detail screens', () => {
   const state = navReducer(initialNav, { type: 'push', route: { name: 'settings' } });
   expect(navReducer(state, { type: 'selectTab', tab: 'history' }).stack).toEqual([]);
-});
-
-test('back is only available once something is pushed', () => {
-  expect(canGoBack(initialNav)).toBe(false);
-  expect(canGoBack(navReducer(initialNav, { type: 'push', route: { name: 'capture' } }))).toBe(true);
 });
 
 test('routes carry the id the screen needs', () => {

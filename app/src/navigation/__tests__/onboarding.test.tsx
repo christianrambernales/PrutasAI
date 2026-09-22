@@ -22,25 +22,25 @@ function render(over: Partial<OnboardingGateProps>): string {
   return textOf(tree.root);
 }
 
-test('an install that has not picked a language sees that screen first', () => {
+test('D-01: an install that has not picked a language sees that screen first', () => {
   expect(render({ languagePicked: false, syncMode: null, consented: false }))
     .toContain('Choose your language');
 });
 
-test('a language-picked install with no sync mode sees Welcome', () => {
+test('D-01: a language-picked install with no sync mode sees Welcome (retained language)', () => {
   expect(render({ syncMode: null, consented: false })).toContain('Keep your scans');
 });
 
-test('an account install that owes the disclosure sees consent', () => {
+test('D-02: an account install that owes the disclosure sees consent', () => {
   expect(render({ syncMode: 'account', consented: false })).toContain('What PrutasAI sends');
 });
 
-test('an offline install that has just requested an account owes the disclosure too', () => {
+test('D-02: an offline install that has just requested an account owes the disclosure too', () => {
   expect(render({ syncMode: 'offline', consented: false, accountRequested: true }))
     .toContain('What PrutasAI sends');
 });
 
-test('an offline consented install is past the gates', () => {
+test('D-01: completion exposes initialNav at Home (gates pass by returning null)', () => {
   let tree!: ReactTestRenderer;
   act(() => { tree = renderer.create(<OnboardingGate {...BASE} />); });
   expect(tree.toJSON()).toBeNull();
