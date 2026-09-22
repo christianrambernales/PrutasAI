@@ -1,10 +1,11 @@
-﻿import type { SqlDriver } from './driver';
+import type { SqlDriver } from './driver';
 import initial from './migrations/001_initial.sql';
 import location from './migrations/002_scan_location.sql';
 import conversations from './migrations/003_conversations.sql';
 import disease_remedy from './migrations/004_knowledge_disease_remedy.sql';
 import scan_retention from './migrations/005_scan_retention.sql';
 import account_and_sync_security from './migrations/006_account_and_sync_security.sql';
+import monitoring from './migrations/007_monitoring.sql';
 
 export const MIGRATIONS: { version: number; sql: string }[] = [
   { version: 1, sql: initial },
@@ -13,6 +14,7 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
   { version: 4, sql: disease_remedy },
   { version: 5, sql: scan_retention },
   { version: 6, sql: account_and_sync_security },
+  { version: 7, sql: monitoring },
 ];
 
 export function migrate(driver: SqlDriver, migrations = MIGRATIONS): number {

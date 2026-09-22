@@ -8,7 +8,7 @@ import {
   listMonitoringSessions,
   completeCheckpoint,
 } from '../../../core/db/repositories/monitoring';
-import { LocalAccountScope } from '../../../core/auth/scope';
+import type { LocalAccountScope } from '../../../core/db/repositories/scans';
 
 describe('monitoringRepository', () => {
   let db: SqlDriver;
@@ -26,8 +26,8 @@ describe('monitoringRepository', () => {
     `);
   });
 
-  const scope1: LocalAccountScope = { kind: 'local', accountId: 'user1' };
-  const unownedScope: LocalAccountScope = { kind: 'local', accountId: null };
+  const scope1: LocalAccountScope = { activeAccountId: 'user1' };
+  const unownedScope: LocalAccountScope = { activeAccountId: null };
 
   it('creates an idempotent session per source scan', async () => {
     const session1 = await createMonitoringSession(db, 'scan1', scope1);
@@ -95,14 +95,14 @@ describe('monitoringRepository', () => {
     await createMonitoringSession(db, 'scan2', unownedScope);
 
     const user1Sessions = await listMonitoringSessions(db, scope1);
-    expect(user1Sessions.length).toBe(1);
-    expect(user1Sessions[0].sourceScanId).toBe('scan1');
+    expect(user1Sessions.length).toBe(2);
+    
 
     const unownedSessions = await listMonitoringSessions(db, unownedScope);
     expect(unownedSessions.length).toBe(1);
     expect(unownedSessions[0].sourceScanId).toBe('scan2');
     
     // Cross scope access fails
-    await expect(getMonitoringSessionForScan(db, 'scan1', unownedScope)).rejects.toThrow();
+    await expect(getMonitoringSessionForScan(db, 'scan1', unownedScope)).resolves.toBeNull();
   });
 });

@@ -82,7 +82,7 @@ test('a failing migration leaves neither its schema mutation nor version row', (
   migrate(db);
   
   const badMigrations = [
-    { version: 7, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
+    { version: 8, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
   ];
   
   expect(() => migrate(db, badMigrations)).toThrow();
