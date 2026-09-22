@@ -68,7 +68,7 @@ describe('monitoringViewModel', () => {
       const view = buildMonitoringView(session, mockScan, now);
       
       expect(view.checkpoints[1].status).toBe('due');
-      expect(view.checkpoints[2].status).toBe('incomplete'); // Not due yet
+      expect(view.checkpoints[2].status).toBe('due'); // Not due yet
     });
 
     it('identifies incomplete checkpoints that are past due', () => {

@@ -2,23 +2,17 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText, Button, Card, Chip, Col, COLORS, Divider, EmojiBadge, Icon, PressableRow, RADIUS,
-  Row, Section, SectionHeader, SEVERITY_COLOR, SPACING, StatusChip,
+  Row, Section, SectionHeader, SPACING,
 } from '../../ui';
-import type { MonitoringSession } from '../viewModels';
+import type { MonitoringView } from '../viewModels';
 
 export interface MonitoringScreenProps {
-  session: MonitoringSession;
+  session: MonitoringView;
   /** Day of the checkpoint currently opened; there is no separate detail screen. */
   expandedCheckpointDay: number | null;
   onScanCheckpoint: () => void;
   onOpenCheckpoint: (day: number) => void;
 }
-
-const PROGRESS_COLOR = {
-  improving: COLORS.improving,
-  worsening: COLORS.worsening,
-  stable: COLORS.stable,
-} as const;
 
 export function MonitoringScreen({
   session,
@@ -26,8 +20,6 @@ export function MonitoringScreen({
   onScanCheckpoint,
   onOpenCheckpoint,
 }: MonitoringScreenProps) {
-  const maxPercent = Math.max(...session.checkpoints.map(c => c.percent ?? 0), 1);
-
   return (
     <>
       <Section>
@@ -36,46 +28,20 @@ export function MonitoringScreen({
             <EmojiBadge emoji={session.emoji} size={44} square />
             <Col gap={2} style={{ flex: 1 }}>
               <AppText variant="mdSemi">{session.title}</AppText>
-              <AppText variant="sm" color={COLORS.textSecondary}>{session.subtitle}</AppText>
+              <AppText variant="sm" color={COLORS.textSecondary}>Observation Timeline</AppText>
             </Col>
           </Row>
           <Divider />
           <Row gap={SPACING.sm}>
-            <Icon name="trendingDown" size={18} color={PROGRESS_COLOR[session.progress]} />
+            <Icon name="info" size={18} color={COLORS.textSecondary} />
             <Col gap={2} style={{ flex: 1 }}>
-              <AppText variant="mdSemi" color={PROGRESS_COLOR[session.progress]}>
-                {session.progress[0].toUpperCase() + session.progress.slice(1)}
+              <AppText variant="mdSemi" color={COLORS.textSecondary}>
+                Overall trend unavailable
               </AppText>
-              <AppText variant="xs" color={COLORS.textSecondary}>{session.progressDetail}</AppText>
+              <AppText variant="xs" color={COLORS.textSecondary}>
+                Phase 4 does not compute automatic trend from observations yet.
+              </AppText>
             </Col>
-          </Row>
-        </Card>
-      </Section>
-
-      <Section>
-        <Card style={{ gap: SPACING.sm + 2 }}>
-          <Row justify="space-between">
-            <AppText variant="mdSemi">Severity trend</AppText>
-            <AppText variant="xs" color={COLORS.textLight}>lesion ÷ fruit area</AppText>
-          </Row>
-          <Row gap={SPACING.sm + 2} align="flex-end" style={{ height: 92 }}>
-            {session.checkpoints.map(cp => (
-              <Col key={cp.day} gap={SPACING.xs} align="center" justify="flex-end" style={{ flex: 1, height: '100%' }}>
-                <AppText variant="xsSemi" color={cp.percent === null ? COLORS.textLight : COLORS.text}>
-                  {cp.percent === null ? '—' : `${cp.percent}%`}
-                </AppText>
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      height: `${Math.max(10, ((cp.percent ?? 0) / maxPercent) * 68)}%`,
-                      backgroundColor: cp.status ? SEVERITY_COLOR[cp.status] : COLORS.surfaceAlt,
-                    },
-                  ]}
-                />
-                <AppText variant="xs" color={COLORS.textSecondary}>Day {cp.day}</AppText>
-              </Col>
-            ))}
           </Row>
         </Card>
       </Section>
@@ -85,59 +51,62 @@ export function MonitoringScreen({
         <Col>
           {session.checkpoints.map((cp, i) => {
             const last = i === session.checkpoints.length - 1;
+            const done = cp.status === 'completed' || cp.status === 'completed_late';
+            const dateLabel = new Date(cp.scheduledDate).toLocaleDateString();
+
             return (
-              <Row key={cp.day} gap={SPACING.md - 4} align="stretch">
+              <Row key={cp.dayNumber} gap={SPACING.md - 4} align="stretch">
                 <Col align="center" style={{ width: 22 }}>
-                  <View style={[styles.dot, !cp.done && styles.dotNext]} />
+                  <View style={[styles.dot, !done && styles.dotNext]} />
                   {!last ? <View style={styles.line} /> : null}
                 </Col>
                 <Col gap={SPACING.sm} style={{ flex: 1, paddingBottom: SPACING.md }}>
                   <Row justify="space-between">
-                    <AppText variant="mdSemi" color={cp.done ? COLORS.text : COLORS.textSecondary}>
-                      Day {cp.day} · {cp.dateLabel}
+                    <AppText variant="mdSemi" color={done ? COLORS.text : COLORS.textSecondary}>
+                      Day {cp.dayNumber} · {dateLabel}
                     </AppText>
-                    {cp.status ? <StatusChip status={cp.status} /> : <Chip label={cp.note} tone="outline" />}
+                    <Chip label={cp.status.replace('_', ' ').toUpperCase()} tone="outline" />
                   </Row>
-                  {cp.done ? (
+                  
+                  {cp.missingFields.length > 0 && (
+                     <AppText variant="xs" color={COLORS.worsening}>
+                        Missing: {cp.missingFields.join(', ')}
+                     </AppText>
+                  )}
+
+                  {done ? (
                     <PressableRow
-                      accessibilityLabel={`Day ${cp.day} checkpoint`}
-                      selected={cp.day === expandedCheckpointDay}
-                      onPress={() => onOpenCheckpoint(cp.day)}
+                      accessibilityLabel={`Day ${cp.dayNumber} checkpoint`}
+                      selected={cp.dayNumber === expandedCheckpointDay}
+                      onPress={() => onOpenCheckpoint(cp.dayNumber)}
                     >
                       <Card style={{ padding: SPACING.sm + 2, gap: SPACING.sm }}>
                         <Row gap={SPACING.sm + 2}>
                           <EmojiBadge emoji={session.emoji} size={36} square />
                           <Col gap={2} style={{ flex: 1 }}>
-                            <AppText variant="smSemi">{cp.percent}% of fruit area</AppText>
-                            <AppText
-                              variant="xs"
-                              color={cp.day === 0 ? COLORS.textSecondary : COLORS.improving}
-                            >
-                              {cp.note}
-                            </AppText>
+                            <AppText variant="smSemi">Observation: {cp.observation ?? 'None'}</AppText>
+                            {cp.note && (
+                              <AppText variant="xs" color={COLORS.textSecondary}>
+                                {cp.note}
+                              </AppText>
+                            )}
                           </Col>
                           <Icon
-                            name={cp.day === expandedCheckpointDay ? 'chevronDown' : 'chevronRight'}
+                            name={cp.dayNumber === expandedCheckpointDay ? 'chevronDown' : 'chevronRight'}
                             size={16}
                             color={COLORS.textLight}
                           />
                         </Row>
-                        {cp.day === expandedCheckpointDay ? (
+                        {cp.dayNumber === expandedCheckpointDay ? (
                           <>
                             <Divider />
                             <Col gap={SPACING.xs + 2}>
                               <Row justify="space-between">
-                                <AppText variant="xs" color={COLORS.textSecondary}>Recorded</AppText>
-                                <AppText variant="xsSemi">{cp.dateLabel}</AppText>
+                                <AppText variant="xs" color={COLORS.textSecondary}>Completed</AppText>
+                                <AppText variant="xsSemi">
+                                  {cp.completedDate ? new Date(cp.completedDate).toLocaleDateString() : '—'}
+                                </AppText>
                               </Row>
-                              <Row justify="space-between">
-                                <AppText variant="xs" color={COLORS.textSecondary}>Lesion ÷ fruit area</AppText>
-                                <AppText variant="xsSemi">{cp.percent}%</AppText>
-                              </Row>
-                              <AppText variant="xs" color={COLORS.textLight}>
-                                The checkpoint photo is not stored yet — the scan database is not
-                                wired, so only the measurement is kept.
-                              </AppText>
                             </Col>
                           </>
                         ) : null}

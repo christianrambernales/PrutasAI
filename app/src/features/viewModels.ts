@@ -31,6 +31,7 @@ export interface RemedySummary {
   instructionEn: string | null;
   instructionFil: string | null;
   isPrevention: boolean;
+  source?: Source | null;
 }
 
 export interface DiseaseSummary {
@@ -40,6 +41,7 @@ export interface DiseaseSummary {
   descriptionEn: string | null;
   descriptionFil: string | null;
   remedies: RemedySummary[];
+  source?: Source | null;
 }
 
 
@@ -120,22 +122,27 @@ export interface ScanResult {
   savedLabel: string;
 }
 
-export interface Checkpoint {
-  day: 0 | 5 | 10;
-  dateLabel: string;
-  status: SeverityKey | null;
-  percent: number | null;
-  note: string;
-  done: boolean;
+export type MonitoringCheckpointStatus = 'due' | 'incomplete' | 'completed' | 'completed_late';
+export type MonitoringMissingField = 'photo_missing' | 'note_missing' | 'observation_needed';
+
+export interface MonitoringCheckpointView {
+  id: string;
+  dayNumber: number;
+  scheduledDate: number;
+  completedDate: number | null;
+  status: MonitoringCheckpointStatus;
+  missingFields: MonitoringMissingField[];
+  observation: 'better' | 'same' | 'worse' | 'unsure' | null;
+  note: string | null;
+  photoUri: string | null;
 }
 
-export interface MonitoringSession {
+export interface MonitoringView {
+  id: string;
   emoji: string;
   title: string;
-  subtitle: string;
-  progress: 'improving' | 'worsening' | 'stable';
-  progressDetail: string;
-  checkpoints: Checkpoint[];
+  overallTrend: 'unavailable';
+  checkpoints: MonitoringCheckpointView[];
 }
 
 export interface ChatMessage {
