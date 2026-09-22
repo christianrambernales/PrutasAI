@@ -46,8 +46,13 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         ? { ...state, stack: [action.route] }
         : { ...state, stack: [...state.stack.slice(0, -1), action.route] };
     case 'back':
-      if (state.stack.length === 0) return state;
-      return { ...state, stack: state.stack.slice(0, -1) };
+      if (state.stack.length > 0) {
+        return { ...state, stack: state.stack.slice(0, -1) };
+      }
+      if (state.tab !== 'home') {
+        return initialNav;
+      }
+      return state;
   }
 }
 
@@ -56,5 +61,5 @@ export function currentRoute(state: NavState): Route | null {
 }
 
 export function canGoBack(state: NavState): boolean {
-  return state.stack.length > 0;
+  return state.stack.length > 0 || state.tab !== 'home';
 }

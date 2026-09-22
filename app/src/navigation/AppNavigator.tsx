@@ -36,10 +36,10 @@ import { TabBar, TabBody, tabItems } from './render/tabs';
 import type { Shell } from './shell';
 import { useHistoryFilters } from '../features/history/useHistoryFilters';
 
-export function AppNavigator() {
+export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/driver').SqlDriver } = {}) {
   // Opened once. History is read from here, so what the app shows is what the
   // device actually stored — there is no sample history behind it any more.
-  const db = useMemo(() => openAppDatabase(), []);
+  const db = useMemo(() => preparedDb ?? openAppDatabase(), [preparedDb]);
 
   // Once per day: sweep conversations past the Trash retention period. Any
   // device may run this — every other device's own sweep or next restore
@@ -156,15 +156,18 @@ export function AppNavigator() {
     [db, dataVersion, accountScope],
   );
 
+  const navRef = React.useRef(nav);
+  navRef.current = nav;
+
   // Android hardware back mirrors the in-app back button.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!canGoBack(nav)) return false;
+      if (!canGoBack(navRef.current)) return false;
       back();
       return true;
     });
     return () => sub.remove();
-  }, [nav, back]);
+  }, [back]);
 
   const statuses = useMemo(() => resolveModels(manifest, bundledModels, {}), []);
   const capability = useMemo(() => describeDetectionCapability(statuses), [statuses]);
