@@ -10,12 +10,13 @@ provides:
   - Pure validator for versioned model manifests and separate owner approval records
   - JSON Schema contract and empty approval registry for future owner submissions
   - Strict source manifest, role, fruit, and tensor contract types
+  - Owner-approved LiteRT signature keys and tensor alias bindings
 affects: [model-sync, app-ml-status]
 
 # Tech tracking
 tech-stack:
   added: []
-  patterns: [pure contract validation, owner approval separated from manifest, stable validation error codes]
+patterns: [pure contract validation, owner approval separated from manifest, stable validation error codes, explicit signature alias binding]
 
 key-files:
   created: [scripts/model-contract.mjs, scripts/model-contract.test.mjs, models/approval-contract.schema.json, models/approval.json]
@@ -25,6 +26,7 @@ key-decisions:
   - "Keep the empty source manifest and approval registry as the valid model-free state."
   - "Require a matching owner-approved record for every nonempty manifest role, bound to its file, version, hash, fruit scope, and confidence threshold."
   - "Keep actual tensors, labels, threshold values, versions, and hashes absent until supplied with owner-approved artifacts."
+  - "Require explicit approved signatures with aliases bound to declared input/output tensor details; an empty signatures array represents a model with no signatures."
 
 patterns-established:
   - "Role IDs map to explicit pipeline stages and supported fruit applicability."
@@ -61,7 +63,7 @@ completed: 2026-09-25
 | Check | Result |
 |---|---|
 | RED: `node --test scripts/model-contract.test.mjs` before implementation | Failed as expected with `ERR_MODULE_NOT_FOUND` for the not-yet-created validator module. |
-| GREEN: `node --test scripts/model-contract.test.mjs` | Passed, 12 tests and 0 failures. |
+| GREEN: `node --test scripts/model-contract.test.mjs` | Passed after the signature amendment, 15 tests and 0 failures. |
 | `npm --prefix app run typecheck` | Passed, exit 0. |
 | Parse actual source manifest and approval registry through `parseModelContract` | Passed; both arrays contain zero entries. |
 | Parse `models/approval-contract.schema.json` | Passed. |
@@ -70,10 +72,21 @@ completed: 2026-09-25
 
 The approval registry and fixtures do not establish owner approval for a real artifact. The validator checks contract structure and equality; synchronization still needs to verify actual file bytes and publish transactionally in a later plan. Real tensor inspection, device inference, and model-present status remain unavailable.
 
+## Cross-Plan Contract Amendment (2026-09-25)
+
+Plan 06-02 integration identified that the original owner contract did not record LiteRT signature metadata for comparison with inspected artifacts. Added a required `signatures` array to every approval record, including typed `key`, `inputs`, and `outputs`. Each input/output map binds an alias to a name in the corresponding approved tensor details. The validator rejects unsafe or empty identifiers, unknown tensor references, repeated binding targets, and duplicate signature keys. An explicit empty array remains valid when an artifact exposes no signatures.
+
+The sync implementer confirmed this mirrors inspector data: `signatures: [{ key, inputs: { alias: tensorName }, outputs: { alias: tensorName } }]`. The schema, parser, TypeScript type, and README now use the same shape. The amended RED run exposed the unsupported field and failing binding cases; the final focused suite passed 15/15. No real model signatures are supplied or claimed.
+
 ## Task Commits
 
 1. **Task 1: RED — specify import-contract acceptance and rejection** - `7bcf76c` (`test(06-01): specify approved model contract validation`)
 2. **Task 2: GREEN/REFACTOR — implement the contract validator and owner template** - `d2842f8` (`feat(06-01): implement approved model contract validation`)
+
+## Cross-Plan Amendment Commits
+
+1. **RED: require owner-approved LiteRT signatures** - `ccdee8c` (`test(06-01): require approved LiteRT signatures`)
+2. **GREEN: validate approved LiteRT signatures** - `3b8aeb5` (`feat(06-01): validate approved LiteRT signatures`)
 
 ## Files Created/Modified
 
@@ -89,6 +102,7 @@ The approval registry and fixtures do not establish owner approval for a real ar
 - A manifest role ID is the role itself; each role can occur once and each entry declares its fruit applicability.
 - Fruit detector and disease detector roles may name an explicitly approved supported subset. A variety role is restricted to its corresponding fruit.
 - Tensor dimensions, labels, thresholds, model versions, and artifact hashes remain owner-supplied; test fixtures are synthetic and confined to the test file.
+- Signature entries mirror the inspector shape and bind aliases to declared tensor detail names; empty arrays are explicit declarations, not omitted fields.
 
 ## Deviations from Plan
 
@@ -114,12 +128,12 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-Plan 06-01 is ready for integration with the model synchronization plan. The current checkout still has no owner-approved artifact or real tensor contract, so model-present import and inference remain unverified.
+The amended contract is ready for Plan 06-02 to compare inspector signatures against owner-approved bindings. The current checkout still has no owner-approved artifact or real tensor/signature contract, so model-present import and inference remain unverified.
 
 ## Self-Check: PASSED
 
 - All plan-owned source files and this summary exist.
-- RED commit `7bcf76c` and GREEN commit `d2842f8` are present in git history.
+- Original RED/GREEN commits `7bcf76c` and `d2842f8`, plus amendment RED/GREEN commits `ccdee8c` and `3b8aeb5`, are present in git history.
 
 ---
 *Phase: 06-file-based-ml-readiness*
