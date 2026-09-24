@@ -46,6 +46,11 @@ function approvalFor(entry) {
     approved_at: '2026-09-24T00:00:00.000Z',
     inputs: [{ name: 'fixture_input', shape: [1], dtype: 'float32' }],
     outputs: [{ name: 'fixture_output', shape: [1], dtype: 'float32' }],
+    signatures: [{
+      key: 'serving_default',
+      inputs: { image: 'fixture_input' },
+      outputs: { scores: 'fixture_output' },
+    }],
     label_mapping: {
       output_name: 'fixture_output',
       index_to_label: ['fixture_label_only'],
@@ -179,6 +184,57 @@ test('requires label mapping semantics to reference a declared output tensor', (
   approvals.approvals[0].label_mapping.output_name = 'missing_output';
 
   assertCode('INVALID_LABEL_MAPPING', manifest, approvals);
+});
+
+test('requires an explicit signatures array and accepts an explicit empty array', () => {
+  const entry = entryFor('fruit_detector');
+  let { manifest, approvals } = contractFor([entry]);
+  delete approvals.approvals[0].signatures;
+  assertCode('INVALID_SIGNATURES', manifest, approvals);
+
+  ({ manifest, approvals } = contractFor([entry]));
+  approvals.approvals[0].signatures = [];
+  assert.doesNotThrow(() => parseModelContract(manifest, approvals));
+});
+
+test('requires typed signatures whose input and output aliases bind approved tensor names', () => {
+  const entry = entryFor('fruit_detector');
+  const mutations = [
+    signature => { signature.inputs = []; },
+    signature => { signature.outputs = {}; },
+    signature => { signature.inputs = { image: 'unapproved_input' }; },
+    signature => { signature.outputs = { scores: 'unapproved_output' }; },
+    signature => { signature.inputs = { 'unsafe alias': 'fixture_input' }; },
+    signature => { signature.outputs = { scores: 'unsafe target name' }; },
+  ];
+
+  for (const mutate of mutations) {
+    const { manifest, approvals } = contractFor([entry]);
+    mutate(approvals.approvals[0].signatures[0]);
+    assertCode('INVALID_SIGNATURE_BINDING', manifest, approvals);
+  }
+
+  const { manifest, approvals } = contractFor([entry]);
+  approvals.approvals[0].signatures[0].key = '';
+  assertCode('INVALID_SIGNATURES', manifest, approvals);
+});
+
+test('rejects duplicate signature keys and repeated tensor bindings', () => {
+  const entry = entryFor('fruit_detector');
+  let { manifest, approvals } = contractFor([entry]);
+  approvals.approvals[0].signatures.push({
+    key: 'serving_default',
+    inputs: { image: 'fixture_input' },
+    outputs: { scores: 'fixture_output' },
+  });
+  assertCode('DUPLICATE_SIGNATURE_KEY', manifest, approvals);
+
+  ({ manifest, approvals } = contractFor([entry]));
+  approvals.approvals[0].signatures[0].inputs = {
+    image: 'fixture_input',
+    pixels: 'fixture_input',
+  };
+  assertCode('DUPLICATE_SIGNATURE_BINDING', manifest, approvals);
 });
 
 test('requires a separate owner-approved record bound to role, file, version, and hash', () => {
