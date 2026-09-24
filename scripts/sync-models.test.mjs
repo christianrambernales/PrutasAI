@@ -297,7 +297,7 @@ test('a version or owner-approval mismatch fails and preserves all outputs', asy
     const approval = clone(fixture.approvals);
     approval.approvals[0].version = '2.0.0';
     await writeContracts(fixture, fixture.manifest, approval);
-    await assertFailurePreserves(fixture, () => sync(fixture), /fruit_detector.*approval.*match/i);
+    await assertFailurePreserves(fixture, () => sync(fixture), /approval for "fruit_detector".*version/i);
   } finally {
     cleanup(fixture);
   }
@@ -404,7 +404,11 @@ test('the production CLI invokes the real inspector for a nonempty import and re
       windowsHide: true,
     });
     assert.notEqual(result.status, 0, 'invalid test bytes cannot pass real LiteRT inspection');
-    assert.match(`${result.stderr}\n${result.stdout}`, /LiteRT|ai-edge-litert|inspect|model/i);
+    assert.match(
+      `${result.stderr}\n${result.stdout}`,
+      /ai-edge-litert is unavailable|LiteRT inspector|Python executable was not found/i,
+      'nonempty production sync must reach the real bounded LiteRT inspector',
+    );
     assert.deepEqual(await snapshotOutputs(fixture.appDir), before);
   } finally {
     cleanup(fixture);
