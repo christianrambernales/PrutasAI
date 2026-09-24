@@ -35,6 +35,12 @@ export interface ModelTensor {
   dtype: TensorDType;
 }
 
+export interface ModelSignature {
+  key: string;
+  inputs: Record<string, string>;
+  outputs: Record<string, string>;
+}
+
 export interface ModelEntry {
   id: string;
   stage: number;
@@ -70,6 +76,7 @@ export interface ModelApprovalRecord {
   approved_at: string;
   inputs: ModelTensor[];
   outputs: ModelTensor[];
+  signatures: ModelSignature[];
   label_mapping: {
     output_name: string;
     index_to_label: string[];

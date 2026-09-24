@@ -156,12 +156,72 @@ function validateLabelMapping(value, outputs) {
   return { output_name: outputName, index_to_label: value.index_to_label.map(label => label.trim()) };
 }
 
+function validateSignatureToken(value, field, code = 'INVALID_SIGNATURES') {
+  const token = requireString(value, code, field);
+  if (
+    token !== value ||
+    !/^[A-Za-z_][A-Za-z0-9._:/@+-]{0,255}$/.test(token) ||
+    ['__proto__', 'constructor', 'prototype'].includes(token)
+  ) {
+    fail(code, `${field} must be a safe nonempty signature identifier.`);
+  }
+  return token;
+}
+
+function validateSignatureBindings(value, tensorNames, field) {
+  if (!isRecord(value) || Object.keys(value).length === 0) {
+    fail('INVALID_SIGNATURE_BINDING', `${field} must map at least one alias to an approved tensor name.`);
+  }
+  const aliases = new Set();
+  const names = new Set();
+  const bindings = {};
+  for (const [rawAlias, rawTensorName] of Object.entries(value)) {
+    const alias = validateSignatureToken(rawAlias, `${field} alias`, 'INVALID_SIGNATURE_BINDING');
+    const tensorName = validateSignatureToken(rawTensorName, `${field}.${alias}`, 'INVALID_SIGNATURE_BINDING');
+    if (aliases.has(alias)) {
+      fail('DUPLICATE_SIGNATURE_BINDING', `${field} contains duplicate alias "${alias}".`);
+    }
+    if (names.has(tensorName)) {
+      fail('DUPLICATE_SIGNATURE_BINDING', `${field} binds tensor "${tensorName}" more than once.`);
+    }
+    if (!tensorNames.has(tensorName)) {
+      fail('INVALID_SIGNATURE_BINDING', `${field}.${alias} must reference an approved tensor detail name.`);
+    }
+    aliases.add(alias);
+    names.add(tensorName);
+    bindings[alias] = tensorName;
+  }
+  return bindings;
+}
+
+function validateSignatures(value, inputs, outputs, field) {
+  if (!Array.isArray(value)) {
+    fail('INVALID_SIGNATURES', `${field} must be an explicit array; use [] only when the model has no signatures.`);
+  }
+  const keys = new Set();
+  const inputNames = new Set(inputs.map(tensor => tensor.name));
+  const outputNames = new Set(outputs.map(tensor => tensor.name));
+  return value.map((signature, index) => {
+    const signatureField = `${field}[${index}]`;
+    if (!isRecord(signature)) fail('INVALID_SIGNATURES', `${signatureField} must be an object.`);
+    assertKeys(signature, new Set(['key', 'inputs', 'outputs']), signatureField, 'INVALID_SIGNATURES');
+    const key = validateSignatureToken(signature.key, `${signatureField}.key`);
+    if (keys.has(key)) fail('DUPLICATE_SIGNATURE_KEY', `${field} contains duplicate signature key "${key}".`);
+    keys.add(key);
+    return {
+      key,
+      inputs: validateSignatureBindings(signature.inputs, inputNames, `${signatureField}.inputs`),
+      outputs: validateSignatureBindings(signature.outputs, outputNames, `${signatureField}.outputs`),
+    };
+  });
+}
+
 function validateApproval(approval, index, seenIds, seenFiles) {
   const label = `approvals[${index}]`;
   if (!isRecord(approval)) fail('INVALID_APPROVAL', `${label} must be an object.`);
   const keys = new Set([
     'id', 'file', 'version', 'sha256', 'fruits', 'min_confidence', 'status',
-    'approved_by', 'approved_at', 'inputs', 'outputs', 'label_mapping',
+    'approved_by', 'approved_at', 'inputs', 'outputs', 'label_mapping', 'signatures',
   ]);
   assertKeys(approval, keys, label, 'INVALID_APPROVAL');
   const id = requireString(approval.id, 'UNKNOWN_ROLE', `${label}.id`);
@@ -186,7 +246,8 @@ function validateApproval(approval, index, seenIds, seenFiles) {
   const inputs = validateTensorList(approval.inputs, `${label}.inputs`);
   const outputs = validateTensorList(approval.outputs, `${label}.outputs`);
   const labelMapping = validateLabelMapping(approval.label_mapping, outputs);
-  return { id, file, version, sha256, fruits, min_confidence: minConfidence, inputs, outputs, label_mapping: labelMapping };
+  const signatures = validateSignatures(approval.signatures, inputs, outputs, `${label}.signatures`);
+  return { id, file, version, sha256, fruits, min_confidence: minConfidence, inputs, outputs, label_mapping: labelMapping, signatures };
 }
 
 function parseModel(value) {

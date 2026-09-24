@@ -47,7 +47,7 @@
     "approval": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "file", "version", "sha256", "fruits", "min_confidence", "status", "approved_by", "approved_at", "inputs", "outputs", "label_mapping"],
+      "required": ["id", "file", "version", "sha256", "fruits", "min_confidence", "status", "approved_by", "approved_at", "inputs", "outputs", "label_mapping", "signatures"],
       "properties": {
         "id": { "$ref": "#/$defs/role" },
         "file": {
@@ -64,6 +64,7 @@
         "approved_at": { "type": "string", "format": "date-time" },
         "inputs": { "type": "array", "items": { "$ref": "#/$defs/tensor" }, "minItems": 1 },
         "outputs": { "type": "array", "items": { "$ref": "#/$defs/tensor" }, "minItems": 1 },
+        "signatures": { "type": "array", "items": { "$ref": "#/$defs/signature" } },
         "label_mapping": {
           "type": "object",
           "additionalProperties": false,
@@ -79,6 +80,25 @@
         { "if": { "properties": { "id": { "const": "variety_mango" } } }, "then": { "properties": { "fruits": { "const": ["mango"] } } } },
         { "if": { "properties": { "id": { "const": "variety_papaya" } } }, "then": { "properties": { "fruits": { "const": ["papaya"] } } } }
       ]
+    },
+    "signatureBindings": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9._:/@+-]{0,255}$" },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9._:/@+-]{0,255}$"
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "inputs", "outputs"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9._:/@+-]{0,255}$" },
+        "inputs": { "$ref": "#/$defs/signatureBindings" },
+        "outputs": { "$ref": "#/$defs/signatureBindings" }
+      }
     }
   }
 }

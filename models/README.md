@@ -34,7 +34,10 @@ and confidence value must match a separate entry in `approval.json`.
 Each approval record also supplies `status: "owner_approved"`, the owner's
 identity and approval date, nonempty input and output tensor names, the actual
 shape dimensions and dtypes, and an index-to-label mapping that identifies its
-output tensor. The checked-in
+output tensor. It must also include a `signatures` array: each entry has a
+signature `key` and `inputs`/`outputs` maps from aliases to names in the approved
+tensor details. Use an explicit empty array only when the actual model exposes
+no signatures. The checked-in
 [approval contract schema](approval-contract.schema.json) defines that record
 shape. The pure contract validator can be run with:
 
