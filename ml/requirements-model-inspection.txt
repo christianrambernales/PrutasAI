@@ -1,0 +1,2 @@
+# Use CPython 3.12 for the pinned build-time model inspection runtime.
+ai-edge-litert==2.2.0
