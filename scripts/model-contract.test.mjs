@@ -10,6 +10,13 @@ const ROLE_FRUITS = {
   variety_papaya: ['papaya'],
   disease_detector: FRUITS,
 };
+const ROLE_STAGES = {
+  fruit_detector: 1,
+  variety_banana: 2,
+  variety_mango: 2,
+  variety_papaya: 2,
+  disease_detector: 3,
+};
 
 // These deliberately synthetic values exist only to exercise the contract.
 // They are not owner approval, production tensor dimensions, labels, hashes, or
@@ -17,6 +24,7 @@ const ROLE_FRUITS = {
 function entryFor(id, suffix = 'test-fixture') {
   return {
     id,
+    stage: ROLE_STAGES[id],
     file: `${id}_${suffix}.tflite`,
     version: 'fixture-version-1',
     sha256: 'a'.repeat(64),
@@ -101,7 +109,7 @@ test('requires fruit-specific variety roles to declare only their supported frui
 });
 
 test('rejects unsafe filenames and non-tflite basenames before any file access', () => {
-  for (const file of ['../outside.tflite', 'folder/model.tflite', 'folder\\model.tflite', 'model.bin']) {
+  for (const file of ['../outside.tflite', 'folder/model.tflite', 'folder\\model.tflite', 'model.bin', 'model.TFLITE']) {
     const entry = entryFor('fruit_detector');
     entry.file = file;
     const { manifest, approvals } = contractFor([entry]);
