@@ -95,3 +95,13 @@ Do not promote any of the static or synthetic results above to browser, device, 
 - **Phase 5:** local SAFE evidence remains distinct from browser/device, bilingual/agronomic review, live-provider, authenticated, and deployed-QA gates. See [05-VERIFICATION.md](../05-assistant-climate-and-safety/05-VERIFICATION.md).
 
 No Phase 6 command or artifact closes these inherited gates.
+
+## Orchestrator Global Verification Addendum — 2026-09-25
+
+The independent global pass reviewed the five plan summaries, the import validator and transactional sync, the generated-metadata registry, and the reachable model-status route. It reproduced the language-inventory failure with `npm --prefix app test -- --runInBand src/features/__tests__/language.test.tsx` (exit 1: `fruitPapaya` was the sole unexpected identical EN/FIL value). It also found that the model-status Refresh action only displayed cached counts rather than re-reading model metadata.
+
+GPT-6 Luna fix agents committed `a603ecb` (add the legitimate identical `Papaya` label to the strict translation inventory) and `d0c7983` (remove the misleading model-status refresh action and update its route test). The language test then passed 9/9; the focused model-status route tests passed 2/2; the fix agent's root typecheck passed.
+
+At HEAD `d0c79830105f993ed427fc790d55bf3ceea35d1a` on branch `Thesis_2_Prototype`, with the pre-existing dirty worktree preserved, the orchestrator reran `npm test` and `npm run typecheck`. Both exited **0**, with results observed by 2026-09-25T06:23:49Z. The root test command reached its script, app, and API phases; the earlier failed run remains recorded above and is superseded only for the current local-test verdict. `git show --check` passed for both fix commits, and `gsd-sdk query init.execute-phase 6` reported five summaries and zero incomplete plans.
+
+These post-fix checks establish a passing local suite and typecheck for this dirty checkout. They do not add owner-approved model bytes, a positive real LiteRT inspection, browser runtime, an Android APK/device run, or inference evidence. The corresponding **Blocked** and **Not tested** verdicts above remain unchanged.
