@@ -26,16 +26,14 @@ test('reachable model status route uses the selected language and never offers d
   expect(content).not.toMatch(/diagnos(?:is|tic)/i);
 });
 
-test('refresh toast localizes build-validation counts and keeps inference separate', () => {
+test('model status route omits the misleading registry refresh control and retains Back', () => {
   const shell = makeShell({ t: strings('FIL') });
-  shell.data.statuses = [{}, {}, {}] as never;
-  shell.data.readyCount = 2;
-
   const tree = render(<RouteBar shell={shell} route={{ name: 'modelStatus' }} />);
+
+  expect(tree.root.findAll(node => node.props.accessibilityLabel === shell.t.rereadRegistry)).toHaveLength(0);
   act(() => {
-    findPressable(tree, shell.t.rereadRegistry).props.onPress();
+    findPressable(tree, 'Go back').props.onPress();
   });
 
-  expect(shell.nav.notify).toHaveBeenCalledWith(shell.t.modelRegistryRefreshed(2, 3));
-  expect(shell.nav.notify).toHaveBeenCalledWith(expect.stringContaining(shell.t.modelInferenceUnverified));
+  expect(shell.nav.back).toHaveBeenCalledTimes(1);
 });

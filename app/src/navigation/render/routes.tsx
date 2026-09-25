@@ -54,20 +54,8 @@ export function routeTitle(route: Route, t: Strings, fruits: FruitSummary[]): st
 
 export function RouteBar({ shell, route: r }: { shell: Shell; route: Route }) {
   const { t } = shell;
-  const { back, notify } = shell.nav;
-  const { fruits, statuses, readyCount } = shell.data;
-
-  if (r.name === 'modelStatus') {
-    return (
-      <AppBar
-        title={routeTitle(r, t, fruits)}
-        onBack={back}
-        action="refresh"
-        actionLabel={t.rereadRegistry}
-        onAction={() => notify(t.modelRegistryRefreshed(readyCount, statuses.length))}
-      />
-    );
-  }
+  const { back } = shell.nav;
+  const { fruits } = shell.data;
   return <AppBar title={routeTitle(r, t, fruits)} onBack={back} />;
 }
 
