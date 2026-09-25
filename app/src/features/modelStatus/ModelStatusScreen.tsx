@@ -2,7 +2,8 @@ import React from 'react';
 import { describeDetectionCapability } from '../../core/status';
 import { bundledModels } from '../../core/ml/bundledModels';
 import manifest from '../../core/ml/manifest.json';
-import { pipelineDepth, resolveModels } from '../../core/ml/registry';
+import verifiedModels from '../../core/ml/verifiedModels.json';
+import { resolveModelRegistry } from '../../core/ml/registry';
 import type { ModelRow } from '../viewModels';
 import { ModelStatusView } from './ModelStatusView';
 
@@ -11,23 +12,24 @@ import { ModelStatusView } from './ModelStatusView';
  * this screen says so, which is the whole point of it existing.
  */
 export function ModelStatusScreen({ onImportModel }: { onImportModel?: () => void }) {
-  const statuses = resolveModels(manifest, bundledModels, {});
-  const capability = describeDetectionCapability(statuses);
+  const registry = resolveModelRegistry(manifest, bundledModels, verifiedModels);
+  const capability = describeDetectionCapability(registry);
 
-  const models: ModelRow[] = statuses.map(s => ({
+  const models: ModelRow[] = registry.models.map(s => ({
     id: s.id,
     stage: s.stage,
     state: s.state,
     source: s.source,
     version: s.version,
     verified: s.verified,
+    note: s.note,
   }));
 
   return (
     <ModelStatusView
       headline={capability.headline}
       detail={capability.detail}
-      depth={pipelineDepth(statuses)}
+      depth={capability.depth}
       models={models}
       manifestVersion={manifest.manifest_version}
       onImportModel={onImportModel ?? (() => {})}

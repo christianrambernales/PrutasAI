@@ -92,3 +92,21 @@ export interface Manifest {
   manifest_version: number;
   models: ModelEntry[];
 }
+
+/** Build output from scripts/sync-models.mjs; this proves artifact validation only. */
+export interface VerifiedModelMetadata {
+  id: string;
+  stage: number;
+  file: string;
+  version: string;
+  sha256: string;
+  fruits: SupportedFruit[];
+}
+
+/** Generated build-validation record. It does not establish inference readiness. */
+export interface VerifiedModels {
+  manifest_version: number;
+  validation_status: string;
+  inference_status: string;
+  models: VerifiedModelMetadata[];
+}

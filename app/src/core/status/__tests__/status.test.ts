@@ -38,7 +38,7 @@ function capabilityFor(roles: ModelRoleId[]) {
       manifest_version: 1,
       validation_status: 'build_validated',
       inference_status: 'unverified',
-      models: models.map(({ id, file, version, sha256, fruits }) => ({ id, file, version, sha256, fruits })),
+      models: models.map(({ id, stage, file, version, sha256, fruits }) => ({ id, stage, file, version, sha256, fruits })),
     },
   );
   return describeDetectionCapability(registry);

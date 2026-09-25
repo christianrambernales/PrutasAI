@@ -1,5 +1,5 @@
 import { resolveModelRegistry } from '../registry';
-import type { ModelRoleId, SupportedFruit, Manifest } from '../manifest';
+import type { ModelRoleId, SupportedFruit, Manifest, VerifiedModels } from '../manifest';
 
 const FRUITS: SupportedFruit[] = ['banana', 'mango', 'papaya'];
 const STAGES: Record<ModelRoleId, number> = {
@@ -38,6 +38,7 @@ function inputs(ids: ModelRoleId[], overrides: Record<string, unknown> = {}) {
     inference_status: 'unverified',
     models: models.map(model => ({
       id: model.id,
+      stage: model.stage,
       file: model.file,
       version: model.version,
       sha256: model.sha256,
@@ -106,6 +107,26 @@ test('a disease model without its fruit and variety prerequisites is not in any 
     expect(registry.fruits[fruit].validatedRoles).toEqual(['disease_detector']);
     expect(registry.fruits[fruit].prerequisiteValidatedRoles).toEqual([]);
   }
+});
+
+test('a verified metadata record without a SHA-256 cannot make a bundled role ready', () => {
+  const { manifest, bundled, verifiedModels } = inputs(['fruit_detector']);
+  const withoutHash = {
+    ...verifiedModels,
+    models: verifiedModels.models.map(({ sha256: _sha256, ...model }) => model),
+  };
+  const registry = resolveModelRegistry(manifest, bundled, withoutHash as unknown as VerifiedModels);
+
+  expect(registry.models[0]).toMatchObject({ state: 'checksum_mismatch', source: null, verified: false });
+  expect(registry.fruits.banana.prerequisiteValidatedRoles).toEqual([]);
+});
+
+test('a validated file absent from the static asset map is unavailable', () => {
+  const { manifest, verifiedModels } = inputs(['fruit_detector']);
+  const registry = resolveModelRegistry(manifest, {}, verifiedModels);
+
+  expect(registry.models[0]).toMatchObject({ state: 'missing', source: null, verified: false });
+  expect(registry.fruits.banana.prerequisiteValidatedRoles).toEqual([]);
 });
 
 test.each([

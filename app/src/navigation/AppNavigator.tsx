@@ -19,7 +19,8 @@ import {
 } from '../core/db/repositories/content';
 import { bundledModels } from '../core/ml/bundledModels';
 import manifest from '../core/ml/manifest.json';
-import { pipelineDepth, resolveModels } from '../core/ml/registry';
+import verifiedModels from '../core/ml/verifiedModels.json';
+import { resolveModelRegistry } from '../core/ml/registry';
 import { purgeTrash } from '../core/sync/purgeTrash';
 import { useAccountSync } from '../features/account/useAccountSync';
 import { CameraCapture } from '../features/capture/CameraCapture';
@@ -169,9 +170,10 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
     return () => sub.remove();
   }, [back]);
 
-  const statuses = useMemo(() => resolveModels(manifest, bundledModels, {}), []);
-  const capability = useMemo(() => describeDetectionCapability(statuses), [statuses]);
-  const depth = useMemo(() => pipelineDepth(statuses), [statuses]);
+  const registry = useMemo(() => resolveModelRegistry(manifest, bundledModels, verifiedModels), []);
+  const statuses = registry.models;
+  const capability = useMemo(() => describeDetectionCapability(registry), [registry]);
+  const depth = capability.depth;
   const readyCount = statuses.filter(s => s.state === 'ready').length;
 
   // --- climate ---------------------------------------------------------------
