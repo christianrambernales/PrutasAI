@@ -1,73 +1,149 @@
-import { resolveModels, pipelineDepth } from '../registry';
+import { resolveModelRegistry } from '../registry';
+import type { ModelRoleId, SupportedFruit, Manifest } from '../manifest';
 
-const manifest = {
-  manifest_version: 1,
-  models: [
-    { id: 'fruit_detector', stage: 1, file: 'fd.tflite', sha256: 'aaa', version: '1.0.0', min_confidence: 0.5 },
-    { id: 'variety_banana', stage: 2, file: 'vb.tflite', sha256: 'bbb', version: '1.0.0', min_confidence: 0.6 },
-    { id: 'disease_detector', stage: 3, file: 'dd.tflite', sha256: 'ccc', version: '1.0.0', min_confidence: 0.5 },
-  ],
+const FRUITS: SupportedFruit[] = ['banana', 'mango', 'papaya'];
+const STAGES: Record<ModelRoleId, number> = {
+  fruit_detector: 1,
+  variety_banana: 2,
+  variety_mango: 2,
+  variety_papaya: 2,
+  disease_detector: 3,
+};
+const ROLE_FRUITS: Record<ModelRoleId, SupportedFruit[]> = {
+  fruit_detector: FRUITS,
+  variety_banana: ['banana'],
+  variety_mango: ['mango'],
+  variety_papaya: ['papaya'],
+  disease_detector: FRUITS,
 };
 
-test('reports every model missing when nothing is bundled', () => {
-  const s = resolveModels(manifest, {}, {});
-  expect(s.every(m => m.state === 'missing')).toBe(true);
-  expect(s.every(m => m.source === null)).toBe(true);
+function entry(id: ModelRoleId, file = `${id}.tflite`) {
+  return {
+    id,
+    stage: STAGES[id],
+    file,
+    sha256: `sha-${id}`,
+    version: '1.0.0',
+    min_confidence: 0.5,
+    fruits: ROLE_FRUITS[id],
+  };
+}
+
+function inputs(ids: ModelRoleId[], overrides: Record<string, unknown> = {}) {
+  const models = ids.map(id => entry(id));
+  const manifest: Manifest = { manifest_version: 1, models };
+  const verifiedModels = {
+    manifest_version: 1,
+    validation_status: 'build_validated',
+    inference_status: 'unverified',
+    models: models.map(model => ({
+      id: model.id,
+      file: model.file,
+      version: model.version,
+      sha256: model.sha256,
+      fruits: model.fruits,
+    })),
+    ...overrides,
+  };
+  const bundled = Object.fromEntries(models.map(model => [model.file, 1]));
+  return { manifest, bundled, verifiedModels };
+}
+
+test('an empty manifest reports no validated roles and never enables inference', () => {
+  const { manifest, bundled, verifiedModels } = inputs([]);
+  const registry = resolveModelRegistry(manifest, bundled, verifiedModels);
+
+  expect(registry.models).toEqual([]);
+  for (const fruit of FRUITS) {
+    expect(registry.fruits[fruit].validatedRoles).toEqual([]);
+    expect(registry.fruits[fruit].prerequisiteValidatedRoles).toEqual([]);
+  }
+  expect(registry.inferenceVerified).toBe(false);
+  expect(registry.canRunInference).toBe(false);
 });
 
-test('an empty manifest yields no statuses and depth zero', () => {
-  const s = resolveModels({ manifest_version: 1, models: [] }, {}, {});
-  expect(s).toEqual([]);
-  expect(pipelineDepth(s)).toBe(0);
+test('a fruit detector alone establishes only the first validated role for each supported fruit', () => {
+  const { manifest, bundled, verifiedModels } = inputs(['fruit_detector']);
+  const registry = resolveModelRegistry(manifest, bundled, verifiedModels);
+
+  for (const fruit of FRUITS) {
+    expect(registry.fruits[fruit].validatedRoles).toEqual(['fruit_detector']);
+    expect(registry.fruits[fruit].prerequisiteValidatedRoles).toEqual(['fruit_detector']);
+  }
+  expect(registry.canRunInference).toBe(false);
 });
 
-test('marks a bundled model with a matching checksum ready', () => {
-  const s = resolveModels(manifest, { 'fd.tflite': 1 }, { 'fd.tflite': 'aaa' });
-  expect(s.find(m => m.id === 'fruit_detector')).toMatchObject({ state: 'ready', source: 'bundled' });
+test('a banana variety head does not imply mango or papaya coverage or bypass fruit detection', () => {
+  const { manifest, bundled, verifiedModels } = inputs(['variety_banana']);
+  const registry = resolveModelRegistry(manifest, bundled, verifiedModels);
+
+  expect(registry.fruits.banana.validatedRoles).toEqual(['variety_banana']);
+  expect(registry.fruits.banana.prerequisiteValidatedRoles).toEqual([]);
+  expect(registry.fruits.mango.validatedRoles).toEqual([]);
+  expect(registry.fruits.papaya.validatedRoles).toEqual([]);
 });
 
-test('flags a checksum mismatch instead of loading it', () => {
-  const s = resolveModels(manifest, { 'fd.tflite': 1 }, { 'fd.tflite': 'wrong' });
-  expect(s.find(m => m.id === 'fruit_detector')?.state).toBe('checksum_mismatch');
+test.each([
+  ['banana', 'variety_banana'],
+  ['mango', 'variety_mango'],
+  ['papaya', 'variety_papaya'],
+] as const)('all three variety heads remain fruit-specific (%s)', (fruit, role) => {
+  const { manifest, bundled, verifiedModels } = inputs(['fruit_detector', 'variety_banana', 'variety_mango', 'variety_papaya']);
+  const registry = resolveModelRegistry(manifest, bundled, verifiedModels);
+
+  expect(registry.fruits[fruit].prerequisiteValidatedRoles).toEqual(['fruit_detector', role]);
+  for (const otherFruit of FRUITS.filter(candidate => candidate !== fruit)) {
+    expect(registry.fruits[otherFruit].prerequisiteValidatedRoles).toHaveLength(2);
+    expect(registry.fruits[otherFruit].prerequisiteValidatedRoles).not.toContain(role);
+  }
 });
 
-test('treats an uncomputed checksum as unverified, not as a mismatch', () => {
-  const s = resolveModels(manifest, { 'fd.tflite': 1 }, {});
-  const fd = s.find(m => m.id === 'fruit_detector');
-  expect(fd?.state).toBe('ready');
-  expect(fd?.verified).toBe(false);
+test('a disease model without its fruit and variety prerequisites is not in any validated chain', () => {
+  const { manifest, bundled, verifiedModels } = inputs(['disease_detector']);
+  const registry = resolveModelRegistry(manifest, bundled, verifiedModels);
+
+  for (const fruit of FRUITS) {
+    expect(registry.fruits[fruit].validatedRoles).toEqual(['disease_detector']);
+    expect(registry.fruits[fruit].prerequisiteValidatedRoles).toEqual([]);
+  }
 });
 
-test('marks a matching checksum as verified', () => {
-  const s = resolveModels(manifest, { 'fd.tflite': 1 }, { 'fd.tflite': 'aaa' });
-  expect(s.find(m => m.id === 'fruit_detector')?.verified).toBe(true);
+test.each([
+  ['missing generated metadata', undefined],
+  ['generated checksum mismatch', (verifiedModels: any) => ({ ...verifiedModels, models: verifiedModels.models.map((model: any) => ({ ...model, sha256: 'wrong-hash' })) })],
+  ['generated filename mismatch', (verifiedModels: any) => ({ ...verifiedModels, models: verifiedModels.models.map((model: any) => ({ ...model, file: 'other.tflite' })) })],
+  ['generated version mismatch', (verifiedModels: any) => ({ ...verifiedModels, models: verifiedModels.models.map((model: any) => ({ ...model, version: '2.0.0' })) })],
+  ['generated role mismatch', (verifiedModels: any) => ({ ...verifiedModels, models: verifiedModels.models.map((model: any) => ({ ...model, id: 'variety_mango' })) })],
+  ['unvalidated build metadata', (verifiedModels: any) => ({ ...verifiedModels, validation_status: 'invalid' })],
+] as const)('%s cannot expose a ready model or role', (_name, mutate) => {
+  const { manifest, bundled, verifiedModels } = inputs(['fruit_detector']);
+  const candidate = typeof mutate === 'function' ? mutate(verifiedModels) : undefined;
+  const registry = resolveModelRegistry(manifest, bundled, candidate);
+
+  expect(registry.models[0]).toMatchObject({ state: expect.not.stringMatching(/^ready$/), source: null, verified: false });
+  expect(registry.fruits.banana.prerequisiteValidatedRoles).toEqual([]);
+  expect(registry.canRunInference).toBe(false);
 });
 
-test('depth is zero when stage 1 is missing, even if later stages are ready', () => {
-  const s = resolveModels(manifest, { 'vb.tflite': 1, 'dd.tflite': 1 }, { 'vb.tflite': 'bbb', 'dd.tflite': 'ccc' });
-  expect(pipelineDepth(s)).toBe(0);
+test('a mismatched source manifest version makes every generated model unavailable', () => {
+  const { manifest, bundled, verifiedModels } = inputs(['fruit_detector']);
+  const registry = resolveModelRegistry({ ...manifest, manifest_version: 2 }, bundled, verifiedModels);
+
+  expect(registry.models[0]).toMatchObject({ state: expect.not.stringMatching(/^ready$/), source: null });
+  expect(registry.fruits.banana.prerequisiteValidatedRoles).toEqual([]);
 });
 
-test('depth is one when only stage 1 is ready', () => {
-  const s = resolveModels(manifest, { 'fd.tflite': 1 }, { 'fd.tflite': 'aaa' });
-  expect(pipelineDepth(s)).toBe(1);
-});
+test('matching build-validated roles form each fruit chain but never claim inference', () => {
+  const { manifest, bundled, verifiedModels } = inputs([
+    'fruit_detector', 'variety_banana', 'variety_mango', 'variety_papaya', 'disease_detector',
+  ]);
+  const registry = resolveModelRegistry(manifest, bundled, verifiedModels);
 
-test('depth is two when stage 1 and a stage 2 head are ready', () => {
-  const s = resolveModels(manifest, { 'fd.tflite': 1, 'vb.tflite': 1 }, { 'fd.tflite': 'aaa', 'vb.tflite': 'bbb' });
-  expect(pipelineDepth(s)).toBe(2);
-});
-
-test('depth is three only when all stages are ready', () => {
-  const s = resolveModels(
-    manifest,
-    { 'fd.tflite': 1, 'vb.tflite': 1, 'dd.tflite': 1 },
-    { 'fd.tflite': 'aaa', 'vb.tflite': 'bbb', 'dd.tflite': 'ccc' },
-  );
-  expect(pipelineDepth(s)).toBe(3);
-});
-
-test('a checksum mismatch on stage 1 stops the pipeline', () => {
-  const s = resolveModels(manifest, { 'fd.tflite': 1, 'vb.tflite': 1 }, { 'fd.tflite': 'wrong', 'vb.tflite': 'bbb' });
-  expect(pipelineDepth(s)).toBe(0);
+  for (const fruit of FRUITS) {
+    expect(registry.fruits[fruit].prerequisiteValidatedRoles).toEqual([
+      'fruit_detector', `variety_${fruit}`, 'disease_detector',
+    ]);
+  }
+  expect(registry.inferenceVerified).toBe(false);
+  expect(registry.canRunInference).toBe(false);
 });
