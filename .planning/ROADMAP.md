@@ -16,7 +16,7 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 | 3 | Cloud, Auth, and Sync Security | Make optional accounts and synchronization safe and recoverable | OFFL-04, SYNC-01–04 | ○ 0% |
 | 4 | Complete Product Flows | Finish navigation and end-to-end offline/future-diagnostic/cloud UI flows | FLOW-01–02, FLOW-04–06 | ○ 0% |
 | 5 | Assistant, Climate, and Safety | Verify grounded guidance, climate evidence, and guarded assistant behavior | SAFE-01–04 | ○ 0% |
-| 6 | File-Based ML Readiness | Make future `.tflite` import deterministic without requiring weights now | MLRD-01–04 | ○ 0% |
+| 6 | File-Based ML Readiness | Make future `.tflite` import deterministic without requiring weights now | MLRD-01–04 | ◐ 5/5 local plans; owner/model/device gates open |
 | 7 | QA, Accessibility, and Release Preparation | Produce deployment-ready evidence, builds, accessibility, and operations handoff | QUAL-01–04, DEPL-01–05 | ○ 0% |
 
 ## Phase Details
@@ -108,6 +108,25 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 2. Synchronization validates artifact presence, metadata, checksums, versions, and expected shapes, failing clearly when invalid.
 3. Generated metadata drives capability exposure while preserving truthful partial/no-model degradation.
 4. A model-free build remains reproducible and demonstrable, and the owner’s future import action is unambiguous.
+
+**Plans:** 5/5 plans executed. Focused local contract/status checks, root typecheck, repeated empty-manifest sync, model-free web export, and Android configuration parsing passed. The full root suite failed on the `fruitPapaya` Filipino translation assertion; a separate API run passed 157/157. Owner-approved model import, positive real LiteRT inspection, browser runtime, Android package/device checks, and inference remain open. See [06-EVIDENCE.md](./phases/06-file-based-ml-readiness/06-EVIDENCE.md) and [06-VERIFICATION.md](./phases/06-file-based-ml-readiness/06-VERIFICATION.md).
+
+**Wave 1**
+- [x] 06-01-PLAN.md — Define the owner-approved import contract and fail-closed manifest validator.
+
+**Wave 2** *(after 06-01)*
+- [x] 06-02-PLAN.md — Inspect real `.tflite` tensors and publish synchronized assets and metadata transactionally.
+
+**Wave 3** *(after 06-02)*
+- [x] 06-03-PLAN.md — Project verified roles by fruit without turning file validation into inferred diagnosis.
+
+**Wave 4** *(after 06-03)*
+- [x] 06-04-PLAN.md — Present bilingual model status and document the owner's later import procedure.
+
+**Wave 5** *(after implementation)*
+- [x] 06-05-PLAN.md — Record scope-separated local, build, owner, and device evidence and verify MLRD-01–04.
+
+**Cross-cutting constraints:** Preserve the empty model-free build, stop and retain the prior generated bundle on any failed nonempty import, require recorded owner approval and real tensor inspection, report partial validated roles by fruit, and keep inference unverified until direct device evidence exists.
 
 ### Phase 7: QA, Accessibility, and Release Preparation
 **Goal:** Produce deployment-ready evidence, builds, accessibility, and operations handoff without live production promotion.
