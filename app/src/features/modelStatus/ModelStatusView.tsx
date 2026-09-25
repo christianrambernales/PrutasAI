@@ -1,138 +1,136 @@
 import React from 'react';
 import {
-  AppText, Button, Card, Chip, Col, COLORS, Divider, Icon, Row, Section,
-  SectionHeader, SPACING, Tile,
+  AppText, Card, Chip, Col, COLORS, Divider, Icon, Row, Section, SectionHeader, SPACING, Tile,
 } from '../../ui';
+import type { ModelRoleId, SupportedFruit } from '../../core/ml/manifest';
+import type { ModelRegistry } from '../../core/ml/registry';
 import type { ModelRow } from '../viewModels';
+import type { strings } from '../../ui/i18n/strings';
+
+type Dictionary = ReturnType<typeof strings>;
 
 export interface ModelStatusViewProps {
   headline: string;
-  detail: string;
-  /** 0–3, from pipelineDepth(). Drives which stage tiles read as available. */
-  depth: 0 | 1 | 2 | 3;
   models: ModelRow[];
+  fruits: ModelRegistry['fruits'];
   manifestVersion: number;
-  onImportModel: () => void;
+  t: Dictionary;
 }
 
-const STAGES = [
-  { stage: 1, label: 'Fruit' },
-  { stage: 2, label: 'Variety' },
-  { stage: 3, label: 'Disease' },
-] as const;
+const FRUITS: Array<{
+  key: SupportedFruit;
+  label: 'fruitBanana' | 'fruitMango' | 'fruitPapaya';
+}> = [
+  { key: 'banana', label: 'fruitBanana' },
+  { key: 'mango', label: 'fruitMango' },
+  { key: 'papaya', label: 'fruitPapaya' },
+];
 
-const STATE_DOT: Record<ModelRow['state'], string> = {
-  ready: COLORS.healthy,
-  missing: COLORS.textLight,
-  checksum_mismatch: COLORS.error,
+const ROLE_LABELS: Record<ModelRoleId, 'modelRoleFruit' | 'modelRoleVariety' | 'modelRoleDisease'> = {
+  fruit_detector: 'modelRoleFruit',
+  variety_banana: 'modelRoleVariety',
+  variety_mango: 'modelRoleVariety',
+  variety_papaya: 'modelRoleVariety',
+  disease_detector: 'modelRoleDisease',
 };
 
-const STATE_LABEL: Record<ModelRow['state'], string> = {
-  ready: 'ready',
-  missing: 'missing',
-  checksum_mismatch: 'checksum mismatch',
+const ROLE_CHAINS: Record<SupportedFruit, ModelRoleId[]> = {
+  banana: ['fruit_detector', 'variety_banana', 'disease_detector'],
+  mango: ['fruit_detector', 'variety_mango', 'disease_detector'],
+  papaya: ['fruit_detector', 'variety_papaya', 'disease_detector'],
 };
 
-export function ModelStatusView(props: ModelStatusViewProps) {
-  const { headline, detail, depth, models, manifestVersion } = props;
-  const complete = depth === 3;
+function roleStatus(
+  fruit: SupportedFruit,
+  role: ModelRoleId,
+  models: ModelRow[],
+  projection: ModelRegistry['fruits'][SupportedFruit],
+  t: Dictionary,
+): { label: string; color: string } {
+  const model = models.find(candidate => candidate.id === role && candidate.fruits?.includes(fruit));
+  if (projection.validatedRoles.includes(role)) {
+    const prerequisitesReady = projection.prerequisiteValidatedRoles.includes(role);
+    return {
+      label: prerequisitesReady ? t.modelBuildValidated : t.modelValidatedPrerequisiteMissing,
+      color: prerequisitesReady ? COLORS.healthy : COLORS.accent,
+    };
+  }
+  if (!model) return { label: t.modelNotDeclared, color: COLORS.textLight };
+  if (model.state === 'checksum_mismatch') return { label: t.modelValidationFailed, color: COLORS.error };
+  return { label: t.modelNotValidated, color: COLORS.textLight };
+}
 
+export function ModelStatusView({ headline, models, fruits, manifestVersion, t }: ModelStatusViewProps) {
   return (
     <>
       <Section>
-        <Card style={{ gap: SPACING.md - 4, borderColor: complete ? COLORS.border : COLORS.severityEarly }}>
+        <Card style={{ gap: SPACING.md - 4, borderColor: COLORS.severityEarly }}>
           <Row gap={SPACING.sm + 2} align="flex-start">
-            <Icon
-              name={complete ? 'check' : 'warning'}
-              size={20}
-              color={complete ? COLORS.healthy : COLORS.accent}
-            />
+            <Icon name="info" size={20} color={COLORS.accent} />
             <Col gap={SPACING.xs} style={{ flex: 1 }}>
               <AppText variant="lg">{headline}</AppText>
-              <AppText variant="sm" color={COLORS.textSecondary}>{detail}</AppText>
+              <AppText variant="sm" color={COLORS.textSecondary}>{t.modelStatusFilesDetail}</AppText>
             </Col>
           </Row>
-          <Divider />
-          <Row gap={SPACING.xs + 2}>
-            {STAGES.map(s => {
-              const on = depth >= s.stage;
-              return (
-                <Tile
-                  key={s.stage}
-                  style={{ flex: 1, alignItems: 'center', gap: SPACING.xs, backgroundColor: on ? '#e6f2ec' : COLORS.surfaceAlt }}
-                >
-                  <AppText variant="xsSemi" color={on ? '#1f6146' : COLORS.textLight}>
-                    STAGE {s.stage}
-                  </AppText>
-                  <Icon name={on ? 'check' : 'close'} size={16} color={on ? COLORS.healthy : COLORS.textLight} />
-                  <AppText variant="xs" color={on ? '#1f6146' : COLORS.textLight}>{s.label}</AppText>
-                </Tile>
-              );
-            })}
-          </Row>
         </Card>
+        <Tile>
+          <Row gap={SPACING.sm} align="flex-start">
+            <Icon name="warning" size={16} color={COLORS.accent} />
+            <Col gap={SPACING.xs} style={{ flex: 1 }}>
+              <AppText variant="smSemi">{t.modelInferenceUnverified}</AppText>
+              <AppText variant="xs" color={COLORS.textSecondary}>
+                {t.modelInferenceUnverifiedDetail}
+              </AppText>
+            </Col>
+          </Row>
+        </Tile>
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <SectionHeader title="Models" meta={`${models.length} declared`} />
+        <SectionHeader title={t.modelFruitStatus} meta={t.modelsDeclared(models.length)} />
+        {FRUITS.map(fruit => (
+          <Card key={fruit.key} style={{ gap: SPACING.sm }}>
+            <AppText variant="mdSemi">{t[fruit.label]}</AppText>
+            {ROLE_CHAINS[fruit.key].map((role, index) => {
+              const status = roleStatus(fruit.key, role, models, fruits[fruit.key], t);
+              const roleLabel = t[ROLE_LABELS[role]];
+              return (
+                <React.Fragment key={`${fruit.key}-${role}`}>
+                  {index > 0 ? <Divider /> : null}
+                  <Row gap={SPACING.sm} align="center">
+                    <Col gap={2} style={{ flex: 1 }}>
+                      <AppText variant="sm">{roleLabel}</AppText>
+                      <AppText variant="xs" color={status.color}>{status.label}</AppText>
+                    </Col>
+                    <Chip label={t.modelStage(index + 1)} tone="outline" />
+                  </Row>
+                </React.Fragment>
+              );
+            })}
+          </Card>
+        ))}
         {models.length === 0 ? (
           <Card>
             <Col gap={SPACING.xs}>
-              <AppText variant="smSemi">No models declared</AppText>
-              <AppText variant="xs" color={COLORS.textSecondary}>
-                manifest.json lists no models, so no detection stage can run. Browsing, climate and
-                the assistant still work.
-              </AppText>
+              <AppText variant="smSemi">{t.noModelsDeclared}</AppText>
+              <AppText variant="xs" color={COLORS.textSecondary}>{t.noModelsDeclaredDetail}</AppText>
             </Col>
           </Card>
-        ) : (
-          <Col gap={SPACING.sm}>
-            {models.map(model => (
-              <Card key={model.id} style={{ gap: SPACING.sm, opacity: model.state === 'ready' ? 1 : 0.78 }}>
-                <Row gap={SPACING.sm}>
-                  <AppText variant="xsSemi" color={COLORS.textLight}>S{model.stage}</AppText>
-                  <AppText variant="smSemi" style={{ flex: 1 }}>{model.id}</AppText>
-                  <Chip label={STATE_LABEL[model.state]} dotColor={STATE_DOT[model.state]} />
-                </Row>
-                {model.state === 'ready' ? (
-                  <>
-                    <Divider />
-                    <Row gap={SPACING.xs + 2} wrap>
-                      {model.source ? <Chip label={model.source} tone="outline" /> : null}
-                      {model.version ? <Chip label={`v${model.version}`} tone="outline" /> : null}
-                      {model.verified ? (
-                        <Chip label="checksum verified" icon="check" tone="outline" />
-                      ) : (
-                        <Chip label="not verified" tone="warning" />
-                      )}
-                    </Row>
-                  </>
-                ) : null}
-                {model.note ? (
-                  <>
-                    <Divider />
-                    <AppText variant="xs" color={COLORS.textSecondary}>{model.note}</AppText>
-                  </>
-                ) : null}
-              </Card>
-            ))}
-          </Col>
-        )}
+        ) : null}
       </Section>
 
       <Section gap={SPACING.sm + 2}>
-        <Button label="Import a model file" icon="plus" variant="secondary" onPress={props.onImportModel} />
+        <SectionHeader title={t.howToImportModels} />
         <Tile>
           <Row gap={SPACING.sm} align="flex-start">
             <Icon name="info" size={16} color={COLORS.textSecondary} />
             <AppText variant="xs" color={COLORS.textSecondary} style={{ flex: 1 }}>
-              Imported files load from device storage, which is unreliable on some Android builds.
-              If loading fails the bundled model is used instead.
+              {t.howToImportModelsDetail}
             </AppText>
           </Row>
         </Tile>
         <AppText variant="xs" color={COLORS.textLight} center>
-          manifest_version {manifestVersion} · classes from ml/classes.json
+          {t.modelManifestVersion(manifestVersion)}
         </AppText>
       </Section>
     </>

@@ -83,14 +83,14 @@ export function TabBar({ shell, tab }: { shell: Shell; tab: TabKey }) {
 export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
   const { t, app, dispatchApp, climate, history, chat, conversations } = shell;
   const { push, notify: _notify, selectTab } = shell.nav;
-  const { fruits, allScans, statuses, capability, readyCount, aiAvailable } = shell.data;
+  const { fruits, allScans, statuses, readyCount, aiAvailable } = shell.data;
 
   switch (tab) {
     case 'home':
       return (
         <HomeScreen
-          capabilityHeadline={capability.headline}
-          capabilityDetail={capability.detail}
+          capabilityHeadline={readyCount > 0 ? t.modelStatusValidatedHeadline : t.modelStatusEmptyHeadline}
+          capabilityDetail={t.modelInferenceUnverified}
           readyModelCount={readyCount}
           totalModelCount={statuses.length}
           fruits={fruits}

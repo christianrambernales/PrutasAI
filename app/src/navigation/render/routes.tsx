@@ -64,11 +64,7 @@ export function RouteBar({ shell, route: r }: { shell: Shell; route: Route }) {
         onBack={back}
         action="refresh"
         actionLabel={t.rereadRegistry}
-        onAction={() =>
-          notify(
-            `Registry re-read · ${readyCount} of ${statuses.length} models installed.`,
-          )
-        }
+        onAction={() => notify(t.modelRegistryRefreshed(readyCount, statuses.length))}
       />
     );
   }
@@ -179,7 +175,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
                 : t.aiAssistantOff
           }
           contentVersion={CONTENT_VERSION}
-          modelsLabel={`${readyCount} of ${statuses.length} installed`}
+          modelsLabel={`${t.modelsInstalled(readyCount, statuses.length)} · ${t.modelInferenceUnverified}`}
           historyLabel={`${allScans.length} scans stored on this device`}
           accountLabel={account.account.email ?? t.accountSignedOut}
           onChangeLanguage={lang =>
@@ -216,13 +212,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
         />
       );
     case 'modelStatus':
-      return (
-        <ModelStatusScreen
-          onImportModel={() =>
-            notify('Put the .tflite in models/, then run npm run sync:models and restart.')
-          }
-        />
-      );
+      return <ModelStatusScreen language={app.language} />;
     case 'locationPicker':
       return (
         <LocationPickerScreen

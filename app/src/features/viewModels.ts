@@ -1,5 +1,6 @@
 import type { SeverityKey } from '../ui';
 import type { EvidenceStatus } from '../ui';
+import type { SupportedFruit } from '../core/ml/manifest';
 
 /**
  * The shapes screens render. Repositories in core/ produce these; screens never
@@ -177,6 +178,8 @@ export interface ModelRow {
   id: string;
   /** Pipeline stage, as declared in models/manifest.json. */
   stage: number;
+  /** Fruits explicitly covered by the source manifest entry. */
+  fruits?: SupportedFruit[];
   state: ModelState;
   source: 'bundled' | 'device' | null;
   version: string | null;

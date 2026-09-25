@@ -325,11 +325,13 @@ test('a variety row opens that variety', () => {
   expect(screenText(tree)).not.toBe(before);
 });
 
-test('the model status screen is reachable and its import control is live', () => {
+test('the model status screen is reachable and explains the repository import workflow', () => {
   const tree = render(<AppNavigator />);
   press(tree, 'Settings');
   press(tree, 'Detection models');
 
   expect(screenText(tree)).toContain('No models declared');
-  expect(typeof findPressable(tree, 'Import a model file').props.onPress).toBe('function');
+  expect(screenText(tree)).toContain('How to import models');
+  expect(screenText(tree)).not.toContain('Import a model file');
+  expect(screenText(tree)).not.toContain('bundled model is used instead');
 });

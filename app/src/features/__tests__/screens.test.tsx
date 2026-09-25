@@ -83,7 +83,7 @@ test('Home renders the capability headline it is given', () => {
   const content = texts(tree);
   expect(content).toContain('Fruit, variety and disease');
   expect(content).toContain('Banana');
-  expect(content).toContain('3/3 models');
+  expect(content).toContain('3 of 3 declared model files build-validated');
 });
 
 test('Capture shows the framing hint and the on-device promise', () => {
@@ -424,12 +424,20 @@ test('Settings surfaces the privacy and assistant controls', () => {
   expect(content).toContain('2026.08.10');
 });
 
-test('Model status reports the real registry, which today declares no models', () => {
-  const content = texts(render(<ModelStatusScreen />));
-  expect(content).toContain('Detection model not installed');
+test('Model status reports the real empty registry and keeps inference unverified', () => {
+  const content = texts(render(<ModelStatusScreen language="EN" />));
+  expect(content).toContain('No validated model files are installed');
   expect(content).toContain('No models declared');
-  // The screen must never imply a stage can run when nothing is installed.
-  expect(content).not.toContain('checksum verified');
+  expect(content).toContain('Inference unverified');
+  expect(content).toContain('How to import models');
+  expect(content).not.toContain('Import a model file');
+});
+
+test('Model status screen renders Filipino copy', () => {
+  const content = texts(render(<ModelStatusScreen language="FIL" />));
+  expect(content).toContain('Hindi pa napatutunayan ang inference');
+  expect(content).toContain('Paano mag-import ng mga modelo');
+  expect(content).toContain('Walang modelong nakasaad');
 });
 
 test('the navigator mounts on the home tab', () => {
