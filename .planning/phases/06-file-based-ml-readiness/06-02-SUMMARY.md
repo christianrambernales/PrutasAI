@@ -65,7 +65,7 @@ completed: 2026-09-25
 - Added RED coverage for deterministic empty sync, missing files, SHA mismatch, inspector and metadata mismatches, version/approval mismatch, unlisted files, symlink escape, staging copy failure, and failure after each of the four publication steps.
 - Implemented real LiteRT inspection for every nonempty production import. The child process has a 30-second timeout, bounded output, and sanitized failures; the empty source manifest skips Python.
 - Validated computed SHA-256, role/version/approval binding, tensor names/shapes/dtypes, and exact approved signature keys and bindings before staging.
-- Staged the assets directory, bundledModels.ts, copied manifest.json, and verifiedModels.json; a failed install restores each prior output byte-for-byte.
+- Staged the assets directory, bundledModels.ts, copied manifest.json, and verifiedModels.json. Successful rollback restores each prior output byte-for-byte; if a restoration operation fails, the transaction directory and remaining backups are retained with a reported recovery path.
 - Generated deterministic zero-model metadata with build_validated and inference_status: unverified. No model weights were added.
 
 ## Task Commits
@@ -102,15 +102,24 @@ completed: 2026-09-25
 - **Verification:** model-contract tests passed 15/15; sync-models tests passed 23/23.
 - **Committed in:** 3b8aeb5 (06-01 implementation).
 
-**Total deviations:** 1 coordinated dependency amendment.
+**Total deviations:** 2 (the coordinated dependency amendment and rollback recovery correction).
 **Impact on plan:** The added contract field closes a required verification gap; no real artifact values or approvals were invented.
+
+### Rollback recovery correction
+
+**2. Preserve recovery backups when rollback restoration itself fails.**
+- **Found during:** Independent audit after Plan 06-02 execution.
+- **Issue:** The publisher reported rollback errors but the outer `finally` block still deleted the transaction directory, removing backups that could be needed for manual recovery.
+- **Fix:** Mark rollback-restoration failures for retention, preserve the transaction directory, and include its short relative name in the error. Successful publications and completed rollbacks still remove their transaction directories.
+- **Verification:** Added an injected restore-failure test that asserts a rejected sync, the reported recovery directory, and intact `backup-0` bytes; ordinary rollback tests assert their transaction directories are cleaned.
+- **Files modified:** `scripts/sync-models.mjs`, `scripts/sync-models.test.mjs`, and this summary.
 
 ## Verification
 
 | Check | Result |
 |---|---|
 | RED: node --test scripts/sync-models.test.mjs before implementation | Failed as expected: 3 existing map tests passed and 20 new synchronization checks failed; the real CLI still bundled an invalid temporary import. |
-| GREEN: node --test scripts/sync-models.test.mjs | Passed, 23 tests and 0 failures. All injected failure cases preserved all four prior outputs byte-for-byte. |
+| GREEN: node --test scripts/sync-models.test.mjs | Passed, 24 tests and 0 failures. Successful rollback restored all four prior outputs byte-for-byte; the injected rollback-restoration failure retained the original backup and exposed its recovery directory. |
 | node --test scripts/model-contract.test.mjs | Passed, 15 tests and 0 failures, including approved signatures. |
 | npm run sync:models | Passed, bundled 0 models without Python or LiteRT. |
 | npm --prefix app run typecheck | Passed, exit 0. |

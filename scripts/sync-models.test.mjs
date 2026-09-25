@@ -13,6 +13,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
+import { rename as renameAsync } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -164,6 +165,11 @@ async function assertFailurePreserves(fixture, run, expectedError) {
     return true;
   });
   assert.deepEqual(await snapshotOutputs(fixture.appDir), before, 'all four generated outputs must be restored byte-for-byte');
+  assert.deepEqual(
+    readdirSync(fixture.root).filter(name => name.startsWith('.models-sync-')),
+    [],
+    'transaction directories must be removed after successful rollback',
+  );
 }
 
 test('generates a valid empty map when there are no models', () => {
@@ -221,6 +227,7 @@ test('a valid injected inspector result publishes one matched build-validated mo
     assert.equal(verified.models[0].sha256, hash(SOURCE_BYTES));
     assert.equal(verified.models[0].id, 'fruit_detector');
     assert.deepEqual(verified.models[0].signatures, [SIGNATURE]);
+    assert.deepEqual(readdirSync(fixture.root).filter(name => name.startsWith('.models-sync-')), []);
   } finally {
     cleanup(fixture);
   }
@@ -387,6 +394,42 @@ for (const step of ['assets', 'bundledModels', 'manifest', 'verifiedModels']) {
     }
   });
 }
+
+test('a failed rollback preserves its backup directory and reports the recovery location', async () => {
+  const fixture = createFixture();
+  try {
+    let failure;
+    await assert.rejects(
+      sync(fixture, {
+        afterPublishStep: async name => {
+          if (name === 'verifiedModels') throw new Error('injected publish failure');
+        },
+        restoreBackup: async (backupPath, targetPath) => {
+          if (backupPath.endsWith('backup-0')) throw new Error('injected backup restoration failure');
+          await renameAsync(backupPath, targetPath);
+        },
+      }),
+      error => {
+        failure = error;
+        assert.match(error.message, /rollback failed for assets: injected backup restoration failure/i);
+        assert.match(error.message, /Recovery files retained in "\.models-sync-[^"/\\]+"/i);
+        assert.equal(error.preserveRecoveryDirectory, true);
+        return true;
+      },
+    );
+
+    assert.match(failure.recoveryDirectory, /^\.models-sync-[A-Za-z0-9_-]+$/);
+    const recoveryPath = join(fixture.root, failure.recoveryDirectory);
+    assert.ok(lstatSync(recoveryPath).isDirectory(), 'transaction directory must remain available for recovery');
+    assert.deepEqual(
+      readFileSync(join(recoveryPath, 'backup-0', 'previous-output.data')),
+      Buffer.from([0, 255, 17, 34]),
+      'the original assets backup must remain intact after restoration fails',
+    );
+  } finally {
+    cleanup(fixture);
+  }
+});
 
 test('the production CLI invokes the real inspector for a nonempty import and retains prior outputs on failure', async () => {
   const fixture = createFixture();

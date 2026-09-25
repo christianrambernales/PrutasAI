@@ -321,7 +321,7 @@ async function exists(path) {
   }
 }
 
-async function publishMatchedSet(transactionDir, stagedOutputs, afterPublishStep) {
+async function publishMatchedSet(transactionDir, stagedOutputs, afterPublishStep, restoreBackup) {
   const operations = stagedOutputs.map((output, index) => ({
     ...output,
     backupPath: join(transactionDir, `backup-${index}`),
@@ -343,13 +343,22 @@ async function publishMatchedSet(transactionDir, stagedOutputs, afterPublishStep
     for (const output of [...operations].reverse()) {
       try {
         if (output.installed) await rm(output.targetPath, { recursive: true, force: true });
-        if (output.backedUp) await rename(output.backupPath, output.targetPath);
+        if (output.backedUp) {
+          await (restoreBackup ?? rename)(output.backupPath, output.targetPath);
+        }
       } catch (error) {
         rollbackErrors.push(`${output.name}: ${sanitizeMessage(error?.message)}`);
       }
     }
     if (rollbackErrors.length > 0) {
-      throw new Error(`Model bundle publication failed (${sanitizeMessage(cause?.message)}); rollback failed for ${rollbackErrors.join('; ')}.`, { cause });
+      const recoveryDirectory = relative(dirname(transactionDir), transactionDir);
+      const error = new Error(
+        `Model bundle publication failed (${sanitizeMessage(cause?.message)}); rollback failed for ${rollbackErrors.join('; ')}. Recovery files retained in "${recoveryDirectory}" (relative to the models directory's parent).`,
+        { cause },
+      );
+      error.preserveRecoveryDirectory = true;
+      error.recoveryDirectory = recoveryDirectory;
+      throw error;
     }
     throw new Error(`Model bundle publication failed: ${sanitizeMessage(cause?.message)}.`, { cause });
   }
@@ -384,6 +393,7 @@ async function runSync(options) {
 
   const transactionDir = await mkdtemp(join(dirname(modelsDir), '.models-sync-'));
   const stagedAssetDir = join(transactionDir, 'assets');
+  let preserveTransactionDir = false;
   try {
     await mkdir(stagedAssetDir, { recursive: true });
     const verifiedModels = [];
@@ -467,10 +477,15 @@ async function runSync(options) {
       { name: 'bundledModels', stagedPath: stagedBundledMap, targetPath: join(mlDir, 'bundledModels.ts') },
       { name: 'manifest', stagedPath: stagedManifest, targetPath: join(mlDir, 'manifest.json') },
       { name: 'verifiedModels', stagedPath: stagedVerifiedModels, targetPath: join(mlDir, 'verifiedModels.json') },
-    ], options.afterPublishStep);
+    ], options.afterPublishStep, options.restoreBackup);
     return { modelCount: verifiedModels.length, verifiedMetadata };
+  } catch (error) {
+    preserveTransactionDir = error?.preserveRecoveryDirectory === true;
+    throw error;
   } finally {
-    await rm(transactionDir, { recursive: true, force: true }).catch(() => {});
+    if (!preserveTransactionDir) {
+      await rm(transactionDir, { recursive: true, force: true }).catch(() => {});
+    }
   }
 }
 
@@ -478,7 +493,7 @@ async function runSync(options) {
  * Non-CLI test seam. The production command never accepts an injected inspector,
  * filesystem root, copier, or publish hook.
  */
-export function syncModelsForTest({ modelsDir, appDir, inspectModel, copyFile, afterPublishStep }) {
+export function syncModelsForTest({ modelsDir, appDir, inspectModel, copyFile, afterPublishStep, restoreBackup }) {
   if (
     typeof modelsDir !== 'string' ||
     typeof appDir !== 'string' ||
@@ -492,6 +507,7 @@ export function syncModelsForTest({ modelsDir, appDir, inspectModel, copyFile, a
     inspectModel,
     copyFile: copyFile ?? ((_sourcePath, targetPath, bytes) => writeFile(targetPath, bytes, { flag: 'wx' })),
     afterPublishStep,
+    restoreBackup,
   });
 }
 
