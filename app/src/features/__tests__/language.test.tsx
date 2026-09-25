@@ -58,7 +58,7 @@ test('no Filipino string was left as its English original', () => {
 
   // A handful are legitimately identical — loanwords a Filipino farmer uses in
   // English anyway, where a coined Tagalog term would read as stilted.
-  expect(untranslated.sort()).toEqual(['emailLabel', 'knowledgeBase', 'passwordLabel', 'tabHome', 'titleScan']);
+  expect(untranslated.sort()).toEqual(['emailLabel', 'fruitPapaya', 'knowledgeBase', 'passwordLabel', 'tabHome', 'titleScan']);
 });
 
 test('switching to Filipino changes the home screen', () => {
