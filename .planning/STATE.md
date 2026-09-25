@@ -51,7 +51,7 @@ Plan: 7 of 8
 - ML weights are intentionally absent and remain a future file-import step.
 - Vercel is QA-only for this milestone; live production promotion is out of scope.
 - Phase 3 local direct-RPC grant remediation is verified: migration 0007 now revokes PUBLIC/anon/authenticated execution and grants only service_role; 221 generated migration-grant regressions covering quoted and nested block-comment identifiers, 37 focused API ownership tests, project typecheck, and the full local suite passed. This does not prove a remote target: disposable rehearsal is Blocked and authenticated two-account/anonymous PostgREST plus API QA is Not tested. Phase 4 must not begin.
-- Phase 6's five plans have local contract, status, and model-free build evidence. Focused Phase 6 suites, root typecheck, separate API tests, repeatable empty-manifest hashes, web export, and Android config parsing passed. The full root suite failed on the `fruitPapaya` Filipino translation assertion. No owner-approved model, positive real LiteRT inspection, browser runtime, Android package/device result, or inference evidence exists; see `06-EVIDENCE.md` and `06-VERIFICATION.md`.
+- Phase 6's five plans have local contract, status, and model-free build evidence. Focused Phase 6 suites, root typecheck, separate API tests, repeatable empty-manifest hashes, web export, and Android config parsing passed. The initial full root suite failed on the `fruitPapaya` Filipino translation assertion; after the global-verification fixes, the full root suite and typecheck passed. No owner-approved model, positive real LiteRT inspection, browser runtime, Android package/device result, or inference evidence exists; see `06-EVIDENCE.md` and `06-VERIFICATION.md`.
 
 ## Decisions and Constraints
 
@@ -69,7 +69,7 @@ Plan: 7 of 8
 ## Session Continuity
 
 **Last activity:** 2026-09-25
-**Next action:** Run the requested global verification of the active dirty checkout after Phase 6 Plan 06-05 evidence is committed. Phase 6 local evidence is recorded in `.planning/phases/06-file-based-ml-readiness/06-EVIDENCE.md` and `06-VERIFICATION.md`; owner-approved files, real positive LiteRT inspection, browser runtime, Android package/device checks, and inference remain open. Phase 3 disposable rehearsal and authenticated QA, Phase 4 04-12/04-09 closure and device/full-browser evidence, and Phase 5 browser/Android, reviewer, and remote/provider checks remain pending. The local-only Phase 4 exception does not satisfy remote or device evidence. Project status stays `remediation_required` until its owning gate is closed.
+**Next action:** Phase 6 global local verification is recorded in `.planning/phases/06-file-based-ml-readiness/06-EVIDENCE.md` and `06-VERIFICATION.md`. Owner-approved model files and contracts, real positive LiteRT inspection, browser runtime, Android package/device checks, and inference remain open. Phase 3 disposable rehearsal and authenticated QA, Phase 4 04-12/04-09 closure and device/full-browser evidence, and Phase 5 browser/Android, reviewer, and remote/provider checks remain pending. The local-only Phase 4 exception does not satisfy remote or device evidence. Project status stays `remediation_required` until its owning gate is closed.
 
 ---
-*Last updated: 2026-09-20 after Phase 3 local remediation*
+*Last updated: 2026-09-25 after Phase 6 global local verification; Phase 3 remediation remains open*

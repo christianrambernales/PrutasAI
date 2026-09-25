@@ -109,7 +109,7 @@ PrutasAI will be completed through seven layered phases. The order moves from re
 3. Generated metadata drives capability exposure while preserving truthful partial/no-model degradation.
 4. A model-free build remains reproducible and demonstrable, and the owner’s future import action is unambiguous.
 
-**Plans:** 5/5 plans executed. Focused local contract/status checks, root typecheck, repeated empty-manifest sync, model-free web export, and Android configuration parsing passed. The full root suite failed on the `fruitPapaya` Filipino translation assertion; a separate API run passed 157/157. Owner-approved model import, positive real LiteRT inspection, browser runtime, Android package/device checks, and inference remain open. See [06-EVIDENCE.md](./phases/06-file-based-ml-readiness/06-EVIDENCE.md) and [06-VERIFICATION.md](./phases/06-file-based-ml-readiness/06-VERIFICATION.md).
+**Plans:** 5/5 plans executed. Focused local contract/status checks, root typecheck, repeated empty-manifest sync, model-free web export, and Android configuration parsing passed. The initial full root suite failed on a `fruitPapaya` Filipino translation assertion; after the global-verification fixes, the full root suite and root typecheck passed. Owner-approved model import, positive real LiteRT inspection, browser runtime, Android package/device checks, and inference remain open. See [06-EVIDENCE.md](./phases/06-file-based-ml-readiness/06-EVIDENCE.md) and [06-VERIFICATION.md](./phases/06-file-based-ml-readiness/06-VERIFICATION.md).
 
 **Wave 1**
 - [x] 06-01-PLAN.md — Define the owner-approved import contract and fail-closed manifest validator.
