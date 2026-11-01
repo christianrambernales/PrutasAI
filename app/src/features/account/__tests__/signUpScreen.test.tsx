@@ -2,7 +2,8 @@ import React from 'react';
 import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 
 import { SignUpScreen } from '../SignUpScreen';
-import { press, textInputs } from '../../../testing/interaction';
+import { press, pressableRoles, textInputs } from '../../../testing/interaction';
+import { LanguageProvider } from '../../../ui';
 
 function render(element: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -106,4 +107,47 @@ test('busy state shows resending label and prevents double resend', () => {
 
   press(tree, 'Resending…');
   expect(onResendConfirmation).not.toHaveBeenCalled();
+});
+
+test('sign-up fields, submit, and return-to-sign-in controls expose localized names and busy state', () => {
+  const tree = render(
+    <SignUpScreen busy={true} error={null} onSignUp={jest.fn()} onGoToSignIn={jest.fn()} />,
+  );
+  expect(Array.from(new Set(textInputs(tree).map(field => field.props.accessibilityLabel))))
+    .toEqual(['Email', 'Password', 'Confirm password']);
+  expect(pressableRoles(tree).map(action => action.props.accessibilityLabel)).toEqual([
+    'Signing in…',
+    'Already have an account? Sign in',
+  ]);
+  expect(pressableRoles(tree).every(action => action.props.accessibilityState?.disabled === true)).toBe(true);
+});
+
+test('Filipino sign-up actions are named in the selected language', () => {
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <LanguageProvider language="FIL">
+        <SignUpScreen busy={false} error={null} onSignUp={jest.fn()} onGoToSignIn={jest.fn()} />
+      </LanguageProvider>,
+    );
+  });
+
+  expect(pressableRoles(tree).map(action => action.props.accessibilityLabel)).toEqual([
+    'Gumawa ng akawnt',
+    'May akawnt ka na? Mag-sign in',
+  ]);
+});
+
+test('sign-up auth errors are announced as alerts without changing their safe bilingual text', () => {
+  const tree = render(
+    <SignUpScreen
+      busy={false}
+      error="Too many attempts. Please try again in a few minutes."
+      onSignUp={jest.fn()}
+      onGoToSignIn={jest.fn()}
+    />,
+  );
+
+  const alert = tree.root.findAll(n => n.props.accessibilityRole === 'alert');
+  expect(alert.some(n => n.props.accessibilityLiveRegion === 'assertive')).toBe(true);
 });

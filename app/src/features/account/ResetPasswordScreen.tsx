@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import {
-  AppText, Button, Col, COLORS, RADIUS, Section, SPACING, useT,
+  AppText, Button, Card, Col, COLORS, RADIUS, Row, Section, SPACING, useT,
 } from '../../ui';
 
 export interface ResetPasswordScreenProps {
@@ -48,18 +48,39 @@ export function ResetPasswordScreen(props: ResetPasswordScreenProps) {
 
   if (succeeded) {
     return (
-      <Section gap={SPACING.md}>
-        <AppText variant="xl">{t.passwordResetSuccessTitle}</AppText>
-        <AppText variant="sm" color={COLORS.textSecondary}>
-          {t.passwordResetSuccessDetail}
-        </AppText>
-        <Button
-          label={t.done}
-          onPress={() => {
-            if (props.onDone) props.onDone();
-          }}
-        />
-      </Section>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.greenTopCell}>
+          <AppText variant="title" center style={styles.iconEmoji}>
+            ✅
+          </AppText>
+          <AppText variant="xl" color={COLORS.surface} center accessibilityRole="header">
+            {t.passwordResetSuccessTitle}
+          </AppText>
+        </View>
+
+        <Section gap={SPACING.md}>
+          <Card style={styles.formCard}>
+            <Col gap={SPACING.sm} align="center">
+              <AppText
+                variant="sm"
+                color={COLORS.textSecondary}
+                center
+                accessibilityLiveRegion="polite"
+              >
+                {t.passwordResetSuccessDetail}
+              </AppText>
+            </Col>
+          </Card>
+
+          <Button
+            variant="primary"
+            label={t.done}
+            onPress={() => {
+              if (props.onDone) props.onDone();
+            }}
+          />
+        </Section>
+      </ScrollView>
     );
   }
 
@@ -67,62 +88,140 @@ export function ResetPasswordScreen(props: ResetPasswordScreenProps) {
   const displayError = localError || props.error;
 
   return (
-    <Section gap={SPACING.md}>
-      <AppText variant="xl">{t.titleResetPassword}</AppText>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Green Top Cell */}
+      <View style={styles.greenTopCell}>
+        <Row justify="space-between" align="center">
+          <AppText variant="xl" color={COLORS.surface} accessibilityRole="header">
+            {t.titleResetPassword}
+          </AppText>
+          {props.onCancel ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t.cancel}
+              onPress={props.onCancel}
+              hitSlop={8}
+              style={styles.cancelBtn}
+            >
+              <AppText variant="smSemi" color={COLORS.surface}>
+                ✕ {t.cancel}
+              </AppText>
+            </Pressable>
+          ) : null}
+        </Row>
+        <AppText variant="xs" color="rgba(255,255,255,0.85)" style={{ marginTop: SPACING.xs }}>
+          {t.forgotPasswordSubtitle}
+        </AppText>
+      </View>
 
-      <Col gap={SPACING.sm}>
-        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.newPasswordLabel}</AppText>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={text => {
-            setPassword(text);
-            if (localError) setLocalError(null);
-          }}
-          secureTextEntry
-          accessibilityLabel={t.newPasswordLabel}
-        />
+      <Section gap={SPACING.md}>
+        <Card style={styles.formCard}>
+          <Col gap={SPACING.md}>
+            {/* New Password */}
+            <Col gap={SPACING.xs}>
+              <AppText variant="smSemi" color={COLORS.textSecondary}>{t.newPasswordLabel}</AppText>
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={text => {
+                  setPassword(text);
+                  if (localError) setLocalError(null);
+                }}
+                secureTextEntry
+                accessibilityLabel={t.newPasswordLabel}
+                returnKeyType="next"
+                editable={!isBusy}
+              />
+            </Col>
 
-        <AppText variant="smSemi" color={COLORS.textSecondary}>{t.confirmPasswordLabel}</AppText>
-        <TextInput
-          style={styles.input}
-          value={confirmPassword}
-          onChangeText={text => {
-            setConfirmPassword(text);
-            if (localError) setLocalError(null);
-          }}
-          secureTextEntry
-          accessibilityLabel={t.confirmPasswordLabel}
-        />
-      </Col>
+            {/* Confirm Password */}
+            <Col gap={SPACING.xs}>
+              <AppText variant="smSemi" color={COLORS.textSecondary}>{t.confirmPasswordLabel}</AppText>
+              <TextInput
+                style={styles.input}
+                value={confirmPassword}
+                onChangeText={text => {
+                  setConfirmPassword(text);
+                  if (localError) setLocalError(null);
+                }}
+                secureTextEntry
+                accessibilityLabel={t.confirmPasswordLabel}
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
+                editable={!isBusy}
+              />
+            </Col>
 
-      {displayError ? (
-        <AppText variant="sm" color={COLORS.error}>{displayError}</AppText>
-      ) : null}
+            {/* Error Message */}
+            {displayError ? (
+              <AppText
+                variant="sm"
+                color={COLORS.error}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="assertive"
+              >
+                {displayError}
+              </AppText>
+            ) : null}
 
-      <Button
-        label={isBusy ? t.updatingPassword : t.setNewPassword}
-        onPress={handleSubmit}
-      />
+            {/* Submit Button */}
+            <Button
+              variant="primary"
+              label={isBusy ? t.updatingPassword : t.setNewPassword}
+              onPress={handleSubmit}
+              disabled={isBusy}
+            />
 
-      {props.onCancel ? (
-        <Button
-          variant="secondary"
-          label={t.cancel}
-          onPress={props.onCancel}
-        />
-      ) : null}
-    </Section>
+            {props.onCancel ? (
+              <Button
+                variant="secondary"
+                label={t.cancel}
+                onPress={props.onCancel}
+                disabled={isBusy}
+              />
+            ) : null}
+          </Col>
+        </Card>
+      </Section>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    paddingBottom: SPACING.xl,
+  },
+  greenTopCell: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md + 4,
+    borderBottomLeftRadius: RADIUS.lg,
+    borderBottomRightRadius: RADIUS.lg,
+    marginBottom: SPACING.md,
+  },
+  iconEmoji: {
+    fontSize: 36,
+    marginBottom: SPACING.xs,
+  },
+  cancelBtn: {
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xs,
+  },
+  formCard: {
+    padding: SPACING.md,
+  },
   input: {
+    minHeight: 48,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: RADIUS.sm,
-    paddingHorizontal: SPACING.sm,
+    paddingHorizontal: SPACING.sm + 2,
     paddingVertical: SPACING.sm,
     color: COLORS.text,
   },

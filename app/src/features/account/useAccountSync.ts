@@ -32,6 +32,8 @@ export interface AccountState {
   email: string | null;
   accessToken: string;
   busy: boolean;
+  modeChangeBusy: boolean;
+  modeChangeError: boolean;
   error: string | null;
   errorKey: AuthErrorKey | null;
   resetMessage: string | null;
@@ -50,6 +52,8 @@ export interface AccountSyncInput {
   push: (route: Route) => void;
   back: () => void;
   consented: boolean;
+  /** The app-level persisted preference, including one completed by consent. */
+  syncMode: SyncMode | null;
   dataVersion: number;
   bumpData: () => void;
   onSyncModeChange: (mode: SyncMode) => void;
@@ -69,14 +73,14 @@ export interface AccountSync {
   clearRecovery: () => void;
   claimUnowned: () => Promise<void>;
   declineUnowned: () => Promise<void>;
-  handleChooseMode: (mode: SyncMode) => void;
+  handleChooseMode: (mode: SyncMode) => Promise<void>;
   syncNow: () => Promise<void>;
   removeLocalDeviceCopy: () => Promise<void>;
 }
 
 export function useAccountSync(input: AccountSyncInput): AccountSync {
   const {
-    db, t, notify, push, back, consented, dataVersion, bumpData,
+    db, t, notify, push, back, consented, syncMode, dataVersion, bumpData,
     onSyncModeChange, onAccountRequested,
   } = input;
 
@@ -85,6 +89,8 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     email: null,
     accessToken: '',
     busy: false,
+    modeChangeBusy: false,
+    modeChangeError: false,
     error: null,
     errorKey: null,
     resetMessage: null,
@@ -98,6 +104,7 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     syncMode: getSyncMode(db) === 'offline' ? 'offline' : 'account',
   });
   const syncEpoch = useRef(0);
+  const modeChangeInFlight = useRef(false);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const refreshSyncCounts = useCallback((ownerId: string | null) => {
     const scope = { activeAccountId: ownerId };
@@ -116,6 +123,18 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
   useEffect(() => {
     refreshSyncCounts(account.userId);
   }, [account.userId, dataVersion, refreshSyncCounts]);
+
+  // Consent can complete an account preference from the onboarding gate rather
+  // than from this screen. Mirror that persisted result before Account renders
+  // so the selected mode is never lost behind stale hook state.
+  useEffect(() => {
+    if (syncMode !== 'offline' && syncMode !== 'account') return;
+    setAccount(a => (
+      a.syncMode === syncMode && a.cloudSyncEnabled === (syncMode === 'account')
+        ? a
+        : { ...a, syncMode, cloudSyncEnabled: syncMode === 'account' }
+    ));
+  }, [syncMode]);
 
   // Recovery deep link listener: routes to resetPassword when valid recovery link arrives
   useEffect(() => {
@@ -237,22 +256,36 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     };
   }, [account.accessToken, account.cloudSyncEnabled, account.unownedClaimPending, account.userId, dataVersion, db]);
 
-  const handleChooseMode = useCallback((mode: SyncMode) => {
+  const handleChooseMode = useCallback(async (mode: SyncMode) => {
+    if (modeChangeInFlight.current || getSyncMode(db) === mode) return;
     if (mode === 'account') {
       if (!consented) {
         onAccountRequested();
         return;
       }
-      setSyncMode(db, 'account');
-      onSyncModeChange('account');
-      setAccount(a => ({ ...a, cloudSyncEnabled: true, syncMode: 'account' }));
-    } else {
-      syncEpoch.current += 1;
-      setSyncMode(db, 'offline');
-      onSyncModeChange('offline');
-      setAccount(a => ({ ...a, cloudSyncEnabled: false, syncMode: 'offline' }));
     }
-  }, [consented, db, onAccountRequested, onSyncModeChange]);
+    modeChangeInFlight.current = true;
+    setAccount(a => ({ ...a, modeChangeBusy: true, modeChangeError: false }));
+    try {
+      setSyncMode(db, mode);
+      if (mode === 'offline') syncEpoch.current += 1;
+      onSyncModeChange(mode);
+      setAccount(a => ({
+        ...a,
+        modeChangeBusy: false,
+        modeChangeError: false,
+        cloudSyncEnabled: mode === 'account',
+        syncMode: mode,
+      }));
+    } catch {
+      // The setting did not persist, so preserve the in-memory and persisted
+      // previous mode. This is a local preference failure, not evidence about
+      // a remote sync service.
+      setAccount(a => ({ ...a, modeChangeBusy: false, modeChangeError: true }));
+    } finally {
+      modeChangeInFlight.current = false;
+    }
+  }, [account.syncMode, consented, db, onAccountRequested, onSyncModeChange]);
 
   const openAccount = useCallback(() => {
     if (!consented) {
@@ -281,6 +314,8 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
         email,
         accessToken: outcome.accessToken,
         busy: false,
+        modeChangeBusy: false,
+        modeChangeError: false,
         error: null,
         errorKey: null,
         resetMessage: null,
@@ -414,6 +449,8 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
     setAccount(a => ({
       ...a,
       busy: false,
+      modeChangeBusy: false,
+      modeChangeError: false,
       error: null,
       errorKey: null,
       resetMessage: t.confirmationResent,
@@ -489,6 +526,8 @@ export function useAccountSync(input: AccountSyncInput): AccountSync {
       email: null,
       accessToken: '',
       busy: false,
+      modeChangeBusy: false,
+      modeChangeError: false,
       error: null,
       errorKey: null,
       resetMessage: null,

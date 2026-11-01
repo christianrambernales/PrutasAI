@@ -449,3 +449,30 @@ test('switching mode to account with consent updates mode instantly', () => {
   expect(h.value.account.cloudSyncEnabled).toBe(true);
   expect(h.value.account.syncMode).toBe('account');
 });
+
+test('a failed local mode preference write retains the previous mode and permits a truthful retry', async () => {
+  const { setSyncMode } = require('../../../core/db/syncMode');
+  setSyncMode(db, 'account');
+  const h = mount();
+  const originalAll = db.all.bind(db);
+  const all = jest.spyOn(db, 'all').mockImplementation((sql, params) => {
+    if (sql.includes('INSERT OR REPLACE INTO setting')) {
+      throw new Error('local database unavailable');
+    }
+    return originalAll(sql, params);
+  });
+
+  await act(async () => { await h.value.handleChooseMode('offline'); });
+
+  expect(getSyncMode(db)).toBe('account');
+  expect(h.value.account.syncMode).toBe('account');
+  expect(h.value.account.modeChangeBusy).toBe(false);
+  expect(h.value.account.modeChangeError).toBe(true);
+  expect(h.onSyncModeChange).not.toHaveBeenCalledWith('offline');
+
+  all.mockRestore();
+  await act(async () => { await h.value.handleChooseMode('offline'); });
+
+  expect(getSyncMode(db)).toBe('offline');
+  expect(h.value.account.modeChangeError).toBe(false);
+});
