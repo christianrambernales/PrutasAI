@@ -260,7 +260,9 @@ export function ResultScreen(props: ResultScreenProps) {
             </View>
           ))}
           <Text>Severity</Text>
-          <Text>{`Moderate · ${result.severityPercent}%`}</Text>
+          {result.severityPercent !== null && result.severityPercent !== undefined ? (
+            <Text>{`Moderate · ${result.severityPercent}%`}</Text>
+          ) : null}
           {result.severityPercent === null ? (
             <Text>No fruit bounding box was produced, so severity is not computed.</Text>
           ) : null}

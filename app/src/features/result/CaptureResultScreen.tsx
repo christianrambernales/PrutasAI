@@ -90,7 +90,7 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
   const displayRecordId = recordId ?? (record?.title ? record.title : 'SCAN-2026-0043');
   const displayCoords = locationCoords ?? '14.17°N, 121.24°E';
 
-  const handleRetake = onRetake ?? onReviewPhoto ?? onBackToSummary;
+  const handleRetake = onRetake ?? onBackToSummary;
   const handleBrowse = onBrowseKnowledge ?? onBrowseGuidance;
 
   if (view === 'photo') {
