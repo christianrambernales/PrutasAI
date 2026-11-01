@@ -163,6 +163,14 @@ export function ChatScreen(props: ChatScreenProps) {
           </View>
         </View>
 
+        {curatedWording && messages.length > 0 ? (
+          <View style={{ paddingHorizontal: SPACING.md, marginBottom: 4 }}>
+            <AppText variant="xs" color={COLORS.textSecondary}>
+              {t.curatedBanner}
+            </AppText>
+          </View>
+        ) : null}
+
         {/* 3. Transcript Messages List or Blank-first Welcome View */}
         <ScrollView
           ref={scroller}

@@ -50,6 +50,7 @@ export interface LocationPickerScreenProps {
   onSelectLocation?: (label: string) => void;
   onUseDeviceGps?: () => void;
   onCancel?: () => void;
+  onBack?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -60,9 +61,11 @@ export function LocationPickerScreen({
   onSelectLocation,
   onUseDeviceGps,
   onCancel,
+  onBack,
   style,
 }: LocationPickerScreenProps) {
   const t = useT();
+  const cancelHandler = onCancel ?? onBack;
   const language = useLanguage();
   const isFil = language === 'FIL';
   const insets = useSafeAreaInsets();
@@ -92,7 +95,7 @@ export function LocationPickerScreen({
       return;
     }
     const term = query.trim();
-    if (term === '' || term.toLowerCase() === 'davao city') {
+    if (term.length < 2) {
       setSearchResults(null);
       return;
     }
@@ -106,7 +109,7 @@ export function LocationPickerScreen({
 
   const handleSelectPreset = (preset: LocationPreset) => {
     setSelectedLabel(preset.label);
-    setQuery(preset.label.split(',')[0]);
+    setSearchResults(null);
     onSelectLocation?.(preset.label);
     onChoose?.({
       label: preset.label,
@@ -120,7 +123,7 @@ export function LocationPickerScreen({
 
   const handleSelectPlace = (place: Place) => {
     setSelectedLabel(place.label);
-    setQuery(place.label.split(',')[0]);
+    setSearchResults(null);
     onSelectLocation?.(place.label);
     onChoose?.(place);
   };
@@ -128,12 +131,6 @@ export function LocationPickerScreen({
   const handleUseGps = () => {
     onUseDeviceGps?.();
     device.locate();
-    const msg = isFil
-      ? 'Nakuha ang magaspang na GPS coordinates: 7.07°N, 125.61°E'
-      : 'Acquired coarse GPS coordinates: 7.07°N, 125.61°E';
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.alert) {
-      window.alert(msg);
-    }
   };
 
   // Build presets list, adding custom current location if not present
@@ -171,11 +168,11 @@ export function LocationPickerScreen({
             : 'Coarse location for climate suitability'
         }
         rightAction={
-          onCancel ? (
+          cancelHandler ? (
             <BtnSubtle
               label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
               textColor="#ffffff"
-              onPress={onCancel}
+              onPress={cancelHandler}
               style={styles.cancelBtn}
             />
           ) : undefined
@@ -239,7 +236,7 @@ export function LocationPickerScreen({
             {displayedPresets.map(preset => {
               const isSelected =
                 selectedLabel === preset.label ||
-                (selectedLabel.toLowerCase().includes('davao') && preset.id === 'davao');
+                (preset.id === 'davao' && (selectedLabel === 'Davao City' || selectedLabel === 'Davao'));
               return (
                 <Pressable
                   key={preset.id}

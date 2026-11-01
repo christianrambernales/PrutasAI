@@ -239,6 +239,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
   const handleBack = onBackHome ?? onBack;
   const handleScan = onScanCrop ?? onBack;
 
+  const isPropFruit = !fruit || fruit.key.toLowerCase() === activeCropKey;
   const cropDisplayName = isFil ? activeProfile.nameFil : activeProfile.nameEn;
 
   return (
@@ -256,7 +257,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
         rightAction={
           handleBack ? (
             <BtnSubtle
-              label={`← ${isFil ? 'Home' : 'Home'}`}
+              label="← Home"
               textColor="#ffffff"
               onPress={handleBack}
               style={styles.homeBtn}
@@ -373,7 +374,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
           {isFil ? 'Mga Pangunahing Sakit (Local Knowledge)' : 'Key Vulnerabilities'}
         </Text>
         <View style={styles.vulnerabilitiesCol} accessibilityRole="list">
-          {diseases.length > 0 ? (
+          {isPropFruit && diseases.length > 0 ? (
             diseases.map(d => {
               const primaryName = isFil ? d.nameFil : d.nameEn;
               const alternateName = isFil ? d.nameEn : d.nameFil;
@@ -415,7 +416,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
       </FrostedCard>
 
       {/* 5. Model Classes & Information-Only (When provided from database / preview) */}
-      {modelVarieties.length > 0 ? (
+      {isPropFruit && modelVarieties.length > 0 ? (
         <FrostedCard style={styles.card}>
           <Text accessibilityRole="header" style={styles.sectionHeader}>
             {t.identifiedByModel ?? 'Identified by the model'}
@@ -431,10 +432,24 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
                   accessibilityLabel={vName}
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => onOpenVariety?.(v.key)}
-                  style={styles.varietyItem}
+                  style={[styles.varietyItem, isSelected && styles.varietyItemSelected]}
                 >
-                  <Text style={styles.varietyName}>{vName}</Text>
-                  {v.note ? <Text style={styles.varietyNote}>{v.note}</Text> : null}
+                  <View style={styles.varietyItemRow}>
+                    <Text style={styles.varietyName}>{vName}</Text>
+                    {v.note ? <Text style={styles.varietyNote}>{v.note}</Text> : null}
+                  </View>
+                  {isSelected ? (
+                    <View style={styles.expandedVariety}>
+                      <View style={styles.expandedRow}>
+                        <Text style={styles.expandedLabel}>{t.filipinoName}</Text>
+                        <Text style={styles.expandedValue}>{v.nameFil}</Text>
+                      </View>
+                      <View style={styles.expandedRow}>
+                        <Text style={styles.expandedLabel}>{t.classIndex}</Text>
+                        <Text style={styles.expandedValue}>{v.mlClassIndex}</Text>
+                      </View>
+                    </View>
+                  ) : null}
                 </Pressable>
               );
             })}
@@ -442,7 +457,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
         </FrostedCard>
       ) : null}
 
-      {informationOnly.length > 0 ? (
+      {isPropFruit && informationOnly.length > 0 ? (
         <FrostedCard style={styles.card}>
           <View style={styles.headerWithBadge}>
             <Text accessibilityRole="header" style={styles.sectionHeader}>
@@ -467,7 +482,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
         </FrostedCard>
       ) : null}
 
-      {sources.length > 0 ? (
+      {isPropFruit && sources.length > 0 ? (
         <FrostedCard style={styles.card}>
           <Text accessibilityRole="header" style={styles.sectionHeader}>
             {t.sources ?? 'Sources & Citations'}
@@ -668,11 +683,41 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   varietyItem: {
+    paddingVertical: 6,
+    minHeight: 48,
+  },
+  varietyItemSelected: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+  varietyItemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 4,
-    minHeight: 44,
+    minHeight: 48,
+  },
+  expandedVariety: {
+    paddingTop: 4,
+    paddingBottom: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#dcfce7',
+    gap: 4,
+  },
+  expandedRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  expandedLabel: {
+    fontSize: 11,
+    color: '#64748b',
+    fontFamily: FONTS.regular,
+  },
+  expandedValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#154d2e',
+    fontFamily: FONTS.bold,
   },
   varietyName: {
     fontSize: 13,
