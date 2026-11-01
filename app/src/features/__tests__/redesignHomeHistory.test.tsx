@@ -233,3 +233,35 @@ it('keeps History errors actionable and retains already loaded records', async (
   await fireEvent.press(screen.getByRole('button', { name: strings('EN').retry }));
   expect(onRetry).toHaveBeenCalledTimes(1);
 });
+
+it('renders HistoryScreen with 1:1 prototype elements (GreenTopCell, search, chips, records)', async () => {
+  const onOpenScan = jest.fn();
+  const onBackHome = jest.fn();
+  const mango = { ...saved, id: 'scan-m1', title: 'Mango · Carabao', fruitKey: 'mango' };
+  await render(
+    <HistoryScreen
+      groups={[{ label: 'Today', scans: [mango] }]}
+      filters={[
+        { key: 'All', label: 'All · 1' },
+        { key: 'mango', label: 'Mangga' },
+        { key: 'banana', label: 'Saging' },
+        { key: 'papaya', label: 'Papaya' },
+      ]}
+      activeFilterKey="All"
+      totalLabel="1 scan stored on device"
+      query=""
+      onChangeQuery={jest.fn()}
+      onFilter={jest.fn()}
+      onOpenScan={onOpenScan}
+      onBackHome={onBackHome}
+    />
+  );
+
+  expect(screen.getByText(/Scan History/i)).toBeTruthy();
+  expect(screen.getByText(/Persisted locally on device SQLite/i)).toBeTruthy();
+  expect(screen.getByText('Local')).toBeTruthy();
+  expect(screen.getByText(/scan-m1/i)).toBeTruthy();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Home' }));
+  expect(onBackHome).toHaveBeenCalledTimes(1);
+});
