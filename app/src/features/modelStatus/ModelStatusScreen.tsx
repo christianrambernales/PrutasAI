@@ -8,11 +8,16 @@ import { strings, type Language } from '../../ui/i18n/strings';
 import type { ModelRow } from '../viewModels';
 import { ModelStatusView } from './ModelStatusView';
 
+export interface ModelStatusScreenProps {
+  language?: Language;
+  onBack?: () => void;
+}
+
 /**
  * Reads the real registry — never preview data. If no weights are installed
  * this screen says so, which is the whole point of it existing.
  */
-export function ModelStatusScreen({ language = 'EN' }: { language?: Language }) {
+export function ModelStatusScreen({ language = 'EN', onBack }: ModelStatusScreenProps) {
   const sourceManifest = manifest as Manifest;
   const registry = resolveModelRegistry(sourceManifest, bundledModels, verifiedModels);
   const t = strings(language);
@@ -34,7 +39,9 @@ export function ModelStatusScreen({ language = 'EN' }: { language?: Language }) 
       models={models}
       fruits={registry.fruits}
       manifestVersion={sourceManifest.manifest_version}
+      language={language}
       t={t}
+      onBack={onBack}
     />
   );
 }

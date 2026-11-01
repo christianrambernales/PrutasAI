@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   AccessibilityRole,
+  AccessibilityState,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -23,10 +24,12 @@ export interface FrostedCardProps {
   accentBorder?: FrostedCardAccent;
   surfaceColor?: string;
   onPress?: () => void;
+  disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
   accessibilityRole?: AccessibilityRole;
   accessibilityLabel?: string;
+  accessibilityState?: AccessibilityState;
 }
 
 const ACCENT_STYLES: Record<Exclude<FrostedCardAccent, 'none'>, ViewStyle> = {
@@ -66,10 +69,12 @@ export function FrostedCard({
   accentBorder = 'none',
   surfaceColor = '#ffffff',
   onPress,
+  disabled,
   style,
   testID,
   accessibilityRole,
   accessibilityLabel,
+  accessibilityState,
 }: FrostedCardProps) {
   const accentStyle = accentBorder !== 'none' ? ACCENT_STYLES[accentBorder] : null;
 
@@ -84,10 +89,12 @@ export function FrostedCard({
     return (
       <Pressable
         onPress={onPress}
+        disabled={disabled}
         accessibilityRole={accessibilityRole ?? 'button'}
         accessibilityLabel={accessibilityLabel}
+        accessibilityState={accessibilityState}
         testID={testID}
-        style={({ pressed }) => [cardStyle, pressed && styles.pressed]}
+        style={({ pressed }) => [cardStyle, pressed && !disabled && styles.pressed, disabled && { opacity: 0.55 }]}
       >
         {children}
       </Pressable>

@@ -288,7 +288,7 @@ const EN = {
 
   // welcome
   welcomeTitle: 'Keep your scans on this phone, or across your devices',
-  welcomeHeaderTitle: 'Welcome to PrutasAI',
+  welcomeHeaderTitle: 'Maligayang Pagdating sa PrutasAI',
   welcomeSubtitle: 'Decision-support tool for Mango, Banana, and Papaya growers',
   welcomeSelectLanguage: 'Select Language',
   welcomeLanguageHint: 'English',
@@ -1076,7 +1076,7 @@ const FIL: Dictionary = {
   aboutSources: 'Mga sanggunian',
 
   // trash
-  titleTrash: 'Basurahan',
+  titleTrash: 'Basurahan (Trash)',
   trashRow: 'Basurahan',
   trashEmpty: 'Walang laman ang basurahan',
   trashSubtitle: '15-Araw na soft-delete bago tuluyang burahin',
