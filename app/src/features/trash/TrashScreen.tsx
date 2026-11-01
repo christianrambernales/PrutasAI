@@ -234,6 +234,8 @@ export function TrashScreen({
                     styles.itemCard,
                     isSelected && styles.selectedItemCard,
                   ]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
                   onPress={() => {
                     if (selecting) { toggle(item.id); return; }
                     setSelected(new Set([item.id]));

@@ -283,17 +283,19 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
           icon={<Text style={styles.actionEmoji}>📊</Text>}
           onPress={onStartMonitoring}
         />
-        <BtnSubtle
-          label={
-            isFil
-              ? '[Demo Test] Tingnan ang Halimbawang Resulta'
-              : '[Demo Test] View Illustrative Sample Screen'
-          }
-          icon={<Text style={styles.actionEmoji}>🔬</Text>}
-          textColor="#c2410c"
-          onPress={onOpenDemoResult}
-          style={styles.demoBtn}
-        />
+        {onOpenDemoResult ? (
+          <BtnSubtle
+            label={
+              isFil
+                ? '[Demo Test] Tingnan ang Halimbawang Resulta'
+                : '[Demo Test] View Illustrative Sample Screen'
+            }
+            icon={<Text style={styles.actionEmoji}>🔬</Text>}
+            textColor="#c2410c"
+            onPress={onOpenDemoResult}
+            style={styles.demoBtn}
+          />
+        ) : null}
       </View>
 
       {/* Hidden offscreen accessibility elements for multi-suite compatibility */}
