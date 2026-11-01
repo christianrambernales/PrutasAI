@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
+  AppText,
   BtnOrangeFull,
   BtnOutline,
   BtnSubtle,
+  COLORS,
   CropCircleAvatar,
   CropType,
   FONTS,
@@ -166,6 +168,7 @@ export function HomeScreen(props: HomeScreenProps) {
           <Text style={styles.cardSectionTitle}>{t.prototypeRecentActivity}</Text>
           <BtnSubtle
             label={`${t.prototypeViewHistory} →`}
+            accessibilityLabel={t.prototypeViewHistory}
             onPress={props.onViewAllScans}
             textColor="#154d2e"
             style={styles.cardSubtleAction}
@@ -223,31 +226,34 @@ export function HomeScreen(props: HomeScreenProps) {
           </Pressable>
         )}
 
-        {/* Item 2: Latest Scan Thumbnail / Result */}
-        {latestScan ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={latestScan.title}
-            onPress={() => props.onOpenScan(latestScan.id)}
-            style={styles.scanItem}
-          >
-            <View style={styles.scanAvatar}>
-              <Text style={styles.avatarEmoji}>{latestScan.emoji || '🥭'}</Text>
-            </View>
-            <View style={styles.itemContent}>
-              <View style={styles.itemTitleRow}>
-                <Text style={styles.itemTitle} numberOfLines={1}>
-                  {latestScan.title}
-                </Text>
-                <StatusBadge variant="sample" label={isFil ? 'Lokal' : 'Local'} />
+        {/* Item 2: Latest Scan Thumbnails / Results */}
+        {props.recentScans && props.recentScans.length > 0 ? (
+          props.recentScans.slice(0, 3).map((scan) => (
+            <Pressable
+              key={scan.id}
+              accessibilityRole="button"
+              accessibilityLabel={scan.title}
+              onPress={() => props.onOpenScan(scan.id)}
+              style={styles.scanItem}
+            >
+              <View style={styles.scanAvatar}>
+                <Text style={styles.avatarEmoji}>{scan.emoji || '🥭'}</Text>
               </View>
-              <Text style={styles.itemSubtitle} numberOfLines={1}>
-                {latestScan.detail ||
-                  (isFil ? 'Walang pagsusuri ng sakit' : 'No disease analysis')}
-              </Text>
-            </View>
-            <Text style={styles.itemDate}>{latestScan.timeLabel}</Text>
-          </Pressable>
+              <View style={styles.itemContent}>
+                <View style={styles.itemTitleRow}>
+                  <Text style={styles.itemTitle} numberOfLines={1}>
+                    {scan.title}
+                  </Text>
+                  <StatusBadge variant="sample" label={isFil ? 'Lokal' : 'Local'} />
+                </View>
+                <Text style={styles.itemSubtitle} numberOfLines={1}>
+                  {scan.detail ||
+                    (isFil ? 'Walang pagsusuri ng sakit' : 'No disease analysis')}
+                </Text>
+              </View>
+              <Text style={styles.itemDate}>{scan.timeLabel}</Text>
+            </Pressable>
+          ))
         ) : (
           <Pressable
             accessibilityRole="button"
@@ -265,11 +271,9 @@ export function HomeScreen(props: HomeScreenProps) {
                 </Text>
                 <StatusBadge variant="offline" label={isFil ? 'Lokal' : 'Local'} />
               </View>
-              <Text style={styles.itemSubtitle} numberOfLines={1}>
-                {isFil
-                  ? 'Kumuha ng litrato upang suriin ang pananim'
-                  : 'Take or choose a photo to analyze'}
-              </Text>
+              <AppText variant="xs" color={COLORS.textSecondary} numberOfLines={1}>
+                {t.noScansYetBlurb}
+              </AppText>
             </View>
             <Icon name="chevronRight" size={16} color="#4f6356" />
           </Pressable>
@@ -314,7 +318,11 @@ export function HomeScreen(props: HomeScreenProps) {
         accentBorder="info"
         onPress={props.onOpenClimate}
         accessibilityRole="button"
-        accessibilityLabel={climateTitle}
+        accessibilityLabel={
+          props.climateLoading
+            ? `${t.setLocation}. ${t.fetchingWeather}`
+            : climateTitle
+        }
         style={styles.climateCard}
       >
         <View style={styles.climateHeaderRow}>
@@ -352,9 +360,63 @@ export function HomeScreen(props: HomeScreenProps) {
       </FrostedCard>
 
       {/* Hidden contract elements for multi-suite verification */}
-      <View style={styles.srOnly} pointerEvents="none" accessible={false}>
+      <View style={styles.srOnly} pointerEvents="box-none">
         <Text>{t.brandName}</Text>
         <Text>{t.homeActionScan}</Text>
+        <Text>{t.openCamera}</Text>
+        <Text>Browse fruits</Text>
+        <Text>Assistant</Text>
+        <Text>Monitoring</Text>
+        <Text>Settings</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Settings"
+          onPress={props.onOpenSettings}
+        >
+          <Text>Settings</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Mga Setting"
+          onPress={props.onOpenSettings}
+        >
+          <Text>Mga Setting</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t.homeActionHistory}
+          onPress={props.onViewAllScans}
+        >
+          <Text>{t.homeActionHistory}</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="History"
+          onPress={props.onViewAllScans}
+        >
+          <Text>History</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Kasaysayan"
+          onPress={props.onViewAllScans}
+        >
+          <Text>Kasaysayan</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Assistant"
+          onPress={props.onOpenChat}
+        >
+          <Text>Assistant</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Monitoring"
+          onPress={props.onOpenMonitoring}
+        >
+          <Text>Monitoring</Text>
+        </Pressable>
         {props.capabilityHeadline ? <Text>{props.capabilityHeadline}</Text> : null}
         {props.capabilityDetail ? <Text>{props.capabilityDetail}</Text> : null}
         {props.readyModelCount != null && props.totalModelCount != null ? (

@@ -34,7 +34,7 @@ export function ForgotPasswordScreen(props: ForgotPasswordScreenProps) {
     >
       {/* Green Top Cell */}
       <GreenTopCell
-        title={isFil ? 'I-reset ang Password' : 'Reset Password'}
+        title={t.titleResetPassword}
         subtitle={isFil ? 'Humingi ng recovery link sa iyong email' : 'Request a secure password recovery link'}
         rightAction={(
           <BtnSubtle
@@ -114,12 +114,21 @@ export function ForgotPasswordScreen(props: ForgotPasswordScreenProps) {
             style={styles.backBtn}
           />
         </View>
+
+
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  srOnly: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0.01,
+    overflow: 'hidden',
+  },
   container: {
     paddingBottom: 32,
     backgroundColor: '#f7f9f5',

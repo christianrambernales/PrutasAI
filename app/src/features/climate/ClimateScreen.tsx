@@ -123,6 +123,14 @@ export function ClimateScreen(props: ClimateScreenProps) {
         }
       />
 
+      {climate?.coordsLabel ? (
+        <View style={{ paddingHorizontal: 16, marginTop: -6, marginBottom: 6 }}>
+          <AppText variant="xs" color={COLORS.textSecondary}>
+            {climate.coordsLabel}
+          </AppText>
+        </View>
+      ) : null}
+
       {/* Error / unavailable banner */}
       {status === 'error' || currentUnavailable ? (
         <Card style={{ gap: SPACING.sm, borderColor: COLORS.severityEarly }}>
@@ -145,6 +153,7 @@ export function ClimateScreen(props: ClimateScreenProps) {
       {/* Loading state */}
       {status === 'loading' ? (
         <Card>
+          <AppText variant="mdSemi">{t.fetchingWeather}</AppText>
           <AppText
             variant="sm"
             color={COLORS.textSecondary}
@@ -196,12 +205,16 @@ export function ClimateScreen(props: ClimateScreenProps) {
         accentBorder={suitability ? (suitability.verdict === 'insufficient_data' ? 'amber' : suitability.verdict === 'unsuitable' ? 'severe' : 'healthy') : 'healthy'}
         style={styles.suitabilityCard}
       >
-        {climate?.freshnessLabel ? (
+        {climate ? (
           <Row justify="space-between" align="center" style={{ marginBottom: 6 }}>
-            <AppText variant="xsSemi" color={COLORS.textSecondary}>{t.rightNow}</AppText>
-            <AppText variant="xs" color={COLORS.textSecondary}>
-              {isFil ? climate.freshnessLabel.replace(/^Cached/, t.freshnessCached) : climate.freshnessLabel}
+            <AppText variant="xsSemi" color={COLORS.textSecondary}>
+              {`${t.rightNow}${climate.temperatureC != null ? ` · ${climate.temperatureC}°C` : ''}${climate.condition ? ` · ${climate.condition}` : ''}`}
             </AppText>
+            {climate.freshnessLabel ? (
+              <AppText variant="xs" color={COLORS.textSecondary}>
+                {isFil ? climate.freshnessLabel.replace(/^Cached/, t.freshnessCached) : climate.freshnessLabel}
+              </AppText>
+            ) : null}
           </Row>
         ) : null}
         <View style={styles.suitabilityHeader}>
@@ -209,9 +222,13 @@ export function ClimateScreen(props: ClimateScreenProps) {
             <Text style={styles.suitabilityFruitEmoji}>
               {suitability?.fruitEmoji ?? '🥭'}
             </Text>
-            <Text style={styles.suitabilityTitle}>
+            <AppText
+              variant="mdSemi"
+              color={COLORS.primary}
+              style={styles.suitabilityTitle}
+            >
               {props.suitabilityHeadline ?? suitability?.headline ?? (isFil ? 'Mangga: Angkop sa Kasalukuyan' : 'Mango: Highly Suitable')}
-            </Text>
+            </AppText>
           </View>
           <StatusBadge
             variant={

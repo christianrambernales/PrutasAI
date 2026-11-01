@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { prepareAppDatabase } from './src/core/db/appDatabase';
 import type { SqlDriver } from './src/core/db/driver';
-import { AppText, Button, COLORS, ErrorBoundary, SPACING, strings, useT } from './src/ui';
+import { reloadLocalFonts, verifyLocalFonts } from './src/ui/reloadFonts';
+import { AppText, AppViewport, Button, Card, COLORS, ErrorBoundary, FontProvider, fontAssets, Icon, SPACING, strings, useT } from './src/ui';
 
 type Startup =
   | { status: 'opening' }
@@ -37,8 +39,8 @@ function browserBlocksDatabase(): boolean {
 
 /**
  * Insets are applied inside the chrome rather than by a wrapper here, so the
- * bottom navigation's own surface can extend under the gesture bar instead of
- * floating above a strip of page background.
+ * floating bottom navigation clears the gesture bar without duplicate padding
+ * on the shared web viewport.
  *
  * The database is opened before `AppNavigator` mounts, not inside it.
  * `AppNavigator` reads the database synchronously during its first render, and
@@ -50,6 +52,10 @@ function browserBlocksDatabase(): boolean {
  * and the app told the user nothing at all.
  */
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
+  const [fontRetry, setFontRetry] = useState<'idle' | 'loading' | 'loaded' | 'failed'>('idle');
+  const [webFonts, setWebFonts] = useState<'waiting' | 'loaded' | 'failed'>('waiting');
+  const fontAttempt = useRef(0);
   const [startup, setStartup] = useState<Startup>({ status: 'opening' });
   const startupAttempt = useRef(0);
 
@@ -73,20 +79,69 @@ export default function App() {
     start();
     return () => {
       startupAttempt.current += 1;
+      fontAttempt.current += 1;
     };
   }, [start]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !fontsLoaded || fontRetry !== 'idle') return;
+    let active = true;
+    verifyLocalFonts().then(
+      () => active && setWebFonts('loaded'),
+      () => active && setWebFonts('failed'),
+    );
+    return () => { active = false; };
+  }, [fontsLoaded, fontRetry]);
+
+  const retryFonts = () => {
+    const attempt = ++fontAttempt.current;
+    setFontRetry('loading');
+    reloadLocalFonts().then(() => {
+      if (attempt === fontAttempt.current) setFontRetry('loaded');
+    }).catch(() => {
+      if (attempt === fontAttempt.current) setFontRetry('failed');
+    });
+  };
+  const localFontsReady = fontRetry === 'loaded' || (fontsLoaded && (Platform.OS !== 'web' || webFonts === 'loaded'));
+  const fontsFailed = !!fontError || fontRetry === 'failed' || webFonts === 'failed';
+
+  const handleStartupRetry = useCallback(() => {
+    if (startup.status === 'notIsolated' && Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
+      window.location.reload();
+      return;
+    }
+    start();
+  }, [startup.status, start]);
+
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      {startup.status === 'ready' ? (
-        <ErrorBoundary>
-          <AppNavigator db={startup.driver} />
-        </ErrorBoundary>
-      ) : (
-        <Startup startup={startup} onRetry={start} />
-      )}
+      <FontProvider value={localFontsReady}>
+        <AppViewport>
+        <StatusBar style={startup.status === 'ready' ? 'light' : 'dark'} />
+        {!localFontsReady && fontsFailed ? <FontLoadNotice busy={fontRetry === 'loading'} onRetry={retryFonts} /> : null}
+        {startup.status === 'ready' ? (
+          <ErrorBoundary>
+            <AppNavigator db={startup.driver} />
+          </ErrorBoundary>
+        ) : (
+          <Startup startup={startup} onRetry={handleStartupRetry} />
+        )}
+        </AppViewport>
+      </FontProvider>
     </SafeAreaProvider>
+  );
+}
+
+/** Font failures remain actionable without hiding the independent database gate. */
+function FontLoadNotice({ busy, onRetry }: { busy: boolean; onRetry: () => void }) {
+  const t = strings('EN');
+  const fil = strings('FIL');
+  return (
+    <View accessibilityRole="alert" style={{ padding: SPACING.md, gap: SPACING.sm, backgroundColor: COLORS.warningSurface }}>
+      <AppText variant="sm" color={COLORS.warningText}>{t.fontLoadFailed}</AppText>
+      <AppText variant="sm" color={COLORS.warningText}>{fil.fontLoadFailed}</AppText>
+      <Button label={`${t.tryAgain} / ${fil.tryAgain}`} variant="secondary" disabled={busy} onPress={onRetry} />
+    </View>
   );
 }
 
@@ -111,45 +166,52 @@ function Startup({ startup, onRetry }: { startup: Exclude<Startup, { status: 're
         alignItems: 'center',
         justifyContent: 'center',
         padding: SPACING.xl,
-        backgroundColor: COLORS.surface,
+        backgroundColor: COLORS.background,
       }}
     >
       {startup.status === 'opening' ? (
-        <>
-          <ActivityIndicator color={COLORS.primary} />
-          <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.md }}>
+        <Card style={{ padding: SPACING.xl, gap: SPACING.md, alignItems: 'center', maxWidth: 395, width: '100%' }}>
+          <ActivityIndicator color={COLORS.primary} size="large" />
+          <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.xs }}>
             {t.startingUp}
           </AppText>
-        </>
+        </Card>
       ) : startup.status === 'notIsolated' ? (
         // A known, diagnosable cause, so it gets its own wording. The generic
         // failure below would say "close the app and open it again", which does
         // not help: reopening the same URL fails identically every time.
-        <>
-          <AppText variant="lg" color={COLORS.error} center>
+        <Card style={{ padding: SPACING.xl, gap: SPACING.md, alignItems: 'center', maxWidth: 395, width: '100%' }}>
+          <Icon name="warning" size={32} color={COLORS.error} />
+          <AppText variant="lg" color={COLORS.error} center accessibilityRole="header">
             {t.notIsolatedTitle}
           </AppText>
-          <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
+          <AppText variant="sm" color={COLORS.textSecondary} center>
             {t.notIsolatedBody}
           </AppText>
-          <AppText variant="xs" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
+          <AppText variant="xs" color={COLORS.textSecondary} center>
             {fil.notIsolatedTitle}
           </AppText>
-          <View style={{ marginTop: SPACING.xl }}><Button label={t.tryAgain} onPress={onRetry} /></View>
-        </>
+          <AppText variant="xs" color={COLORS.textLight} center style={{ marginTop: SPACING.xs }}>
+            Note: This is an offline on-device browser SQLite database requirement (needs cross-origin isolation), NOT an issue with your Supabase cloud database.
+          </AppText>
+          <View style={{ marginTop: SPACING.md, width: '100%' }}>
+            <Button label={t.tryAgain} onPress={onRetry} />
+          </View>
+        </Card>
       ) : (
-        <>
-          <AppText variant="lg" color={COLORS.error} center>
+        <Card style={{ padding: SPACING.xl, gap: SPACING.md, alignItems: 'center', maxWidth: 395, width: '100%' }}>
+          <Icon name="warning" size={32} color={COLORS.error} />
+          <AppText variant="lg" color={COLORS.error} center accessibilityRole="header">
             {t.startupFailedTitle}
           </AppText>
-          <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
+          <AppText variant="sm" color={COLORS.textSecondary} center>
             {t.startupFailedBody}
           </AppText>
-          <AppText variant="xs" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
+          <AppText variant="xs" color={COLORS.textSecondary} center>
             {fil.startupFailedTitle} — {fil.startupFailedBody}
           </AppText>
-          <View style={{ marginTop: SPACING.xl }}><Button label={t.tryAgain} onPress={onRetry} /></View>
-          <View style={{ marginTop: SPACING.sm }}>
+          <View style={{ marginTop: SPACING.md, width: '100%', gap: SPACING.sm }}>
+            <Button label={t.tryAgain} onPress={onRetry} />
             <Button
               label={showDetail ? t.hideTechnicalDetails : t.showTechnicalDetails}
               variant="secondary"
@@ -157,11 +219,11 @@ function Startup({ startup, onRetry }: { startup: Exclude<Startup, { status: 're
             />
           </View>
           {showDetail ? (
-            <AppText variant="xs" color={COLORS.textLight} center style={{ marginTop: SPACING.lg }}>
+            <AppText variant="xs" color={COLORS.textLight} center style={{ marginTop: SPACING.md }}>
               {startup.detail}
             </AppText>
           ) : null}
-        </>
+        </Card>
       )}
     </View>
   );

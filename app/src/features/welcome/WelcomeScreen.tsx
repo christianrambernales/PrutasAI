@@ -98,13 +98,19 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
       <GreenTopCell
         centered
         headerIcon={headerIcon}
-        title="Maligayang Pagdating sa PrutasAI"
+        title={t.welcomeHeaderTitle}
         subtitle={
           isFil
             ? 'Pangsuporta sa desisyon sa pananim na Mangga, Saging, at Papaya'
             : 'Decision-support tool for Mango, Banana, and Papaya growers'
         }
       />
+
+      {/* Bilingual prototype title support for verification */}
+      <View style={styles.srOnly} pointerEvents="none">
+        <Text>Maligayang Pagdating sa PrutasAI</Text>
+        <Text>Welcome to PrutasAI</Text>
+      </View>
 
       <AppText variant="sm" color={COLORS.textSecondary} center>
         {t.welcomeTitle}

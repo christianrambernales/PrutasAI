@@ -288,7 +288,7 @@ const EN = {
 
   // welcome
   welcomeTitle: 'Keep your scans on this phone, or across your devices',
-  welcomeHeaderTitle: 'Maligayang Pagdating sa PrutasAI',
+  welcomeHeaderTitle: 'Welcome to PrutasAI',
   welcomeSubtitle: 'Decision-support tool for Mango, Banana, and Papaya growers',
   welcomeSelectLanguage: 'Select Language',
   welcomeLanguageHint: 'English',
