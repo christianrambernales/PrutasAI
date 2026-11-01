@@ -20,8 +20,13 @@ describe('Prototype Primitives', () => {
           title="Good day!"
           subtitle="Decision-support for your fruit crops"
           badge={{ label: 'Local Offline Mode', variant: 'offline' }}
+          testID="green-top-cell"
         />
       );
+      const cellEl = screen.getByTestId('green-top-cell');
+      const flattenedStyle = StyleSheet.flatten(cellEl.props.style);
+      expect(flattenedStyle.overflow).toBeUndefined();
+
       const titleEl = screen.getByText('Good day!');
       expect(titleEl).toBeTruthy();
       expect(titleEl.props.accessibilityRole).toBe('header');

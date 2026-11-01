@@ -100,7 +100,6 @@ export function GreenTopCell({
 const styles = StyleSheet.create({
   outerContainer: {
     borderRadius: 20,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     shadowColor: '#0f2d19',
@@ -111,6 +110,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   gradient: {
+    borderRadius: 20,
+    overflow: 'hidden',
     paddingVertical: 18,
     paddingHorizontal: 20,
   },
