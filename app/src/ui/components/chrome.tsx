@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, ViewProps } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, RADIUS, SHADOWS, SPACING } from '../tokens';
 import { Icon, IconName } from './Icon';
 import { AppText, Col, Row } from './primitives';
+import { useT } from '../i18n/LanguageContext';
 
 /**
  * Screen background, inset from the status bar. `SafeAreaView` from react-native
@@ -21,6 +23,8 @@ export function ScreenBody({ children }: { children: React.ReactNode }) {
       style={styles.body}
       contentContainerStyle={styles.bodyContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     >
       {children}
     </ScrollView>
@@ -50,22 +54,24 @@ export function AppBar({
   onMenu?: () => void;
   right?: React.ReactNode;
 }) {
+  const t = useT();
+  const [focused, setFocused] = useState<string | null>(null);
   return (
     <Row gap={SPACING.md - 4} style={styles.appBar}>
       {menu && onMenu ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="menu" onPress={onMenu} hitSlop={8}>
-          <Icon name={menu} size={24} />
+        <Pressable accessibilityRole="button" accessibilityLabel={t.openMenu} onPress={onMenu} onFocus={() => setFocused('menu')} onBlur={() => setFocused(null)} hitSlop={12} style={[styles.chromeAction, focused === 'menu' && styles.headerFocus]}>
+          <Icon name={menu} size={24} color={COLORS.surface} />
         </Pressable>
       ) : null}
       {onBack ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} hitSlop={8}>
-          <Icon name="arrowLeft" size={24} />
+        <Pressable accessibilityRole="button" accessibilityLabel={t.goBack} onPress={onBack} onFocus={() => setFocused('back')} onBlur={() => setFocused(null)} hitSlop={12} style={[styles.chromeAction, focused === 'back' && styles.headerFocus]}>
+          <Icon name="arrowLeft" size={24} color={COLORS.surface} />
         </Pressable>
       ) : null}
-      <Col gap={2} style={{ flex: 1 }}>
-        <AppText variant="lg">{title}</AppText>
+      <Col gap={4} style={{ flex: 1, minWidth: 0 }}>
+        <AppText variant="xl" color={COLORS.surface} accessibilityRole="header">{title}</AppText>
         {subtitle ? (
-          <AppText variant="xs" color={COLORS.textSecondary}>
+          <AppText variant="sm" color={COLORS.primarySurface}>
             {subtitle}
           </AppText>
         ) : null}
@@ -74,11 +80,14 @@ export function AppBar({
       {action && onAction ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={actionLabel ?? action}
+          accessibilityLabel={actionLabel ?? (action === 'refresh' ? t.refreshClimate : action === 'search' ? t.searchScans : action === 'trash' ? t.trashRow : t.moreOptions)}
           onPress={onAction}
-          hitSlop={8}
+          onFocus={() => setFocused('action')}
+          onBlur={() => setFocused(null)}
+          hitSlop={12}
+          style={[styles.chromeAction, focused === 'action' && styles.headerFocus]}
         >
-          <Icon name={action} size={22} color={COLORS.textSecondary} />
+          <Icon name={action} size={22} color={COLORS.surface} />
         </Pressable>
       ) : null}
     </Row>
@@ -91,13 +100,14 @@ export function AppBar({
  * broken.
  */
 export function NoticeBar({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  const t = useT();
   return (
     <Row gap={SPACING.sm} style={styles.notice}>
       <Icon name="info" size={16} color={COLORS.surface} />
       <AppText variant="xs" color={COLORS.surface} style={{ flex: 1 }}>
         {message}
       </AppText>
-      <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" onPress={onDismiss} hitSlop={8}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t.dismiss} onPress={onDismiss} hitSlop={12} style={styles.chromeAction}>
         <Icon name="close" size={16} color={COLORS.surface} />
       </Pressable>
     </Row>
@@ -121,7 +131,9 @@ export function BottomNav({
   onSelect: (key: string) => void;
   onScan: () => void;
 }) {
+  const t = useT();
   const insets = useSafeAreaInsets();
+  const [focused, setFocused] = useState<string | null>(null);
   const left = tabs.slice(0, 2);
   const right = tabs.slice(2);
 
@@ -134,12 +146,19 @@ export function BottomNav({
         accessibilityState={{ selected: on }}
         accessibilityLabel={tab.label}
         onPress={() => onSelect(tab.key)}
-        style={styles.navItem}
+        onFocus={() => setFocused(tab.key)}
+        onBlur={() => setFocused(null)}
+        style={[styles.navItem, focused === tab.key && styles.navFocus]}
       >
         <View style={[styles.navPill, on && styles.navPillOn]}>
-          <Icon name={tab.icon} size={22} color={on ? COLORS.primary : COLORS.textSecondary} />
+          <Icon name={tab.icon} size={22} color={on ? COLORS.primary : '#64748b'} />
         </View>
-        <AppText variant={on ? 'xsSemi' : 'xs'} color={on ? COLORS.primary : COLORS.textSecondary}>
+        <AppText
+          variant={on ? 'xsSemi' : 'xs'}
+          color={on ? COLORS.primary : '#64748b'}
+          center
+          style={[styles.navLabel, on && styles.navLabelActive]}
+        >
           {tab.label}
         </AppText>
       </Pressable>
@@ -147,17 +166,35 @@ export function BottomNav({
   };
 
   return (
-    // The surface itself extends under the gesture bar, rather than floating
-    // above a strip of page background.
-    <View style={[styles.nav, { paddingBottom: insets.bottom }]}>
-      <Row style={styles.navRow}>
+    // The outer wrapper owns the system bottom inset once. The pill can grow
+    // with translated/scaled labels and never covers the scrolling content.
+    <View testID="bottom-nav" style={[styles.nav, { paddingBottom: insets.bottom + 14 }]}>
+      <Row testID="bottom-nav-pill" align="stretch" style={styles.navRow}>
         {left.map(item)}
-        <Pressable accessibilityRole="button" accessibilityLabel="Scan a fruit" onPress={onScan} style={styles.navItem}>
-          <View style={styles.fab}>
-            <Icon name="camera" size={26} color={COLORS.primaryDark} />
-          </View>
-          <AppText variant="xs" color={COLORS.textSecondary}>
-            Scan
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t.scanHeadline}
+          onPress={onScan}
+          onFocus={() => setFocused('scan')}
+          onBlur={() => setFocused(null)}
+          style={[styles.navItem, styles.centerScanContainer, focused === 'scan' && styles.navFocus]}
+        >
+          <LinearGradient
+            testID="bottom-nav-fab"
+            colors={['#c2410c', '#ea580c']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fab}
+          >
+            <Icon name="camera" size={25} color="#ffffff" />
+          </LinearGradient>
+          <AppText
+            variant="xsSemi"
+            color="#64748b"
+            center
+            style={[styles.navLabel, styles.centerScanLabel]}
+          >
+            {t.tabScan}
           </AppText>
         </Pressable>
         {right.map(item)}
@@ -167,19 +204,22 @@ export function BottomNav({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
+  screen: { flex: 1, backgroundColor: COLORS.primary },
   body: { flex: 1 },
-  bodyContent: { paddingBottom: SPACING.lg },
+  bodyContent: { paddingBottom: SPACING.lg, backgroundColor: COLORS.background, flexGrow: 1 },
   appBar: {
-    paddingLeft: SPACING.md - 4,
-    paddingRight: SPACING.md,
-    paddingTop: SPACING.sm + 2,
-    paddingBottom: SPACING.md - 4,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.lg,
   },
+  chromeAction: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'transparent', borderRadius: RADIUS.button },
+  headerFocus: { borderColor: COLORS.surface },
+  navFocus: { borderColor: COLORS.focus },
   nav: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 14,
+    paddingTop: 20,
   },
   notice: {
     backgroundColor: COLORS.primaryDark,
@@ -187,21 +227,56 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm + 2,
   },
   navRow: {
-    paddingTop: SPACING.sm + 2,
+    height: 64,
+    minHeight: 64,
+    borderRadius: 36,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(21, 77, 46, 0.12)',
+    shadowColor: '#0f2316',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+    paddingTop: SPACING.sm,
     paddingBottom: SPACING.sm,
     paddingHorizontal: SPACING.sm,
   },
-  navItem: { flex: 1, alignItems: 'center', gap: 4 },
-  navPill: { paddingHorizontal: SPACING.md, paddingVertical: 4, borderRadius: RADIUS.full },
-  // A tint, not a token colour: variable-alpha fills are not in the palette.
-  navPillOn: { backgroundColor: 'rgba(26,71,42,0.14)' },
+  navItem: { flex: 1, minWidth: 0, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 2, borderRadius: RADIUS.button, borderWidth: 2, borderColor: 'transparent' },
+  navLabel: {
+    alignSelf: 'stretch',
+    flexShrink: 1,
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  navLabelActive: {
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+  centerScanContainer: { minHeight: 48 },
+  centerScanLabel: {
+    fontWeight: '700',
+    color: '#64748b',
+    marginTop: 3,
+  },
+  navPill: { width: 32, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
+  navPillOn: { backgroundColor: '#eaf4ed' },
   fab: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: COLORS.accent,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginTop: -24,
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    backgroundColor: '#c2410c',
     alignItems: 'center',
     justifyContent: 'center',
-    ...SHADOWS.lg,
+    shadowColor: '#c2410c',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    elevation: 8,
   },
 });
