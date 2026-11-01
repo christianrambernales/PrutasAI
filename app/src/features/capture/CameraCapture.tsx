@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
-import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraType, CameraView, FlashMode, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { AppText, Button, Col, COLORS, Icon, SPACING, useT } from '../../ui';
 import { CaptureScreen } from './CaptureScreen';
@@ -8,57 +8,104 @@ import { CaptureScreen } from './CaptureScreen';
 export interface CameraCaptureProps {
   onClose: () => void;
   /** Receives the local file URI of the photo the user took or chose. */
-  onCaptured: (uri: string) => void;
-  onError: (message: string) => void;
+  onCaptured: (uri: string) => void | Promise<void>;
 }
 
 /**
- * Owns the camera. The screen next door stays presentational so it can be
- * rendered in tests without a device; everything that needs real hardware —
- * permissions, the preview, the shutter — lives here.
+ * Owns the camera hardware, permissions, photo capture, and gallery selection.
+ * The presentational screen handles chrome and controls.
  */
-export function CameraCapture({ onClose, onCaptured, onError }: CameraCaptureProps) {
+type PhotoAttempt = { uri: string } | { error: string } | null;
+
+export function CameraCapture({ onClose, onCaptured }: CameraCaptureProps) {
   const t = useT();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<CameraType>('back');
+  const [flash, setFlash] = useState<FlashMode>('auto');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const camera = useRef<CameraView | null>(null);
+  const inFlight = useRef(false);
+  const retryPhotoUri = useRef<string | null>(null);
 
   const granted = permission?.granted === true;
 
-  const capture = useCallback(async () => {
-    if (!camera.current || busy) return;
+  const runPhotoAttempt = useCallback(async (operation: () => Promise<PhotoAttempt>) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    retryPhotoUri.current = null;
     setBusy(true);
+    setError(null);
     try {
-      const photo = await camera.current.takePictureAsync({ quality: 0.8 });
-      if (photo?.uri) onCaptured(photo.uri);
-      else onError('The camera returned no image.');
-    } catch {
-      onError('The photo could not be taken.');
-    } finally {
-      setBusy(false);
-    }
-  }, [busy, onCaptured, onError]);
-
-  const pickImage = useCallback(async () => {
-    try {
-      const allowed = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!allowed.granted) {
-        onError('Photo access is needed to choose an existing image.');
+      const attempt = await operation();
+      if (attempt === null) return;
+      if ('error' in attempt) {
+        setError(attempt.error);
         return;
       }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets?.[0]?.uri) onCaptured(result.assets[0].uri);
+      retryPhotoUri.current = attempt.uri;
+      await onCaptured(attempt.uri);
+      retryPhotoUri.current = null;
     } catch {
-      onError('The photo library could not be opened.');
+      // The repository already cleaned up a partially owned copy. Never show
+      // a raw filesystem or database error, and leave the last selected URI
+      // available for an explicit retry.
+      setError(t.captureSavingFailed);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
     }
-  }, [onCaptured, onError]);
+  }, [onCaptured, t.captureSavingFailed]);
+
+  const capture = useCallback(async () => {
+    if (!camera.current || inFlight.current) return;
+    await runPhotoAttempt(async () => {
+      try {
+        const photo = await camera.current?.takePictureAsync({ quality: 0.8 });
+        return photo?.uri ? { uri: photo.uri } : { error: t.captureNoImage };
+      } catch {
+        return { error: t.capturePhotoCaptureFailed };
+      }
+    });
+  }, [runPhotoAttempt, t.captureNoImage, t.capturePhotoCaptureFailed]);
+
+  const pickImage = useCallback(async () => {
+    await runPhotoAttempt(async () => {
+      try {
+        const allowed = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!allowed.granted) return { error: t.capturePhotoAccessDenied };
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          quality: 0.8,
+        });
+        return result.canceled || !result.assets?.[0]?.uri
+          ? null
+          : { uri: result.assets[0].uri };
+      } catch {
+        return { error: t.captureLibraryUnavailable };
+      }
+    });
+  }, [runPhotoAttempt, t.captureLibraryUnavailable, t.capturePhotoAccessDenied]);
+
+  const retry = useCallback(() => {
+    const uri = retryPhotoUri.current;
+    if (uri) {
+      void runPhotoAttempt(async () => ({ uri }));
+    } else {
+      setError(null);
+    }
+  }, [runPhotoAttempt]);
 
   const flip = useCallback(() => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
+  }, []);
+
+  const toggleFlash = useCallback(() => {
+    setFlash(current => {
+      if (current === 'auto') return 'on';
+      if (current === 'on') return 'off';
+      return 'auto';
+    });
   }, []);
 
   return (
@@ -66,15 +113,21 @@ export function CameraCapture({ onClose, onCaptured, onError }: CameraCapturePro
       onClose={onClose}
       onCapture={capture}
       onPickImage={pickImage}
+      onPickGallery={pickImage}
       onFlip={flip}
+      onFlipCamera={flip}
+      activeCamera={facing}
+      onToggleFlash={toggleFlash}
+      flashMode={flash}
       canCapture={granted}
       busy={busy}
+      error={error}
+      onRetry={retry}
       preview={
         granted ? (
-          <CameraView ref={camera} facing={facing} style={StyleSheet.absoluteFill} />
+          <CameraView ref={camera} facing={facing} flash={flash} style={StyleSheet.absoluteFill} />
         ) : (
           <PermissionPrompt
-            // `permission` is null until the first check resolves.
             asked={permission != null}
             canAskAgain={permission?.canAskAgain !== false}
             onRequest={requestPermission}
@@ -97,11 +150,13 @@ function PermissionPrompt({
   onRequest: () => void;
   photoStaysHere: string;
 }) {
+  const t = useT();
+
   if (!asked) {
     return (
       <View style={styles.prompt}>
         <AppText variant="sm" color={COLORS.surface} center>
-          Starting the camera…
+          {t.captureStartingCamera}
         </AppText>
       </View>
     );
@@ -112,16 +167,16 @@ function PermissionPrompt({
       <Col gap={SPACING.md} align="center">
         <Icon name="camera" size={40} color={COLORS.surface} />
         <AppText variant="mdSemi" color={COLORS.surface} center>
-          Camera access is needed to scan a fruit
+          {t.captureCameraAccessNeeded}
         </AppText>
         <AppText variant="xs" color="rgba(255,255,255,0.7)" center>
           {photoStaysHere}
         </AppText>
         {canAskAgain ? (
-          <Button label="Allow camera access" variant="accent" onPress={onRequest} />
+          <Button label={t.captureAllowCameraAccess} variant="accent" onPress={onRequest} />
         ) : (
           <Button
-            label="Open settings"
+            label={t.openSettings}
             variant="accent"
             onPress={() => {
               void Linking.openSettings();
@@ -139,6 +194,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.lg,
-    backgroundColor: '#131715',
+    backgroundColor: '#0c140e',
   },
 });
