@@ -4,27 +4,48 @@ import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 import { AppNavigator } from '../../navigation/AppNavigator';
 import { resetAppDatabase, seedConsent, seedLanguagePicked, seedSyncMode } from '../../testing/appDatabase';
 import { CaptureScreen } from '../capture/CaptureScreen';
+import { CameraCapture } from '../capture/CameraCapture';
+import { CaptureResultScreen } from '../result/CaptureResultScreen';
 import { ChatScreen } from '../chat/ChatScreen';
+import { ConversationSidebar } from '../chat/ConversationSidebar';
 import { ClimateScreen } from '../climate/ClimateScreen';
 import { HistoryScreen } from '../history/HistoryScreen';
 import { HomeScreen } from '../home/HomeScreen';
+import { LocationPickerScreen } from '../location/LocationPickerScreen';
 import { ModelStatusScreen } from '../modelStatus/ModelStatusScreen';
 import { MonitoringScreen } from '../monitoring/MonitoringScreen';
 import { ResultScreen } from '../result/ResultScreen';
 import { SettingsScreen } from '../settings/SettingsScreen';
+import { TrashScreen } from '../trash/TrashScreen';
 import { VarietyInfoScreen } from '../varietyInfo/VarietyInfoScreen';
 import { ResetPasswordScreen } from '../account/ResetPasswordScreen';
 import { routeTitle, RouteBody } from '../../navigation/render/routes';
 import { makeShell } from '../../testing/shellFixture';
+import { findPressable } from '../../testing/interaction';
 import { strings } from '../../ui/i18n/strings';
 import * as preview from '../../preview/previewContent';
 import { LanguageProvider } from '../../ui';
+
+let renderedTrees: ReactTestRenderer[] = [];
+
+afterEach(async () => {
+  for (const tree of renderedTrees) {
+    act(() => {
+      tree.unmount();
+    });
+  }
+  renderedTrees = [];
+  await act(async () => {
+    await Promise.resolve();
+  });
+});
 
 function render(element: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
   act(() => {
     tree = renderer.create(element);
   });
+  renderedTrees.push(tree);
   return tree;
 }
 
@@ -49,6 +70,19 @@ function texts(tree: ReactTestRenderer): string {
   };
   return collect(tree.toJSON());
 }
+
+const screen = {
+  getByText: (matcher: string | RegExp) => {
+    const lastTree = renderedTrees[renderedTrees.length - 1];
+    if (!lastTree) throw new Error('No rendered tree');
+    const all = texts(lastTree);
+    const matches = typeof matcher === 'string' ? all.includes(matcher) : matcher.test(all);
+    if (!matches) {
+      throw new Error(`Unable to find an element with text: ${matcher}.\nFound in tree:\n${all}`);
+    }
+    return true;
+  },
+};
 
 const noop = () => {};
 
@@ -90,11 +124,11 @@ test('Capture shows the framing hint and the on-device promise', () => {
   const content = texts(
     render(<CaptureScreen onClose={noop} onCapture={noop} onPickImage={noop} onFlip={noop} />),
   );
-  expect(content).toContain('Center the fruit in the frame');
+  expect(content).toContain('Center fruit in frame');
   // The old copy claimed nothing was uploaded at all, which stopped being true
   // when anonymous scans began syncing. What is still true, and is the point, is
   // that the photograph never leaves the phone.
-  expect(content).toContain('Your photo never leaves it');
+  expect(content).toContain('Your photo stays on this device.');
 });
 
 test('Result shows all three pipeline stages with their confidences', () => {
@@ -181,6 +215,88 @@ test('Variety info uses Filipino as primary and keeps linked disease citations v
   expect(content).toContain('Mango disease guide');
 });
 
+it('renders LocationPickerScreen matching prototype presets', () => {
+  render(
+    <LocationPickerScreen
+      currentLocation="Davao City, Davao del Sur"
+      onSelectLocation={jest.fn()}
+      onUseDeviceGps={jest.fn()}
+      onCancel={jest.fn()}
+    />,
+  );
+  expect(screen.getByText(/Select Location/i)).toBeTruthy();
+  expect(screen.getByText(/Davao City, Davao del Sur/i)).toBeTruthy();
+  expect(screen.getByText(/Use Device GPS/i)).toBeTruthy();
+});
+
+it('LocationPickerScreen invokes onSelectLocation, onChoose, onUseDeviceGps, and onCancel', () => {
+  const onSelectLocation = jest.fn();
+  const onChoose = jest.fn();
+  const onUseDeviceGps = jest.fn();
+  const onCancel = jest.fn();
+
+  const tree = render(
+    <LocationPickerScreen
+      currentLocation="Davao City, Davao del Sur"
+      onSelectLocation={onSelectLocation}
+      onChoose={onChoose}
+      onUseDeviceGps={onUseDeviceGps}
+      onCancel={onCancel}
+    />,
+  );
+
+  act(() => {
+    findPressable(tree, 'Tagum City, Davao del Norte').props.onPress();
+    findPressable(tree, 'Use Device GPS').props.onPress();
+    findPressable(tree, 'Cancel').props.onPress();
+  });
+
+  expect(onSelectLocation).toHaveBeenCalledWith('Tagum City, Davao del Norte');
+  expect(onChoose).toHaveBeenCalledWith(expect.objectContaining({ label: 'Tagum City, Davao del Norte' }));
+  expect(onUseDeviceGps).toHaveBeenCalledTimes(1);
+  expect(onCancel).toHaveBeenCalledTimes(1);
+});
+
+it('renders VarietyInfoScreen matching prototype 2x2 threshold grid', () => {
+  render(
+    <VarietyInfoScreen
+      selectedCrop="mango"
+      onSelectCrop={jest.fn()}
+      onScanCrop={jest.fn()}
+      onBackHome={jest.fn()}
+    />,
+  );
+  expect(screen.getByText(/Carabao Mango/i)).toBeTruthy();
+  expect(screen.getByText(/Agronomic Thresholds/i)).toBeTruthy();
+  expect(screen.getByText(/Key Vulnerabilities/i)).toBeTruthy();
+  expect(screen.getByText(/Scan this Crop/i)).toBeTruthy();
+});
+
+it('VarietyInfoScreen tab switching and action buttons invoke callbacks', () => {
+  const onSelectCrop = jest.fn();
+  const onScanCrop = jest.fn();
+  const onBackHome = jest.fn();
+
+  const tree = render(
+    <VarietyInfoScreen
+      selectedCrop="mango"
+      onSelectCrop={onSelectCrop}
+      onScanCrop={onScanCrop}
+      onBackHome={onBackHome}
+    />,
+  );
+
+  act(() => {
+    findPressable(tree, 'Banana').props.onPress();
+    findPressable(tree, 'Scan this Crop').props.onPress();
+    findPressable(tree, 'Home').props.onPress();
+  });
+
+  expect(onSelectCrop).toHaveBeenCalledWith('banana');
+  expect(onScanCrop).toHaveBeenCalledTimes(1);
+  expect(onBackHome).toHaveBeenCalledTimes(1);
+});
+
 test('Climate shows the verdict and one row per evidence parameter', () => {
   const content = texts(
     render(
@@ -221,7 +337,7 @@ test('Chat renders the conversation and explains curated wording without claimin
     ),
   );
   expect(content).toContain('Pwede bang magtanim');
-  expect(content).toContain('curated templates');
+  expect(content).toContain('grounded answers retain their curated wording.');
   // The banner used to read "No connection", which was false for every user
   // who simply had online phrasing switched off — the default.
   expect(content).not.toContain('No connection');
@@ -362,21 +478,27 @@ test('History groups scans by recency', () => {
 });
 
 test('History shows an empty state rather than an empty list', () => {
-  const content = texts(
-    render(
-      <HistoryScreen
-        groups={[{ label: 'TODAY', scans: [] }]}
-        filters={[{ key: 'All', label: 'All' }]}
-        activeFilterKey="All"
-        totalLabel="0 scans"
-        query={null}
-        onChangeQuery={noop}
-        onFilter={noop}
-        onOpenScan={noop}
-      />,
-    ),
+  const onScan = jest.fn();
+  const tree = render(
+    <HistoryScreen
+      groups={[{ label: 'TODAY', scans: [] }]}
+      filters={[{ key: 'All', label: 'All' }]}
+      activeFilterKey="All"
+      totalLabel="0 scans"
+      query={null}
+      onChangeQuery={noop}
+      onFilter={noop}
+      onOpenScan={noop}
+      onScan={onScan}
+    />,
   );
+  const content = texts(tree);
   expect(content).toContain('No scans yet');
+  expect(content).toContain('Scan a fruit');
+  act(() => {
+    findPressable(tree, 'Scan a fruit').props.onPress();
+  });
+  expect(onScan).toHaveBeenCalledTimes(1);
 });
 
 test('Monitoring renders every checkpoint including the one still due', () => {
@@ -385,7 +507,7 @@ test('Monitoring renders every checkpoint including the one still due', () => {
       <MonitoringScreen session={preview.SESSION} expandedCheckpointDay={null} onScanCheckpoint={noop} onOpenCheckpoint={noop} />,
     ),
   );
-  expect(content).toContain('Day 0');
+  expect(content).toContain('Day 1');
   expect(content).toContain('Day 5');
   expect(content).toContain('Day 10');
   expect(content).toContain('Scan checkpoint');
@@ -588,4 +710,187 @@ test('RouteBody renders ResetPasswordScreen for resetPassword route', () => {
   const tree = render(<RouteBody shell={shell} route={{ name: 'resetPassword' }} />);
   const content = texts(tree);
   expect(content).toContain('Set new password');
+});
+
+test('CaptureScreen shows saving message and disables controls when busy', () => {
+  const tree = render(
+    <CaptureScreen busy onClose={noop} onCapture={noop} onPickImage={noop} onFlip={noop} />,
+  );
+  const content = texts(tree);
+  expect(content).toContain('Saving photo locally');
+
+  // The native controls are disabled while the container owns the one active
+  // capture/save operation, so a second press cannot enqueue another scan.
+  const buttons = tree.root.findAll(node => node.props.accessibilityRole === 'button');
+  buttons.forEach((b: any) => {
+    const isDisabled = b.props.disabled === true || b.props.accessibilityState?.disabled === true;
+    expect({ label: b.props.accessibilityLabel, disabled: isDisabled }).toEqual({ label: b.props.accessibilityLabel, disabled: true });
+  });
+});
+
+test('CaptureScreen shows error overlay with Retry when saving fails', () => {
+  const onRetry = jest.fn();
+  const onPickImage = jest.fn();
+  const tree = render(
+    <CaptureScreen error="Could not save the photo locally." onClose={noop} onCapture={noop} onPickImage={onPickImage} onFlip={noop} onRetry={onRetry} />,
+  );
+  const content = texts(tree);
+  expect(content).toContain('Could not save the photo locally.');
+  expect(content).toContain('Try again');
+  expect(content).toContain('Choose another photo');
+  act(() => {
+    findPressable(tree, 'Try again').props.onPress();
+    findPressable(tree, 'Choose another photo').props.onPress();
+  });
+  expect(onRetry).toHaveBeenCalledTimes(1);
+  expect(onPickImage).toHaveBeenCalledTimes(1);
+});
+
+test('CameraCapture retries the same local URI and rejects duplicate capture presses', async () => {
+  const onCaptured = jest.fn()
+    .mockRejectedValueOnce(new Error('disk error'))
+    .mockResolvedValueOnce(undefined);
+  const tree = render(<CameraCapture onClose={noop} onCaptured={onCaptured} />);
+  const shutter = findPressable(tree, 'Take photo');
+
+  await act(async () => {
+    await Promise.all([shutter.props.onPress(), shutter.props.onPress()]);
+  });
+  expect(onCaptured).toHaveBeenCalledTimes(1);
+  expect(onCaptured).toHaveBeenCalledWith('file:///test/photo.jpg');
+  expect(texts(tree)).toContain('Could not save photo locally.');
+
+  await act(async () => {
+    findPressable(tree, 'Try again').props.onPress();
+    await Promise.resolve();
+  });
+  expect(onCaptured).toHaveBeenCalledTimes(2);
+  expect(onCaptured).toHaveBeenLastCalledWith('file:///test/photo.jpg');
+  expect(texts(tree)).not.toContain('Could not save photo locally.');
+});
+
+test('CaptureResultScreen shows truthful no-model result and exactly three safe actions', () => {
+  const onReviewPhoto = jest.fn();
+  const onBrowseGuidance = jest.fn();
+  const onStartMonitoring = jest.fn();
+  const tree = render(
+    <CaptureResultScreen
+      photoUri="file:///fake.jpg"
+      onReviewPhoto={onReviewPhoto}
+      onBrowseGuidance={onBrowseGuidance}
+      onStartMonitoring={onStartMonitoring}
+      onBackToSummary={noop}
+    />,
+  );
+  const content = texts(tree);
+  expect(content).toContain('Analysis unavailable');
+  expect(content).toContain('Not analyzed');
+  expect(content).toContain('No approved model installed');
+  expect(content).toContain('Review local photo');
+  expect(content).toContain('Browse local guidance');
+  expect(content).toContain('Start observation monitoring');
+
+  act(() => {
+    findPressable(tree, 'Review local photo').props.onPress();
+    findPressable(tree, 'Browse local guidance').props.onPress();
+    findPressable(tree, 'Start observation monitoring').props.onPress();
+  });
+  expect(onReviewPhoto).toHaveBeenCalledTimes(1);
+  expect(onBrowseGuidance).toHaveBeenCalledTimes(1);
+  expect(onStartMonitoring).toHaveBeenCalledTimes(1);
+
+  // Must not contain prohibited claims
+  expect(content).not.toContain('Severity');
+  expect(content).not.toContain('Confidence');
+});
+
+test('CaptureResultScreen photo review returns to its truthful summary', () => {
+  const onBackToSummary = jest.fn();
+  const tree = render(
+    <CaptureResultScreen
+      photoUri="file:///fake.jpg"
+      view="photo"
+      onReviewPhoto={noop}
+      onBrowseGuidance={noop}
+      onStartMonitoring={noop}
+      onBackToSummary={onBackToSummary}
+    />,
+  );
+  expect(texts(tree)).toContain('Back to summary');
+  act(() => {
+    findPressable(tree, 'Back to summary').props.onPress();
+  });
+  expect(onBackToSummary).toHaveBeenCalledTimes(1);
+});
+
+test('capture and no-model result copy is supplied by the Filipino dictionary', () => {
+  const tree = render(
+    <LanguageProvider language="FIL">
+      <CaptureResultScreen
+        photoUri="file:///fake.jpg"
+        onReviewPhoto={noop}
+        onBrowseGuidance={noop}
+        onStartMonitoring={noop}
+        onBackToSummary={noop}
+      />
+    </LanguageProvider>,
+  );
+  const content = texts(tree);
+  expect(content).toContain('Hindi available ang pagsusuri');
+  expect(content).toContain('Hindi nasuri');
+  expect(content).toContain('Walang naka-install na aprubadong modelo');
+});
+
+test('History renders a model-free row with its local thumbnail, date, fruit and truthful status', () => {
+  const onOpenScan = jest.fn();
+  const tree = render(
+    <HistoryScreen
+      groups={[{
+        label: 'TODAY',
+        scans: [{
+          id: 'scan-1', imageUri: 'file:///owned/mango.jpg', emoji: '🥭',
+          title: 'Mango', status: 'undetermined', detail: 'No disease model', timeLabel: '09:15', fruitKey: 'mango',
+        }],
+      }]}
+      filters={[{ key: 'All', label: 'All' }]}
+      activeFilterKey="All"
+      totalLabel="1 scan stored on this device"
+      query={null}
+      onChangeQuery={noop}
+      onFilter={noop}
+      onOpenScan={onOpenScan}
+    />,
+  );
+  const content = texts(tree);
+  expect(content).toContain('Mango');
+  expect(content).toContain('09:15');
+  expect(content).toContain('Not analyzed');
+  expect(tree.root.find(node => node.props.source?.uri === 'file:///owned/mango.jpg')).toBeTruthy();
+  act(() => {
+    findPressable(tree, 'Mango').props.onPress();
+  });
+  expect(onOpenScan).toHaveBeenCalledWith('scan-1');
+});
+
+test('History keeps its existing rows visible for loading, offline, and sanitized-error states', () => {
+  const scans = [{
+    id: 'scan-1', imageUri: 'file:///owned/mango.jpg', emoji: '🥭',
+    title: 'Mango', status: 'undetermined' as const, detail: 'No disease model', timeLabel: '09:15', fruitKey: 'mango',
+  }];
+  const base = {
+    groups: [{ label: 'TODAY', scans }], filters: [{ key: 'All', label: 'All' }], activeFilterKey: 'All',
+    totalLabel: '1 scan stored on this device', query: null, onChangeQuery: noop, onFilter: noop, onOpenScan: noop,
+  };
+  expect(texts(render(<HistoryScreen {...base} loading />))).toContain('Loading…');
+  expect(texts(render(<HistoryScreen {...base} offline />))).toContain('Offline — saved on this device');
+  const onRetry = jest.fn();
+  const errorTree = render(<HistoryScreen {...base} error="file:///private/path" onRetry={onRetry} />);
+  const errorContent = texts(errorTree);
+  expect(errorContent).toContain('Could not read saved scan history.');
+  expect(errorContent).toContain('Mango');
+  expect(errorContent).not.toContain('file:///private/path');
+  act(() => {
+    findPressable(errorTree, 'Try again').props.onPress();
+  });
+  expect(onRetry).toHaveBeenCalledTimes(1);
 });

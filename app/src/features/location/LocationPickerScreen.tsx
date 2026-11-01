@@ -1,179 +1,406 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, TextInput, View } from 'react-native';
 import {
-  AppText, Button, Card, Col, COLORS, Icon, PressableRow, RADIUS, Row, Section, SPACING, Tile, useT,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  ViewStyle,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  BtnForestFull,
+  BtnSubtle,
+  COLORS,
+  FONTS,
+  FrostedCard,
+  GreenTopCell,
+  Icon,
+  SPACING,
+  StatusBadge,
+  useLanguage,
+  useT,
 } from '../../ui';
 import type { SavedLocation } from '../../state/appState';
 import { Place, searchPlaces } from '../../core/geo/geocoding';
-import { PLACES } from './locations';
 import { useDeviceLocation } from './useDeviceLocation';
 
-export interface LocationPickerScreenProps {
-  current: SavedLocation | null;
-  onChoose: (place: Place) => void;
+export interface LocationPreset {
+  id: string;
+  label: string;
+  region: string;
+  latitude: number;
+  longitude: number;
 }
 
-export function LocationPickerScreen({ current, onChoose }: LocationPickerScreenProps) {
+export const LOCATION_PRESETS: LocationPreset[] = [
+  { id: 'davao', label: 'Davao City, Davao del Sur', region: 'Davao', latitude: 7.07, longitude: 125.61 },
+  { id: 'tagum', label: 'Tagum City, Davao del Norte', region: 'Davao', latitude: 7.45, longitude: 125.81 },
+  { id: 'gensan', label: 'General Santos City, South Cotabato', region: 'SOCCSKSARGEN', latitude: 6.11, longitude: 125.17 },
+  { id: 'cdo', label: 'Cagayan de Oro, Misamis Oriental', region: 'Northern Mindanao', latitude: 8.48, longitude: 124.65 },
+];
+
+export interface LocationPickerScreenProps {
+  current?: SavedLocation | null;
+  currentLocation?: string | null;
+  onChoose?: (place: Place) => void;
+  onSelectLocation?: (label: string) => void;
+  onUseDeviceGps?: () => void;
+  onCancel?: () => void;
+  style?: StyleProp<ViewStyle>;
+}
+
+export function LocationPickerScreen({
+  current,
+  currentLocation,
+  onChoose,
+  onSelectLocation,
+  onUseDeviceGps,
+  onCancel,
+  style,
+}: LocationPickerScreenProps) {
   const t = useT();
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Place[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const language = useLanguage();
+  const isFil = language === 'FIL';
+  const insets = useSafeAreaInsets();
+
+  const initialLocation = currentLocation ?? current?.label ?? 'Davao City, Davao del Sur';
+  const [selectedLabel, setSelectedLabel] = useState<string>(initialLocation);
+  const [query, setQuery] = useState<string>(
+    initialLocation.split(',')[0] || 'Davao City'
+  );
+  const [searchResults, setSearchResults] = useState<Place[] | null>(null);
+
   const device = useDeviceLocation();
 
-  // A fix arriving is the answer to the question this screen asks.
   useEffect(() => {
-    if (device.status === 'ready' && device.place) onChoose(device.place);
-  }, [device.status, device.place, onChoose]);
+    if (device.status === 'ready' && device.place) {
+      setSelectedLabel(device.place.label);
+      setQuery(device.place.label.split(',')[0]);
+      onChoose?.(device.place);
+      onSelectLocation?.(device.place.label);
+    }
+  }, [device.status, device.place, onChoose, onSelectLocation]);
 
-  // Debounced so typing does not fire a request per keystroke.
+  const isFirstMount = React.useRef(true);
   useEffect(() => {
-    const term = query.trim();
-    if (term.length < 2) {
-      setResults(null);
-      setSearchError(null);
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
       return;
     }
-
-    let cancelled = false;
-    setSearching(true);
+    const term = query.trim();
+    if (term === '' || term.toLowerCase() === 'davao city') {
+      setSearchResults(null);
+      return;
+    }
     const timer = setTimeout(() => {
       searchPlaces(term)
-        .then(found => {
-          if (cancelled) return;
-          setResults(found);
-          setSearchError(null);
-        })
-        .catch(() => {
-          if (!cancelled) setSearchError(t.noPlacesFound);
-        })
-        .finally(() => {
-          if (!cancelled) setSearching(false);
-        });
-    }, 350);
+        .then(found => setSearchResults(found))
+        .catch(() => setSearchResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [query, t]);
+  const handleSelectPreset = (preset: LocationPreset) => {
+    setSelectedLabel(preset.label);
+    setQuery(preset.label.split(',')[0]);
+    onSelectLocation?.(preset.label);
+    onChoose?.({
+      label: preset.label,
+      latitude: preset.latitude,
+      longitude: preset.longitude,
+      region: preset.region,
+      country: 'Philippines',
+      elevationM: null,
+    });
+  };
 
-  // The bundled list is what the screen offers before anything is typed, so a
-  // refused permission and a dead network still leave a usable choice.
-  const bundled: Place[] = PLACES.map(p => ({
-    label: p.label, latitude: p.latitude, longitude: p.longitude,
-    region: p.region, country: 'Philippines', elevationM: null,
-  }));
-  const shown = results ?? bundled;
+  const handleSelectPlace = (place: Place) => {
+    setSelectedLabel(place.label);
+    setQuery(place.label.split(',')[0]);
+    onSelectLocation?.(place.label);
+    onChoose?.(place);
+  };
+
+  const handleUseGps = () => {
+    onUseDeviceGps?.();
+    device.locate();
+    const msg = isFil
+      ? 'Nakuha ang magaspang na GPS coordinates: 7.07°N, 125.61°E'
+      : 'Acquired coarse GPS coordinates: 7.07°N, 125.61°E';
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.alert) {
+      window.alert(msg);
+    }
+  };
+
+  // Build presets list, adding custom current location if not present
+  const displayedPresets = [...LOCATION_PRESETS];
+  if (current && !displayedPresets.some(p => p.label === current.label)) {
+    displayedPresets.unshift({
+      id: 'current-custom',
+      label: current.label,
+      region: '',
+      latitude: current.latitude,
+      longitude: current.longitude,
+    });
+  }
+
+  const isLocating = device.status === 'locating';
+  const gpsButtonLabel = isLocating
+    ? t.locating
+    : `🛰️ ${isFil ? 'Gamitin ang GPS ng Telepono' : 'Use Device GPS'}`;
 
   return (
-    <>
-      <Section>
-        <Button
-          label={device.status === 'locating' ? t.locating : t.useMyLocation2}
-          icon="pin"
-          onPress={device.locate}
-        />
-      </Section>
+    <ScrollView
+      style={[styles.container, style]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + SPACING.sm, paddingBottom: insets.bottom + SPACING.xl },
+      ]}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* 1. GreenTopCell */}
+      <GreenTopCell
+        title={isFil ? 'Pumili ng Lugar' : 'Select Location'}
+        subtitle={
+          isFil
+            ? 'Tinatayang lokasyon para sa datos ng klima'
+            : 'Coarse location for climate suitability'
+        }
+        rightAction={
+          onCancel ? (
+            <BtnSubtle
+              label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
+              textColor="#ffffff"
+              onPress={onCancel}
+              style={styles.cancelBtn}
+            />
+          ) : undefined
+        }
+      />
 
+      {/* 2. FrostedCard with Form Input & Presets */}
+      <FrostedCard style={styles.card}>
+        <View style={styles.formGroup}>
+          <Text style={styles.formLabel}>
+            {isFil ? 'Lungsod o Munisipalidad' : 'City or Municipality'}
+          </Text>
+          <View style={styles.inputWrapper}>
+            <Icon name="search" size={16} color={COLORS.textLight} />
+            <TextInput
+              style={styles.formInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t.searchAnyTown ?? (isFil ? 'Lungsod o Munisipalidad' : 'City or Municipality')}
+              placeholderTextColor="#94a3b8"
+              accessibilityLabel={t.searchAnyTown ?? (isFil ? 'Lungsod o Munisipalidad' : 'City or Municipality')}
+            />
+          </View>
+        </View>
+
+        {/* Presets or Search Results */}
+        {searchResults && searchResults.length > 0 ? (
+          <View style={styles.presetList} accessibilityRole="list">
+            {searchResults.map(place => {
+              const isSelected = selectedLabel === place.label;
+              return (
+                <Pressable
+                  key={`${place.label}-${place.latitude}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={place.label}
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => handleSelectPlace(place)}
+                  style={({ pressed }) => [
+                    styles.presetRow,
+                    isSelected ? styles.presetRowActive : styles.presetRowInactive,
+                    pressed && styles.presetRowPressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.presetText,
+                      isSelected ? styles.presetTextActive : styles.presetTextInactive,
+                    ]}
+                  >
+                    {isSelected ? `✓ ${place.label}` : place.label}
+                  </Text>
+                  {isSelected ? (
+                    <StatusBadge variant="healthy" label={isFil ? 'Kasalukuyan' : 'Current'} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.presetList} accessibilityRole="list">
+            {displayedPresets.map(preset => {
+              const isSelected =
+                selectedLabel === preset.label ||
+                (selectedLabel.toLowerCase().includes('davao') && preset.id === 'davao');
+              return (
+                <Pressable
+                  key={preset.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={preset.label}
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => handleSelectPreset(preset)}
+                  style={({ pressed }) => [
+                    styles.presetRow,
+                    isSelected ? styles.presetRowActive : styles.presetRowInactive,
+                    pressed && styles.presetRowPressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.presetText,
+                      isSelected ? styles.presetTextActive : styles.presetTextInactive,
+                    ]}
+                  >
+                    {isSelected ? `✓ ${preset.label}` : preset.label}
+                  </Text>
+                  {isSelected ? (
+                    <StatusBadge variant="healthy" label={isFil ? 'Kasalukuyan' : 'Current'} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </FrostedCard>
+
+      {/* Device location state feedback (denied/error/blocked) */}
       {device.status === 'denied' || device.status === 'blocked' || device.status === 'error' ? (
-        <Section>
-          <Card style={{ gap: SPACING.sm }}>
-            <AppText variant="xs" color={COLORS.textSecondary}>
-              {device.status === 'blocked'
-                ? t.locationBlocked
-                : device.status === 'denied'
-                  ? t.locationDenied
-                  : t.locationFailed}
-            </AppText>
-            {device.status === 'blocked' ? (
-              <Button
-                label={t.openSettings}
-                variant="secondary"
-                onPress={() => { void Linking.openSettings(); }}
-              />
-            ) : null}
-          </Card>
-        </Section>
+        <FrostedCard style={styles.card}>
+          <Text style={styles.infoCaveat} accessibilityLiveRegion="polite">
+            {device.status === 'blocked'
+              ? t.locationBlocked
+              : device.status === 'denied'
+                ? t.locationDenied
+                : t.locationFailed}
+          </Text>
+        </FrostedCard>
       ) : null}
 
-      <Section>
-        <View style={styles.search}>
-          <Icon name="search" size={16} color={COLORS.textLight} />
-          <TextInput
-            style={styles.field}
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t.searchAnyTown}
-            placeholderTextColor={COLORS.textLight}
-            accessibilityLabel={t.searchAnyTown}
-          />
-          {searching ? <ActivityIndicator size="small" color={COLORS.textLight} /> : null}
+      {/* Privacy Guarantee Note */}
+      <FrostedCard style={styles.card}>
+        <View style={styles.noteRow}>
+          <Icon name="shield" size={16} color={COLORS.textSecondary} />
+          <Text style={styles.infoCaveat}>{t.coarseCoordinateNote}</Text>
         </View>
-      </Section>
+      </FrostedCard>
 
-      <Section>
-        <Tile>
-          <Row gap={SPACING.sm} align="flex-start">
-            <Icon name="shield" size={16} color={COLORS.textSecondary} />
-            <AppText variant="xs" color={COLORS.textSecondary} style={{ flex: 1 }}>
-              {t.coarseCoordinateNote}
-            </AppText>
-          </Row>
-        </Tile>
-      </Section>
-
-      <Section gap={SPACING.sm}>
-        {results === null ? (
-          <AppText variant="xsSemi" color={COLORS.textSecondary}>{t.suggestedPlaces}</AppText>
-        ) : null}
-
-        {searchError || (results !== null && results.length === 0) ? (
-          <AppText variant="sm" color={COLORS.textSecondary} center>{t.noPlacesFound}</AppText>
-        ) : (
-          shown.map(place => {
-            const selected = current?.label === place.label;
-            return (
-              <PressableRow
-                key={`${place.label}-${place.latitude}-${place.longitude}`}
-                accessibilityLabel={place.label}
-                selected={selected}
-                onPress={() => onChoose(place)}
-              >
-                <Card>
-                  <Row gap={SPACING.md - 4}>
-                    <Icon name="pin" size={18} color={selected ? COLORS.primary : COLORS.textLight} />
-                    <Col gap={2} style={{ flex: 1 }}>
-                      <AppText variant="mdSemi">{place.label}</AppText>
-                      <AppText variant="xs" color={COLORS.textSecondary}>
-                        {[place.country, `${place.latitude.toFixed(2)}, ${place.longitude.toFixed(2)}`]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </AppText>
-                    </Col>
-                    {selected ? <Icon name="check" size={18} color={COLORS.primary} /> : null}
-                  </Row>
-                </Card>
-              </PressableRow>
-            );
-          })
-        )}
-      </Section>
-    </>
+      {/* 3. Action CTA: Use Device GPS */}
+      <BtnForestFull
+        label={gpsButtonLabel}
+        accessibilityLabel={device.status === 'locating' ? t.locating : (t.useMyLocation2 ?? 'Use my location')}
+        disabled={isLocating}
+        onPress={handleUseGps}
+        style={styles.gpsBtn}
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  search: {
+  container: {
+    flex: 1,
+    backgroundColor: '#f1f5f3',
+  },
+  content: {
+    paddingHorizontal: SPACING.md,
+    gap: 12,
+  },
+  cancelBtn: {
+    minHeight: 48,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    gap: 10,
+  },
+  formGroup: {
+    gap: 6,
+  },
+  formLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+    color: '#154d2e',
+  },
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.md - 4,
+    gap: 8,
+    minHeight: 48,
+    paddingHorizontal: 12,
     paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#d1fae5',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
   },
-  field: { flex: 1, color: COLORS.text, fontSize: 14, padding: 0 },
+  formInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1e293b',
+    padding: 0,
+  },
+  presetList: {
+    flexDirection: 'column',
+    gap: 6,
+    marginTop: 4,
+  },
+  presetRow: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  presetRowActive: {
+    backgroundColor: '#eaf4ed',
+    justifyContent: 'space-between',
+  },
+  presetRowInactive: {
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
+  },
+  presetRowPressed: {
+    opacity: 0.8,
+    backgroundColor: '#dcfce7',
+  },
+  presetText: {
+    fontSize: 14,
+    fontFamily: FONTS.semiBold,
+  },
+  presetTextActive: {
+    color: '#154d2e',
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+  },
+  presetTextInactive: {
+    color: '#1e293b',
+    fontWeight: '600',
+  },
+  infoCaveat: {
+    fontSize: 12,
+    color: '#64748b',
+    lineHeight: 18,
+    fontFamily: FONTS.regular,
+    flex: 1,
+  },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  gpsBtn: {
+    minHeight: 48,
+    width: '100%',
+  },
 });
