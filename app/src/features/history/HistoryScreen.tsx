@@ -124,6 +124,7 @@ export function HistoryScreen(props: HistoryScreenProps) {
                 key={f.key}
                 accessibilityRole="button"
                 accessibilityLabel={f.label}
+                accessibilityState={{ selected: isSelected }}
                 onPress={() => props.onFilter(f.key)}
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                 style={[
@@ -271,7 +272,13 @@ export function HistoryScreen(props: HistoryScreenProps) {
                             />
                           ) : scan.status ? (
                             <StatusBadge
-                              variant="healthy"
+                              variant={
+                                scan.status === 'severe'
+                                  ? 'severe'
+                                  : scan.status === 'early' || scan.status === 'moderate'
+                                  ? 'warning'
+                                  : 'healthy'
+                              }
                               label={SEVERITY_LABEL[scan.status]}
                               style={{ paddingVertical: 1, paddingHorizontal: 6 }}
                               textStyle={{ fontSize: 10 }}

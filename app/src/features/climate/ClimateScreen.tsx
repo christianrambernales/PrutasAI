@@ -173,6 +173,7 @@ export function ClimateScreen(props: ClimateScreenProps) {
                   key={f.key}
                   accessibilityRole="button"
                   accessibilityLabel={name}
+                  accessibilityState={{ selected }}
                   onPress={() => props.onSelectFruit?.(f.key)}
                   hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                   style={[
@@ -195,6 +196,14 @@ export function ClimateScreen(props: ClimateScreenProps) {
         accentBorder={suitability ? (suitability.verdict === 'insufficient_data' ? 'amber' : suitability.verdict === 'unsuitable' ? 'severe' : 'healthy') : 'healthy'}
         style={styles.suitabilityCard}
       >
+        {climate?.freshnessLabel ? (
+          <Row justify="space-between" align="center" style={{ marginBottom: 6 }}>
+            <AppText variant="xsSemi" color={COLORS.textSecondary}>{t.rightNow}</AppText>
+            <AppText variant="xs" color={COLORS.textSecondary}>
+              {isFil ? climate.freshnessLabel.replace(/^Cached/, t.freshnessCached) : climate.freshnessLabel}
+            </AppText>
+          </Row>
+        ) : null}
         <View style={styles.suitabilityHeader}>
           <View style={styles.suitabilityFruitRow}>
             <Text style={styles.suitabilityFruitEmoji}>
@@ -205,8 +214,23 @@ export function ClimateScreen(props: ClimateScreenProps) {
             </Text>
           </View>
           <StatusBadge
-            variant={suitability?.verdict === 'insufficient_data' ? 'warning' : 'healthy'}
-            label={props.seasonLabel ?? (suitability?.verdict === 'suitable' ? (isFil ? 'Dry Period' : 'Induction Season') : suitability?.verdict === 'insufficient_data' ? (isFil ? 'Kakulangan ng Datos' : 'Insufficient Data') : (isFil ? 'Dry Period' : 'Induction Season'))}
+            variant={
+              suitability?.verdict === 'insufficient_data'
+                ? 'warning'
+                : suitability?.verdict === 'unsuitable'
+                ? 'severe'
+                : 'healthy'
+            }
+            label={
+              props.seasonLabel ??
+              (suitability?.verdict === 'suitable'
+                ? (isFil ? 'Dry Period' : 'Induction Season')
+                : suitability?.verdict === 'insufficient_data'
+                ? (isFil ? 'Kakulangan ng Datos' : 'Provisional Data')
+                : suitability?.verdict === 'unsuitable'
+                ? (isFil ? 'Hindi Angkop' : 'Off Season')
+                : (isFil ? 'Dry Period' : 'Induction Season'))
+            }
           />
         </View>
 
