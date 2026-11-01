@@ -10,6 +10,7 @@ export interface CropCircleAvatarProps {
   backgroundColor?: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  accessibilityLabel?: string;
 }
 
 const CROP_EMOJIS: Record<string, string> = {
@@ -25,6 +26,7 @@ export function CropCircleAvatar({
   backgroundColor = '#eaf4ed',
   style,
   testID,
+  accessibilityLabel,
 }: CropCircleAvatarProps) {
   const displayEmoji = emoji ?? (crop ? CROP_EMOJIS[crop.toLowerCase()] ?? '🌱' : '🌱');
   const fontSize = Math.round(size * 0.48);
@@ -32,6 +34,9 @@ export function CropCircleAvatar({
   return (
     <View
       testID={testID}
+      accessible={Boolean(accessibilityLabel)}
+      accessibilityRole={accessibilityLabel ? 'image' : undefined}
+      accessibilityLabel={accessibilityLabel}
       style={[
         styles.container,
         {

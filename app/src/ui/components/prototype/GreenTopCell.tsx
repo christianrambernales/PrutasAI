@@ -62,10 +62,15 @@ export function GreenTopCell({
             {headerIcon ? <View style={styles.headerIcon}>{headerIcon}</View> : null}
             {badge ? (
               <View style={[styles.badgeWrapper, centered && styles.centeredBadge]}>
-                <StatusBadge variant={badge.variant ?? 'offline'} label={badge.label} />
+                <StatusBadge
+                  variant={badge.variant ?? 'offline'}
+                  label={badge.label}
+                  style={centered ? { alignSelf: 'center' } : undefined}
+                />
               </View>
             ) : null}
             <Text
+              accessibilityRole="header"
               style={[
                 styles.title,
                 centered && styles.centeredText,

@@ -145,6 +145,7 @@ export function BtnSubtle({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!disabled }}
       accessibilityLabel={accessibilityLabel ?? label}
@@ -174,7 +175,6 @@ const styles = StyleSheet.create({
   orangeContainer: {
     width: '100%',
     borderRadius: 14,
-    overflow: 'hidden',
     shadowColor: '#c2410c',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
@@ -183,6 +183,8 @@ const styles = StyleSheet.create({
   },
   gradientFill: {
     width: '100%',
+    borderRadius: 14,
+    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import {
   GreenTopCell,
@@ -22,7 +22,9 @@ describe('Prototype Primitives', () => {
           badge={{ label: 'Local Offline Mode', variant: 'offline' }}
         />
       );
-      expect(screen.getByText('Good day!')).toBeTruthy();
+      const titleEl = screen.getByText('Good day!');
+      expect(titleEl).toBeTruthy();
+      expect(titleEl.props.accessibilityRole).toBe('header');
       expect(screen.getByText('Decision-support for your fruit crops')).toBeTruthy();
       expect(screen.getByText('Local Offline Mode')).toBeTruthy();
     });
@@ -32,6 +34,7 @@ describe('Prototype Primitives', () => {
         <GreenTopCell
           title="Centered Title"
           subtitle="Centered Subtitle"
+          badge={{ label: 'Centered Badge', variant: 'offline' }}
           headerIcon={<Text testID="header-icon">🌾</Text>}
           leftAction={<Text testID="left-action">←</Text>}
           rightAction={<Text testID="right-action">Settings</Text>}
@@ -43,6 +46,11 @@ describe('Prototype Primitives', () => {
       expect(screen.getByTestId('header-icon')).toBeTruthy();
       expect(screen.getByTestId('left-action')).toBeTruthy();
       expect(screen.getByTestId('right-action')).toBeTruthy();
+
+      const badgeText = screen.getByText('Centered Badge');
+      const badgeParent = badgeText.parent;
+      const flattenedBadgeStyle = StyleSheet.flatten(badgeParent?.props.style);
+      expect(flattenedBadgeStyle.alignSelf).toBe('center');
     });
   });
 
@@ -91,10 +99,10 @@ describe('Prototype Primitives', () => {
 
       await render(
         <>
-          <BtnOrangeFull label="Take Photo" onPress={onOrange} />
+          <BtnOrangeFull label="Take Photo" onPress={onOrange} testID="btn-orange" />
           <BtnForestFull label="Save Note" onPress={onForest} />
           <BtnOutline label="Pick from Gallery" onPress={onOutline} />
-          <BtnSubtle label="View History" onPress={onSubtle} />
+          <BtnSubtle label="View History" onPress={onSubtle} testID="btn-subtle" />
         </>
       );
 
@@ -109,6 +117,15 @@ describe('Prototype Primitives', () => {
 
       await fireEvent.press(screen.getByText('View History'));
       expect(onSubtle).toHaveBeenCalledTimes(1);
+
+      // Verify BtnSubtle hitSlop
+      const subtleBtn = screen.getByTestId('btn-subtle');
+      expect(subtleBtn.props.hitSlop).toEqual({ top: 8, bottom: 8, left: 8, right: 8 });
+
+      // Verify BtnOrangeFull shadow and inner gradient overflow
+      const orangeBtn = screen.getByTestId('btn-orange');
+      const flattenedOrangeStyle = StyleSheet.flatten(orangeBtn.props.style);
+      expect(flattenedOrangeStyle.overflow).toBeUndefined();
     });
 
     it('does not fire onPress when disabled', async () => {
@@ -175,8 +192,10 @@ describe('Prototype Primitives', () => {
 
   describe('CropCircleAvatar', () => {
     it('renders correct emoji for known crops and custom emoji', async () => {
-      const { rerender } = await render(<CropCircleAvatar crop="mango" size={48} />);
+      const { rerender } = await render(<CropCircleAvatar crop="mango" size={48} testID="crop-avatar" />);
       expect(screen.getByText('🥭')).toBeTruthy();
+      const avatar = screen.getByTestId('crop-avatar');
+      expect(avatar.props.accessible).toBe(false);
 
       await rerender(<CropCircleAvatar crop="banana" />);
       expect(screen.getByText('🍌')).toBeTruthy();
@@ -187,8 +206,12 @@ describe('Prototype Primitives', () => {
       await rerender(<CropCircleAvatar crop="unknown" />);
       expect(screen.getByText('🌱')).toBeTruthy();
 
-      await rerender(<CropCircleAvatar emoji="🍎" />);
+      await rerender(<CropCircleAvatar emoji="🍎" accessibilityLabel="Apple fruit" testID="crop-avatar-labeled" />);
       expect(screen.getByText('🍎')).toBeTruthy();
+      const labeledAvatar = screen.getByTestId('crop-avatar-labeled');
+      expect(labeledAvatar.props.accessibilityLabel).toBe('Apple fruit');
+      expect(labeledAvatar.props.accessibilityRole).toBe('image');
+      expect(labeledAvatar.props.accessible).toBe(true);
     });
   });
 });
