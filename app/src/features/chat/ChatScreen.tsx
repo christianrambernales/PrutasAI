@@ -27,7 +27,6 @@ import {
   RADIUS,
   Row,
   SPACING,
-  Tile,
   useLanguage,
   useT,
 } from '../../ui';
@@ -163,19 +162,6 @@ export function ChatScreen(props: ChatScreenProps) {
             </AppText>
           </View>
         </View>
-
-        {curatedWording ? (
-          <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.xs }}>
-            <Tile style={{ backgroundColor: '#eef2f6' }}>
-              <Row gap={SPACING.sm} align="flex-start">
-                <Icon name="shield" size={16} color={COLORS.stable} />
-                <AppText variant="xs" color="#2f5a76" style={{ flex: 1 }}>
-                  {t.curatedBanner}
-                </AppText>
-              </Row>
-            </Tile>
-          </View>
-        ) : null}
 
         {/* 3. Transcript Messages List or Blank-first Welcome View */}
         <ScrollView

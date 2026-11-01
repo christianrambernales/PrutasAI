@@ -32,7 +32,7 @@ export function ConversationSidebar(props: ConversationSidebarProps) {
   const language = useLanguage();
   const isFil = language === 'FIL';
   const translate = useRef(new Animated.Value(props.visible ? 0 : -WIDTH)).current;
-  const newConversation = useRef<any>(null);
+  const newConversation = useRef<React.ElementRef<typeof Pressable> | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<ConversationSummary | null>(null);
 
   React.useEffect(() => {
@@ -64,7 +64,7 @@ export function ConversationSidebar(props: ConversationSidebarProps) {
 
   React.useEffect(() => {
     if (!props.visible) return undefined;
-    const timer = setTimeout(() => newConversation.current?.focus?.(), 0);
+    const timer = setTimeout(() => (newConversation.current as any)?.focus?.(), 0);
     return () => clearTimeout(timer);
   }, [props.visible]);
 
