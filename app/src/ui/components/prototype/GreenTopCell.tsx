@@ -108,12 +108,14 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 6,
     flexShrink: 0,
+    width: '100%',
   },
   gradient: {
     borderRadius: 20,
     overflow: 'hidden',
     paddingVertical: 18,
     paddingHorizontal: 20,
+    width: '100%',
   },
   centeredGradient: {
     alignItems: 'center',
@@ -121,6 +123,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
   },
   centeredRow: {
     justifyContent: 'center',
@@ -134,12 +137,15 @@ const styles = StyleSheet.create({
   },
   contentCol: {
     flexDirection: 'column',
+    flex: 1,
   },
   flexContent: {
     flex: 1,
   },
   centeredCol: {
     alignItems: 'center',
+    alignSelf: 'stretch',
+    width: '100%',
   },
   headerIcon: {
     marginBottom: 6,
@@ -157,6 +163,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontFamily: FONTS.extraBold,
     letterSpacing: -0.4,
+    maxWidth: '100%',
   },
   subtitle: {
     color: '#d1fae5',
@@ -164,7 +171,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
     fontFamily: FONTS.medium,
-    marginTop: 3,
+    marginTop: 4,
+    maxWidth: '100%',
   },
   centeredText: {
     textAlign: 'center',

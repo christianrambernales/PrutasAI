@@ -389,6 +389,15 @@ const styles = StyleSheet.create({
     width: 0,
     overflow: 'hidden',
   },
+  srOnly: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    opacity: 0,
+  },
   footerRow: {
     alignItems: 'center',
     justifyContent: 'center',
