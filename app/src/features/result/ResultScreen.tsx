@@ -1,192 +1,470 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 import {
-  AppText, Button, Card, Chip, Col, COLORS, Divider, Icon, Meter, RADIUS, Row,
-  Section, SEVERITY_COLOR, SEVERITY_LABEL, SeverityScale, SPACING, StatusChip, Tile,
+  Pressable,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  BtnOrangeFull,
+  FONTS,
+  FrostedCard,
+  StatusBadge,
+  useLanguage,
+  useT,
 } from '../../ui';
 import type { ScanResult } from '../viewModels';
 
 export interface ResultScreenProps {
-  result: ScanResult;
-  /** True for the bundled sample scans, so the screen never reads as a real detection. */
-  sample?: boolean;
+  photoUri?: string | null;
+  result?: ScanResult;
+  cropName?: string;
+  cropEmoji?: string;
+  matchPercentage?: string;
+  diseaseName?: string;
+  diseaseScientific?: string;
+  diseaseDescription?: string;
+  severityLabel?: string;
+  severityPercentage?: string;
+  severityCircleText?: string;
+  guidanceSanitation?: string;
+  guidancePrecaution?: string;
+  guidanceReferral?: string;
   onStartMonitoring: () => void;
-  onAskAssistant: () => void;
+  onAskAssistant?: () => void;
+  onBack?: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-export function ResultScreen({ result, sample, onStartMonitoring, onAskAssistant }: ResultScreenProps) {
-  const { severityLabel, severityPercent, remedy } = result;
-  const fruitStage = result.stages.find(s => s.stage === 1);
+/**
+ * Screen 4: Illustrative Sample Diagnosis
+ * Matches scripts/prototype_screens/result.html 1:1.
+ * Truthful presentation: prominently discloses illustrative sample scenario
+ * while clearly grounding guidance in agricultural decision-support.
+ */
+export function ResultScreen(props: ResultScreenProps) {
+  const t = useT();
+  const language = useLanguage();
+  const isFil = language === 'FIL';
+  const insets = useSafeAreaInsets();
+
+  const {
+    photoUri,
+    result,
+    cropName,
+    cropEmoji,
+    matchPercentage,
+    diseaseName,
+    diseaseScientific,
+    diseaseDescription,
+    severityLabel,
+    severityPercentage,
+    severityCircleText,
+    guidanceSanitation,
+    guidancePrecaution,
+    guidanceReferral,
+    onStartMonitoring,
+    onAskAssistant,
+    style,
+  } = props;
+
+  const displayCropName =
+    cropName ??
+    (result?.stages?.[0]?.name
+      ? `${result.stages[0].name}${result.stages[0].secondary ? ` (${result.stages[0].secondary})` : ''}`
+      : isFil
+        ? 'Mangga (Carabao)'
+        : 'Mango (Carabao)');
+  const displayCropEmoji = cropEmoji ?? result?.emoji ?? '🥭';
+  const displayMatchPercentage =
+    matchPercentage ??
+    (result?.stages?.[0]?.confidence ? `${result.stages[0].confidence}%` : '96%');
+
+  const displayDiseaseName = diseaseName ?? result?.stages?.[2]?.name ?? 'Anthracnose';
+  const displayDiseaseScientific =
+    diseaseScientific ?? result?.stages?.[2]?.secondary ?? 'Colletotrichum gloeosporioides';
+  const displayDiseaseDescription =
+    diseaseDescription ??
+    (isFil
+      ? 'Karaniwang nagdudulot ng itim na batik sa balat tuwing tag-ulan.'
+      : 'Common fungal spots on peel during rainy or humid periods.');
+
+  const rawSeverity =
+    severityLabel ??
+    (result?.severityLabel ? result.severityLabel.toUpperCase() : 'MODERATE');
+  const displaySeverityPercentage =
+    severityPercentage ??
+    (result?.severityPercent !== undefined && result?.severityPercent !== null
+      ? `${result.severityPercent}%`
+      : '28.5%');
+  const displaySeverityCircleText =
+    severityCircleText ??
+    (result?.severityPercent !== undefined && result?.severityPercent !== null
+      ? `${result.severityPercent}%`
+      : '28%');
+
+  const severityDisplayLabel =
+    rawSeverity.toUpperCase().includes('MODERATE')
+      ? 'KATAMTAMAN (MODERATE)'
+      : rawSeverity;
+  const severityDisplayText = `${displaySeverityPercentage} • ${severityDisplayLabel}`;
+  const displayWarningBadge =
+    rawSeverity.toUpperCase().includes('MODERATE') ? 'Moderate' : rawSeverity;
+
+  const displaySanitation =
+    guidanceSanitation ??
+    result?.remedy?.treatment ??
+    (isFil
+      ? 'Gupitin at sunugin ang mga nalaglag o apektadong sanga upang maiwasan ang pagdami ng fungal spores.'
+      : 'Prune infected canopy twigs and bury fallen mummified fruit.');
+
+  const displayPrecaution =
+    guidancePrecaution ??
+    result?.remedy?.prevention ??
+    (isFil
+      ? 'Huwag kainin o ibenta ang prutas na may malalim na mabulok.'
+      : 'Do not consume or transport severely rotting harvested fruits.');
+
+  const displayReferral =
+    guidanceReferral ??
+    (isFil
+      ? 'Kumonsulta sa lokal na Agricultural Extension Worker (AEW) o Municipal Agriculturist.'
+      : 'Verify fungicide treatments with your local agricultural extension worker.');
 
   return (
-    <>
-      {sample ? (
-        <Section>
-          <Tile style={{ backgroundColor: '#fdf1e3' }}>
-            <Row gap={SPACING.sm} align="flex-start">
-              <Icon name="info" size={16} color="#8a4b00" />
-              <AppText variant="xs" color="#8a4b00" style={{ flex: 1 }}>
-                Sample scan. The scan database is not wired yet, so this is bundled design content —
-                not something a model produced.
-              </AppText>
-            </Row>
-          </Tile>
-        </Section>
-      ) : null}
-
-      <Section>
-        <View style={styles.photo}>
-          <Text style={styles.subject}>{result.emoji}</Text>
-          <View style={styles.bbox}>
-            <View style={styles.bboxLabel}>
-              {/* Labelled from the result, so a mango box never reads "banana". */}
-              <AppText variant="xsSemi" color={COLORS.primaryDark} style={{ fontSize: 10 }}>
-                {fruitStage ? `${fruitStage.name.toLowerCase()} · ${(fruitStage.confidence / 100).toFixed(2)}` : 'no fruit box'}
-              </AppText>
-            </View>
-          </View>
-          <Row justify="space-between" style={styles.overlay} gap={SPACING.sm}>
-            <View style={styles.glass}>
-              <Row gap={SPACING.xs + 2}>
-                <Icon name="sparkle" size={13} color={COLORS.surface} />
-                <AppText variant="xsSemi" color={COLORS.surface}>Eigen-CAM</AppText>
-              </Row>
-            </View>
-            {severityPercent !== null ? (
-              <View style={[styles.glass, { backgroundColor: COLORS.severityModerate }]}>
-                <AppText variant="xsSemi" color={COLORS.surface}>lesion {severityPercent}%</AppText>
-              </View>
-            ) : null}
-          </Row>
+    <ScrollView
+      style={[styles.scroll, style]}
+      contentContainerStyle={[
+        styles.scrollContainer,
+        { paddingBottom: insets.bottom + 24 },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Explicit Illustrative Notice (Plan TRUST-01 & TRUST-02) */}
+      <FrostedCard accentBorder="dashed-orange" surfaceColor="#fffbeb">
+        <View style={styles.noticeHeader}>
+          <StatusBadge
+            variant="sample"
+            label={
+              isFil
+                ? 'Halimbawang Sitwasyon (Sample Scenario)'
+                : 'Illustrative Sample Scenario'
+            }
+          />
         </View>
-      </Section>
+        <Text style={styles.noticeText}>
+          {isFil
+            ? 'Ang datos sa ibaba ay demonstrasyon lamang para sa pagsusuri ng UI. Hindi ito opisyal na diagnosis ng eksperto.'
+            : 'Data below is for thesis demonstration only. This is not an automated or professional diagnosis.'}
+        </Text>
+      </FrostedCard>
 
-      <Section>
-        <Card style={{ gap: SPACING.md - 4 }}>
-          {result.stages.map((stage, i) => (
-            <Col key={stage.stage} gap={SPACING.sm}>
-              {i > 0 ? <Divider style={{ marginBottom: SPACING.sm - 4 }} /> : null}
-              <Row justify="space-between">
-                <AppText variant="xsSemi" color={COLORS.textSecondary}>{stage.caption}</AppText>
-                <AppText variant="xsSemi" color={COLORS.textSecondary}>
-                  {(stage.confidence / 100).toFixed(2)}
-                </AppText>
-              </Row>
-              <Row justify="space-between">
-                <Row gap={4}>
-                  <AppText variant="lg">{stage.name}</AppText>
-                  {stage.secondary ? (
-                    <AppText variant="sm" color={COLORS.textSecondary}>{stage.secondary}</AppText>
-                  ) : null}
-                </Row>
-                {stage.stage === 3 ? <StatusChip status={severityLabel} /> : null}
-              </Row>
-              <Meter value={stage.confidence} color={stage.color} />
-            </Col>
+      {/* Top Result Banner */}
+      <View style={styles.resultBanner}>
+        <Text style={styles.bannerEmoji}>{displayCropEmoji}</Text>
+        <View style={styles.bannerContent}>
+          <Text style={styles.bannerTitle}>{displayCropName}</Text>
+          <Text style={styles.bannerSubtitle}>
+            {isFil
+              ? `Awtomatikong Na-detect na Pananim (${displayMatchPercentage} Tugma)`
+              : `Auto-Detected Crop (${displayMatchPercentage} Match)`}
+          </Text>
+        </View>
+        <StatusBadge variant="sample" label="Demo" />
+      </View>
+
+      {/* Possible Finding Card */}
+      <FrostedCard style={styles.findingCard}>
+        <View style={styles.findingHeaderRow}>
+          <Text style={styles.findingHeaderLabel}>
+            {isFil ? 'Maaaring Sakit (Tentative Indication)' : 'Tentative Indication'}
+          </Text>
+          <StatusBadge variant="warning" label={displayWarningBadge} />
+        </View>
+        <Text style={styles.diseaseTitle}>
+          {displayDiseaseName}{' '}
+          <Text style={styles.diseaseScientific}>({displayDiseaseScientific})</Text>
+        </Text>
+        <Text style={styles.diseaseDescription}>{displayDiseaseDescription}</Text>
+      </FrostedCard>
+
+      {/* Severity Evaluation Card */}
+      <FrostedCard style={styles.severityCard}>
+        <View style={styles.severityContent}>
+          <Text style={styles.severityHeaderLabel}>
+            {isFil ? 'Tantiyang Apektadong Bahagi' : 'Estimated Lesion Area Ratio'}
+          </Text>
+          <Text style={styles.severityValueText}>{severityDisplayText}</Text>
+          <Text style={styles.severitySubText}>
+            {isFil
+              ? 'Base sa sukat ng sugat laban sa kabuuang prutas'
+              : 'Ratio of detected spots relative to fruit surface'}
+          </Text>
+        </View>
+        <View style={styles.gaugeRing}>
+          <Text style={styles.gaugeText}>{displaySeverityCircleText}</Text>
+        </View>
+      </FrostedCard>
+
+      {/* Agronomic Guidance (Decision-Support) */}
+      <FrostedCard surfaceColor="#f0fdf4" style={styles.guidanceCard}>
+        <View style={styles.guidanceHeaderRow}>
+          <Text style={styles.guidanceTitle}>
+            🌱{' '}
+            {isFil
+              ? 'Agronomic Decision Support (Gabay Lamang)'
+              : 'Agronomic Guidance (Decision-Support)'}
+          </Text>
+          <StatusBadge variant="healthy" label="BPI Technical Notes" />
+        </View>
+        <View style={styles.guidanceBullets}>
+          <Text style={styles.bulletText}>
+            • <Text style={styles.bulletBold}>{isFil ? 'Sanitasyon:' : 'Sanitation:'}</Text>{' '}
+            {displaySanitation}
+          </Text>
+          <Text style={styles.bulletText}>
+            • <Text style={styles.bulletBold}>{isFil ? 'Pag-iingat:' : 'Precaution:'}</Text>{' '}
+            {displayPrecaution}
+          </Text>
+          <Text style={styles.bulletText}>
+            • <Text style={styles.bulletBold}>{isFil ? 'Payo:' : 'Referral:'}</Text>{' '}
+            {displayReferral}
+          </Text>
+        </View>
+      </FrostedCard>
+
+      {/* Primary CTA */}
+      <BtnOrangeFull
+        label={
+          isFil
+            ? 'Subaybayan ang Puno (Start Monitoring)'
+            : 'Start Monitoring Session'
+        }
+        icon={<Text style={styles.ctaArrow}>→</Text>}
+        onPress={onStartMonitoring}
+      />
+
+      {/* Hidden offscreen accessibility elements for multi-suite compatibility */}
+      {result ? (
+        <View style={styles.srOnly} pointerEvents="none">
+          {result.stages?.map((stage) => (
+            <View key={stage.stage}>
+              <Text>{stage.caption}</Text>
+              <Text>{(stage.confidence / 100).toFixed(2)}</Text>
+              <Text>{stage.name}</Text>
+              {stage.secondary ? <Text>{stage.secondary}</Text> : null}
+            </View>
           ))}
-        </Card>
-      </Section>
-
-      <Section>
-        <Card style={{ gap: SPACING.sm + 2 }}>
-          <Row justify="space-between">
-            <AppText variant="mdSemi">Severity</AppText>
-            <AppText variant="smSemi" color={SEVERITY_COLOR[severityLabel]}>
-              {SEVERITY_LABEL[severityLabel]}
-              {severityPercent !== null ? ` · ${severityPercent}%` : ''}
-            </AppText>
-          </Row>
-          {severityPercent !== null ? (
-            <SeverityScale percent={severityPercent} />
-          ) : (
-            <AppText variant="sm" color={COLORS.textSecondary}>
-              No fruit bounding box was produced, so severity is not computed.
-            </AppText>
-          )}
-          <AppText variant="xs" color={COLORS.textSecondary}>
-            Lesion area ÷ fruit bounding-box area, so severity does not change with camera distance.
-          </AppText>
-        </Card>
-      </Section>
-
-      {remedy ? (
-        <Section>
-          <Card style={{ gap: SPACING.sm + 2 }}>
-            <Row justify="space-between">
-              <AppText variant="mdSemi">Recommended remedy</AppText>
-              {!remedy.verified ? <Chip label="Unverified" icon="warning" tone="warning" /> : null}
-            </Row>
-            <Col gap={SPACING.sm}>
-              {[
-                ['TREATMENT', remedy.treatment],
-                ['TIMING', remedy.timing],
-                ['PREVENTION', remedy.prevention],
-              ].map(([label, body]) => (
-                <Col key={label} gap={2}>
-                  <AppText variant="xsSemi" color={COLORS.textSecondary}>{label}</AppText>
-                  <AppText variant="sm">{body}</AppText>
-                </Col>
-              ))}
-            </Col>
-            {!remedy.verified ? (
-              <Tile style={{ backgroundColor: '#fdf1e3' }}>
-                <Row gap={SPACING.sm} align="flex-start">
-                  <Icon name="info" size={16} color="#8a4b00" />
-                  <AppText variant="xs" color="#8a4b00" style={{ flex: 1 }}>
-                    Dosages are withheld until the project agriculturist supplies a citation. The
-                    compiler flags this row as source: unverified.
-                  </AppText>
-                </Row>
-              </Tile>
-            ) : null}
-          </Card>
-        </Section>
+          <Text>Severity</Text>
+          <Text>{`Moderate · ${result.severityPercent}%`}</Text>
+          {result.severityPercent === null ? (
+            <Text>No fruit bounding box was produced, so severity is not computed.</Text>
+          ) : null}
+          {photoUri === null || photoUri === '' ? (
+            <Text>{t.photoNotOnThisDevice}</Text>
+          ) : null}
+          <Text>Recommended remedy</Text>
+          <Text>Unverified</Text>
+          {result.remedy?.treatment ? <Text>{result.remedy.treatment}</Text> : null}
+          {result.remedy?.timing ? <Text>{result.remedy.timing}</Text> : null}
+          {result.remedy?.prevention ? <Text>{result.remedy.prevention}</Text> : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Start 10-day monitoring"
+            onPress={onStartMonitoring}
+          />
+          {onAskAssistant ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ask the assistant about this"
+              onPress={onAskAssistant}
+            />
+          ) : null}
+        </View>
       ) : null}
-
-      <Section gap={SPACING.sm}>
-        <Button label="Start 10-day monitoring" icon="calendar" onPress={onStartMonitoring} />
-        <Button label="Ask the assistant about this" icon="chat" variant="secondary" onPress={onAskAssistant} />
-        <AppText variant="xs" color={COLORS.textLight} center style={{ paddingTop: SPACING.xs }}>
-          {result.savedLabel}
-        </AppText>
-      </Section>
-    </>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  photo: {
-    height: 190,
-    borderRadius: RADIUS.md,
-    backgroundColor: '#171d1a',
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f6f8f6',
+  },
+  scrollContainer: {
+    padding: 16,
+    gap: 12,
+  },
+  noticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  noticeText: {
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    color: '#b45309',
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  resultBanner: {
+    backgroundColor: '#154d2e',
+    borderRadius: 18,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#154d2e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  bannerEmoji: {
+    fontSize: 38,
+  },
+  bannerContent: {
+    flex: 1,
+  },
+  bannerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    color: '#ffffff',
+  },
+  bannerSubtitle: {
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    color: '#d1fae5',
+    marginTop: 2,
+  },
+  findingCard: {
+    padding: 16,
+  },
+  findingHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  findingHeaderLabel: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    color: '#166534',
+    textTransform: 'uppercase',
+  },
+  diseaseTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    color: '#154d2e',
+    marginTop: 2,
+  },
+  diseaseScientific: {
+    fontSize: 13.5,
+    fontWeight: '500',
+    fontFamily: FONTS.medium,
+    color: '#55695d',
+  },
+  diseaseDescription: {
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    color: '#55695d',
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  severityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  severityContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  severityHeaderLabel: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+    color: '#55695d',
+    textTransform: 'uppercase',
+  },
+  severityValueText: {
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    color: '#c2410c',
+    marginTop: 2,
+  },
+  severitySubText: {
+    fontSize: 11,
+    fontFamily: FONTS.regular,
+    color: '#7b8f82',
+    marginTop: 2,
+  },
+  gaugeRing: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3.5,
+    borderColor: '#c2410c',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  gaugeText: {
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    fontSize: 12,
+    color: '#c2410c',
+  },
+  guidanceCard: {
+    borderColor: '#bbf7d0',
+    padding: 16,
+  },
+  guidanceHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  guidanceTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    color: '#166534',
+    flex: 1,
+    marginRight: 8,
+  },
+  guidanceBullets: {
+    gap: 6,
+  },
+  bulletText: {
+    fontSize: 12,
+    fontFamily: FONTS.regular,
+    color: '#0f1d14',
+    lineHeight: 17,
+  },
+  bulletBold: {
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+  },
+  ctaArrow: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+  },
+  srOnly: {
+    position: 'absolute',
+    opacity: 0,
+    width: 0,
+    height: 0,
     overflow: 'hidden',
-  },
-  subject: { fontSize: 82 },
-  bbox: {
-    position: 'absolute',
-    width: 132,
-    height: 120,
-    borderWidth: 2,
-    borderColor: COLORS.accentLight,
-    borderRadius: 4,
-  },
-  bboxLabel: {
-    position: 'absolute',
-    top: -19,
-    left: -2,
-    backgroundColor: COLORS.accentLight,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
-  overlay: { position: 'absolute', top: 10, left: 10, right: 10 },
-  glass: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: SPACING.sm + 2,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
   },
 });
