@@ -20,6 +20,7 @@ describe('monitoringViewModel', () => {
   const createBaseSession = (): MonitoringSession => ({
     id: 'session-1',
     sourceScanId: 'scan-1',
+    sourceCreatedAt: BASE_TIME,
     checkpoints: [
       {
         id: 'cp5',
@@ -53,10 +54,14 @@ describe('monitoringViewModel', () => {
       expect(view.checkpoints[2].dayNumber).toBe(10);
     });
 
-    it('derives scheduled dates from immutable baseline date', () => {
+    it('uses the persisted source timestamp as Day 1 and retains persisted schedule dates', () => {
       const session = createBaseSession();
+      session.sourceCreatedAt = BASE_TIME - MS_PER_DAY;
       const view = buildMonitoringView(session, mockScan, BASE_TIME);
       
+      expect(view.checkpoints[0].scheduledDate).toBe(BASE_TIME - MS_PER_DAY);
+      expect(view.checkpoints[0].completedDate).toBe(BASE_TIME - MS_PER_DAY);
+      expect(view.checkpoints[0].status).toBe('completed');
       expect(view.checkpoints[1].scheduledDate).toBe(BASE_TIME + 4 * MS_PER_DAY);
       expect(view.checkpoints[2].scheduledDate).toBe(BASE_TIME + 9 * MS_PER_DAY);
     });
@@ -68,7 +73,7 @@ describe('monitoringViewModel', () => {
       const view = buildMonitoringView(session, mockScan, now);
       
       expect(view.checkpoints[1].status).toBe('due');
-      expect(view.checkpoints[2].status).toBe('due'); // Not due yet
+      expect(view.checkpoints[2].status).toBe('due'); // Awaiting its scheduled date
     });
 
     it('identifies incomplete checkpoints that are past due', () => {
@@ -102,6 +107,23 @@ describe('monitoringViewModel', () => {
       expect(view.checkpoints[1].status).toBe('completed_late');
       expect(view.checkpoints[1].scheduledDate).toBe(BASE_TIME + 4 * MS_PER_DAY);
       expect(view.checkpoints[1].completedDate).toBe(BASE_TIME + 5 * MS_PER_DAY + 1000);
+    });
+
+    it('retains late completion date faithfully without shifting or synthesizing dates', () => {
+      const session = createBaseSession();
+      const scheduledDay5 = BASE_TIME + 4 * MS_PER_DAY;
+      const actualLateDay5 = BASE_TIME + 7 * MS_PER_DAY; // 3 days late
+      session.checkpoints[0].scheduledDate = scheduledDay5;
+      session.checkpoints[0].completedDate = actualLateDay5;
+      session.checkpoints[0].observation = 'better';
+
+      const view = buildMonitoringView(session, mockScan, actualLateDay5);
+      const cp5 = view.checkpoints.find(c => c.dayNumber === 5)!;
+
+      expect(cp5.status).toBe('completed_late');
+      expect(cp5.scheduledDate).toBe(scheduledDay5);
+      expect(cp5.completedDate).toBe(actualLateDay5);
+      expect(cp5.completedDate).toBeGreaterThan(cp5.scheduledDate);
     });
 
     it('detects missing fields (photo missing, note missing, observation needed)', () => {
@@ -148,9 +170,22 @@ describe('monitoringViewModel', () => {
       expect(view.overallTrend).toBe('unavailable');
       
       session.checkpoints[1].completedDate = BASE_TIME + 9 * MS_PER_DAY;
-      session.checkpoints[1].observation = 'worse';
+      session.checkpoints[1].observation = 'better';
       view = buildMonitoringView(session, mockScan, BASE_TIME + 9 * MS_PER_DAY);
       expect(view.overallTrend).toBe('unavailable');
+    });
+
+    it('never infers recovery or fabricates a positive trend even when all checkpoints are reported better', () => {
+      const session = createBaseSession();
+      session.checkpoints[0].completedDate = BASE_TIME + 4 * MS_PER_DAY;
+      session.checkpoints[0].observation = 'better';
+      session.checkpoints[1].completedDate = BASE_TIME + 9 * MS_PER_DAY;
+      session.checkpoints[1].observation = 'better';
+
+      const view = buildMonitoringView(session, mockScan, BASE_TIME + 10 * MS_PER_DAY);
+      expect(view.overallTrend).toBe('unavailable');
+      expect((view as any).recoveryTrend).toBeUndefined();
+      expect((view as any).healthScore).toBeUndefined();
     });
 
     it('prohibits fields like disease, severity, lesion percent, confidence, or chart trend in the output type', () => {
