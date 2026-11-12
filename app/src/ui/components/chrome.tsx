@@ -191,9 +191,13 @@ export function BottomNav({
           </LinearGradient>
           <AppText
             variant="xsSemi"
-            color="#64748b"
+            color={active === 'scan' ? '#c2410c' : '#64748b'}
             center
-            style={[styles.navLabel, styles.centerScanLabel]}
+            style={[
+              styles.navLabel,
+              styles.centerScanLabel,
+              active === 'scan' && styles.centerScanLabelActive,
+            ]}
           >
             {t.tabScan}
           </AppText>
@@ -205,7 +209,7 @@ export function BottomNav({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.primary },
+  screen: { flex: 1, backgroundColor: COLORS.background },
   body: { flex: 1 },
   bodyContent: { paddingBottom: SPACING.lg, backgroundColor: COLORS.background, flexGrow: 1 },
   appBar: {
@@ -261,6 +265,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#64748b',
     marginTop: 3,
+  },
+  centerScanLabelActive: {
+    color: '#c2410c',
+    fontWeight: '800',
   },
   navPill: { width: 32, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
   navPillOn: { backgroundColor: '#eaf4ed' },

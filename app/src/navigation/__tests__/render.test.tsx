@@ -1,12 +1,13 @@
 import React from 'react';
 import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
-import { TabBody, tabItems } from '../render/tabs';
+import { TabBar, TabBody, tabItems } from '../render/tabs';
 import type { TabKey } from '../navState';
 import { HomeScreen } from '../../features/home/HomeScreen';
 import { MonitoringListScreen } from '../../features/monitoring/MonitoringListScreen';
 import { findPressable, textOf } from '../../testing/interaction';
 import { makeShell } from '../../testing/shellFixture';
-import { RouteBody, routeTitle } from '../render/routes';
+import { RouteBar, RouteBody, routeTitle } from '../render/routes';
+import { activeNavKey } from '../AppNavigator';
 import { strings } from '../../ui/i18n/strings';
 import { insertScan } from '../../core/db/repositories/scans';
 
@@ -191,4 +192,49 @@ test('stored scan guidance uses the known fruit and monitoring receives its stab
   expect(shell.nav.push).toHaveBeenLastCalledWith(expect.objectContaining({
     name: 'monitoring',
   }));
+});
+
+test('TabBar and RouteBar return null so no stacked legacy AppBar renders', () => {
+  const shell = makeShell();
+  for (const tab of ['home', 'monitoring', 'chat', 'account'] as const) {
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<TabBar shell={shell} tab={tab} />);
+    });
+    expect(tree.toJSON()).toBeNull();
+  }
+  for (const route of [
+    { name: 'history' as const },
+    { name: 'climate' as const },
+    { name: 'settings' as const },
+    { name: 'account' as const },
+    { name: 'monitoring' as const, sessionId: 'scan-1' },
+  ]) {
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<RouteBar shell={shell} route={route} />);
+    });
+    expect(tree.toJSON()).toBeNull();
+  }
+});
+
+test('activeNavKey maps active routes to BottomNav keys', () => {
+  expect(activeNavKey('home', null)).toBe('home');
+  expect(activeNavKey('chat', null)).toBe('chat');
+  expect(activeNavKey('home', { name: 'capture' })).toBe('scan');
+  expect(activeNavKey('home', { name: 'captureResult', scanId: 's1', photoUri: 'file:///a.jpg', view: 'summary' })).toBe('scan');
+  expect(activeNavKey('home', { name: 'result', scanId: 's1' })).toBe('scan');
+  expect(activeNavKey('home', { name: 'monitoring', sessionId: 's1' })).toBe('monitoring');
+  expect(activeNavKey('home', { name: 'account' })).toBe('account');
+  expect(activeNavKey('home', { name: 'login' })).toBe('account');
+  expect(activeNavKey('home', { name: 'signup' })).toBe('account');
+  expect(activeNavKey('home', { name: 'forgotPassword' })).toBe('account');
+  expect(activeNavKey('home', { name: 'resetPassword' })).toBe('account');
+  expect(activeNavKey('home', { name: 'modelStatus' })).toBe('account');
+  expect(activeNavKey('home', { name: 'trash' })).toBe('account');
+  expect(activeNavKey('home', { name: 'settings' })).toBe('account');
+  expect(activeNavKey('account', { name: 'history' })).toBe('home');
+  expect(activeNavKey('account', { name: 'climate' })).toBe('home');
+  expect(activeNavKey('account', { name: 'locationPicker' })).toBe('home');
+  expect(activeNavKey('account', { name: 'varietyInfo', fruitKey: 'mango' })).toBe('home');
 });

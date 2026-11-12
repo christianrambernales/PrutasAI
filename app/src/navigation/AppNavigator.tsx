@@ -32,13 +32,39 @@ import { useConversationsUi } from '../features/chat/useConversationsUi';
 import { useClimateViews } from '../features/climate/useClimateViews';
 import { canGoBack, currentRoute, initialNav, navReducer, Route, TabKey } from './navState';
 import { needsOnboarding, OnboardingGate } from './render/onboarding';
-import { RouteBar, RouteBody } from './render/routes';
-import { TabBar, TabBody, tabItems } from './render/tabs';
+import { RouteBody } from './render/routes';
+import { TabBody, tabItems } from './render/tabs';
 import type { Shell } from './shell';
 import { useHistoryFilters } from '../features/history/useHistoryFilters';
 import { localizeScanGroups } from '../features/history/localizeScan';
 import { useMonitoring } from '../features/monitoring/useMonitoring';
 import { useMonitoringList } from '../features/monitoring/useMonitoringList';
+
+export function activeNavKey(tab: TabKey, route: Route | null): TabKey | 'scan' {
+  if (!route) return tab;
+  switch (route.name) {
+    case 'capture':
+    case 'captureResult':
+    case 'result':
+      return 'scan';
+    case 'monitoring':
+      return 'monitoring';
+    case 'account':
+    case 'login':
+    case 'signup':
+    case 'forgotPassword':
+    case 'resetPassword':
+    case 'modelStatus':
+    case 'trash':
+    case 'settings':
+      return 'account';
+    case 'history':
+    case 'climate':
+    case 'locationPicker':
+    case 'varietyInfo':
+      return 'home';
+  }
+}
 
 export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/driver').SqlDriver } = {}) {
   // Opened once. History is read from here, so what the app shows is what the
@@ -392,45 +418,41 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
   const body = route
     ? <RouteBody shell={shell} route={route} monitoring={monitoringForRoute} />
     : <TabBody shell={shell} tab={nav.tab} />;
-  const bar = route
-    ? <RouteBar shell={shell} route={route} />
-    : <TabBar shell={shell} tab={nav.tab} />;
   const chatTabActive = nav.tab === 'chat' && !route;
 
   return (
     <LanguageProvider language={app.language}>
-    <Screen>
-      {bar}
-      {chatTabActive ? (
-        <View style={{ flex: 1 }} {...conversations.edgeSwipe.panHandlers}>
-          {body}
-        </View>
-      ) : (
-        <ScreenBody>{body}</ScreenBody>
-      )}
-      {app.notice ? (
-        <NoticeBar
-          message={app.notice}
-          onDismiss={() => dispatchApp({ type: 'dismissNotice' })}
+      <Screen>
+        {chatTabActive ? (
+          <View style={{ flex: 1 }} {...conversations.edgeSwipe.panHandlers}>
+            {body}
+          </View>
+        ) : (
+          <ScreenBody>{body}</ScreenBody>
+        )}
+        {app.notice ? (
+          <NoticeBar
+            message={app.notice}
+            onDismiss={() => dispatchApp({ type: 'dismissNotice' })}
+          />
+        ) : null}
+        <BottomNav
+          tabs={tabItems(t)}
+          active={activeNavKey(nav.tab, route)}
+          onSelect={key => shell.nav.selectTab(key as TabKey)}
+          onScan={() => push({ name: 'capture' })}
         />
-      ) : null}
-      <BottomNav
-        tabs={tabItems(t)}
-        active={nav.tab}
-        onSelect={key => shell.nav.selectTab(key as TabKey)}
-        onScan={() => push({ name: 'capture' })}
-      />
-      <ConversationSidebar
-        visible={conversations.sidebarOpen}
-        conversations={conversations.list}
-        activeId={chat.conversationId}
-        onSelect={uuid => chat.openConversation(uuid)}
-        onNew={() => chat.startNewConversation()}
-        onClose={conversations.closeSidebar}
-        onRename={conversations.rename}
-        onDelete={conversations.remove}
-      />
-    </Screen>
+        <ConversationSidebar
+          visible={conversations.sidebarOpen}
+          conversations={conversations.list}
+          activeId={chat.conversationId}
+          onSelect={uuid => chat.openConversation(uuid)}
+          onNew={() => chat.startNewConversation()}
+          onClose={conversations.closeSidebar}
+          onRename={conversations.rename}
+          onDelete={conversations.remove}
+        />
+      </Screen>
     </LanguageProvider>
   );
 }

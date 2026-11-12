@@ -1,6 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import { AppBar, AppText, COLORS, TabItem } from '../../ui';
+import { TabItem } from '../../ui';
 import { ChatScreen } from '../../features/chat/ChatScreen';
 import { MonitoringListScreen } from '../../features/monitoring/MonitoringListScreen';
 import { RouteBody } from './routes';
@@ -21,62 +20,8 @@ export function tabItems(t: Strings): TabItem[] {
   ];
 }
 
-function tabTitle(t: Strings): Record<TabKey, string> {
-  return {
-    home: 'PrutasAI',
-    monitoring: t.titleMonitoring,
-    chat: t.titleAssistant,
-    account: t.titleAccount,
-  };
-}
-
-export function TabBar({ shell, tab }: { shell: Shell; tab: TabKey }) {
-  const { t, app, chat, conversations } = shell;
-  const TAB_TITLE = tabTitle(t);
-  const conversationsAction = React.useRef<any>(null);
-
-  if (tab === 'home') return null;
-  if (tab === 'monitoring') {
-    return (
-      <AppBar
-        title={TAB_TITLE.monitoring}
-      />
-    );
-  }
-  if (tab === 'account') {
-    return (
-      <AppBar
-        title={TAB_TITLE.account}
-        action="gear"
-        actionLabel={t.titleSettings}
-        onAction={() => shell.nav.push({ name: 'settings' })}
-      />
-    );
-  }
-  return (
-    <AppBar
-      title={TAB_TITLE.chat}
-      subtitle={
-        app.aiAssistant && shell.data.aiAvailable
-          ? t.onlineSubtitle
-          : t.groundedSubtitle
-      }
-      right={(
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t.openConversations}
-          ref={conversationsAction}
-          onPress={() => conversations.openSidebar(conversationsAction.current)}
-          style={styles.conversationsAction}
-        >
-          <AppText variant="xsSemi" color={COLORS.surface}>{t.chatConversations}</AppText>
-        </Pressable>
-      )}
-      action="trash"
-      actionLabel={t.clearConversation}
-      onAction={chat.clear}
-    />
-  );
+export function TabBar(_props: { shell: Shell; tab: TabKey }) {
+  return null;
 }
 
 export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
@@ -144,11 +89,3 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
       return <RouteBody shell={shell} route={{ name: 'account' }} />;
   }
 }
-
-const styles = StyleSheet.create({
-  conversationsAction: {
-    minHeight: 48,
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-});

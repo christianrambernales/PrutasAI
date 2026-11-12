@@ -47,9 +47,34 @@ test('Scan launches capture without selecting a tab and tabs preserve selection 
 test('safe-area ownership stays in the screen top and floating navigation bottom', () => {
   const tree = renderTree(<Screen testID="screen"><ScreenBody><Text>Content</Text></ScreenBody><BottomNav tabs={[]} active="home" onSelect={() => {}} onScan={() => {}} /></Screen>);
   const view = (testID: string) => tree.root.findAllByType(View).find(node => node.props.testID === testID)!;
-  expect(StyleSheet.flatten(view('screen').props.style)).toMatchObject({ paddingTop: 24 });
+  expect(StyleSheet.flatten(view('screen').props.style)).toMatchObject({ paddingTop: 24, backgroundColor: '#f2f6f3' });
   expect(StyleSheet.flatten(view('bottom-nav').props.style)).toMatchObject({ paddingBottom: 32 });
   expect(StyleSheet.flatten(view('bottom-nav-pill').props.style).paddingBottom).toBe(8);
+});
+
+test('BottomNav highlights Scan label in orange when active is scan', () => {
+  const tree = renderTree(
+    <LanguageProvider language="EN">
+      <BottomNav
+        tabs={[
+          { key: 'home', label: 'Home', icon: 'home' },
+          { key: 'monitoring', label: 'Monitoring', icon: 'monitoring' },
+          { key: 'chat', label: 'Assistant', icon: 'chat' },
+          { key: 'account', label: 'Account', icon: 'account' },
+        ]}
+        active="scan"
+        onSelect={() => {}}
+        onScan={() => {}}
+      />
+    </LanguageProvider>,
+  );
+  const scanBtn = tree.root.find(node => node.props?.accessibilityLabel === 'Scan a fruit');
+  expect(scanBtn).toBeTruthy();
+  const scanLabel = scanBtn.findAllByType(Text)[0];
+  expect(StyleSheet.flatten(scanLabel.props.style)).toMatchObject({
+    color: '#c2410c',
+    fontWeight: '800',
+  });
 });
 
 test('scrolling preserves form button taps with the keyboard open', () => {

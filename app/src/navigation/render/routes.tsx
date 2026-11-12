@@ -1,5 +1,4 @@
 import React from 'react';
-import { AppBar } from '../../ui';
 import { CONTENT_VERSION } from '../../core/db/appDatabase';
 import { findScan } from '../../core/db/repositories/scans';
 import { restoreConversation } from '../../core/db/repositories/conversations';
@@ -67,22 +66,8 @@ export function routeTitle(route: Route, t: Strings, fruits: FruitSummary[], lan
   }
 }
 
-export function RouteBar({ shell, route: r }: { shell: Shell; route: Route }) {
-  const { t, app } = shell;
-  const { back } = shell.nav;
-  const { fruits } = shell.data;
-  if (r.name === 'history') {
-    return <AppBar title={t.tabHistory} onBack={back} action="search" actionLabel={t.searchScans}
-      onAction={() => shell.dispatchApp({ type: app.historyQuery === null ? 'openSearch' : 'closeSearch' })} />;
-  }
-  if (r.name === 'climate') {
-    return <AppBar title={t.tabClimate} onBack={back} action="refresh" actionLabel={t.refreshClimate}
-      onAction={() => {
-        if (!app.savedLocation) { shell.nav.push({ name: 'locationPicker' }); return; }
-        shell.climate.climate.refresh();
-      }} />;
-  }
-  return <AppBar title={routeTitle(r, t, fruits, app.language)} onBack={back} />;
+export function RouteBar(_props: { shell: Shell; route: Route }) {
+  return null;
 }
 
 export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route: Route; monitoring?: MonitoringController }) {
