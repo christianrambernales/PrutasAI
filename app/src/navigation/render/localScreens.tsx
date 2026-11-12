@@ -12,6 +12,7 @@ export function ClimateBody({ shell }: { shell: Shell }) {
       suitability={climate.suitabilityFor(app.suitabilityFruit)}
       fruits={shell.data.fruits}
       selectedFruitKey={app.suitabilityFruit}
+      selectedLocation={app.savedLocation?.label}
       status={climate.climate.status}
       currentStatus={climate.climate.currentStatus}
       error={climate.climate.error}
@@ -29,6 +30,7 @@ export function HistoryBody({ shell }: { shell: Shell }) {
   return (
     <HistoryScreen
       groups={history.visibleGroups}
+      allCount={shell.data.allScans.length}
       filters={history.filters}
       activeFilterKey={app.historyFilter}
       query={app.historyQuery}
@@ -37,6 +39,7 @@ export function HistoryBody({ shell }: { shell: Shell }) {
       onFilter={key => dispatchApp({ type: 'setHistoryFilter', filter: key })}
       onOpenScan={scanId => shell.nav.push({ name: 'result', scanId })}
       onScan={() => shell.nav.push({ name: 'capture' })}
+      onBack={shell.nav.back}
       onBackHome={() => shell.nav.selectTab('home')}
       offline={shell.account.account.syncMode === 'offline'}
     />

@@ -1,7 +1,5 @@
 import React from 'react';
 import {
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,18 +12,13 @@ import {
   Card,
   Col,
   COLORS,
-  Divider,
-  EvidencePill,
   FONTS,
   FrostedCard,
   GreenTopCell,
   Icon,
-  RADIUS,
   Row,
-  Section,
   SPACING,
   StatusBadge,
-  Tile,
   useLanguage,
   useT,
 } from '../../ui';
@@ -50,6 +43,7 @@ export interface ClimateScreenProps {
   onBackHome?: () => void;
 
   /** Direct / prototype override props */
+  selectedLocation?: string;
   locationName?: string;
   suitabilityHeadline?: string;
   seasonLabel?: string;
@@ -70,35 +64,13 @@ export function ClimateScreen(props: ClimateScreenProps) {
   const {
     climate,
     normals,
-    suitability,
-    fruits,
-    selectedFruitKey,
     status = 'ready',
     currentStatus,
-    hasLocation = true,
   } = props;
 
-  if (props.hasLocation === false && !props.locationName && !climate) {
-    return (
-      <Section>
-        <Card style={{ gap: SPACING.md - 4 }}>
-          <Row gap={SPACING.sm} align="flex-start">
-            <Icon name="pin" size={20} color={COLORS.textSecondary} />
-            <Col gap={2} style={{ flex: 1 }}>
-              <AppText variant="lg" accessibilityRole="header">{t.noLocationSet}</AppText>
-              <AppText variant="sm" color={COLORS.textSecondary}>
-                {t.noLocationBlurb}
-              </AppText>
-            </Col>
-          </Row>
-          <Button label={t.chooseLocation} icon="pin" onPress={props.onChangeLocation} />
-        </Card>
-      </Section>
-    );
-  }
-
   const currentUnavailable = (currentStatus ?? status) === 'error';
-  const displayLocation = props.locationName ?? climate?.place ?? 'Davao City, Region XI';
+  const displayLocation =
+    props.selectedLocation ?? props.locationName ?? climate?.place ?? 'Davao City, Region XI';
   const humidityVal = props.humidity ?? (climate ? `${climate.humidityPct}%` : '78%');
   const rainfallVal = props.rainfall ?? (climate ? `${climate.rainTodayMm} mm` : '1.4 mm');
   const elevationVal = props.elevation ?? (climate ? (climate.elevationM === null ? t.climateMissingElevation : `${climate.elevationM} m`) : '32 m');
@@ -122,14 +94,6 @@ export function ClimateScreen(props: ClimateScreenProps) {
           />
         }
       />
-
-      {climate?.coordsLabel ? (
-        <View style={{ paddingHorizontal: 16, marginTop: -6, marginBottom: 6 }}>
-          <AppText variant="xs" color={COLORS.textSecondary}>
-            {climate.coordsLabel}
-          </AppText>
-        </View>
-      ) : null}
 
       {/* Error / unavailable banner */}
       {status === 'error' || currentUnavailable ? (
@@ -167,191 +131,36 @@ export function ClimateScreen(props: ClimateScreenProps) {
         </Card>
       ) : null}
 
-      {/* Fruit selection chips if fruits are provided */}
-      {fruits && fruits.length > 0 ? (
-        <View style={styles.fruitChipsRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-            {fruits.map(f => {
-              const name = f.key === 'banana' ? t.fruitBanana
-                : f.key === 'mango' ? t.fruitMango
-                : f.key === 'papaya' ? t.fruitPapaya
-                : f.nameEn;
-              const selected = f.key === selectedFruitKey;
-              return (
-                <Pressable
-                  key={f.key}
-                  accessibilityRole="button"
-                  accessibilityLabel={name}
-                  accessibilityState={{ selected }}
-                  onPress={() => props.onSelectFruit?.(f.key)}
-                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-                  style={[
-                    styles.fruitChip,
-                    selected ? styles.fruitChipSelected : styles.fruitChipDefault,
-                  ]}
-                >
-                  <Text style={[styles.fruitChipText, selected ? styles.fruitChipTextSelected : styles.fruitChipTextDefault]}>
-                    {`${f.emoji} ${name}`}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      ) : null}
-
       {/* 2. Current Weather vs Suitability FrostedCard */}
       <FrostedCard
-        accentBorder={suitability ? (suitability.verdict === 'insufficient_data' ? 'amber' : suitability.verdict === 'unsuitable' ? 'severe' : 'healthy') : 'healthy'}
+        accentBorder="healthy"
         style={styles.suitabilityCard}
       >
-        {climate ? (
-          <Row justify="space-between" align="center" style={{ marginBottom: 6 }}>
-            <AppText variant="xsSemi" color={COLORS.textSecondary}>
-              {`${t.rightNow}${climate.temperatureC != null ? ` · ${climate.temperatureC}°C` : ''}${climate.condition ? ` · ${climate.condition}` : ''}`}
-            </AppText>
-            {climate.freshnessLabel ? (
-              <AppText variant="xs" color={COLORS.textSecondary}>
-                {isFil ? climate.freshnessLabel.replace(/^Cached/, t.freshnessCached) : climate.freshnessLabel}
-              </AppText>
-            ) : null}
-          </Row>
-        ) : null}
         <View style={styles.suitabilityHeader}>
           <View style={styles.suitabilityFruitRow}>
-            <Text style={styles.suitabilityFruitEmoji}>
-              {suitability?.fruitEmoji ?? '🥭'}
-            </Text>
+            <Text style={styles.suitabilityFruitEmoji}>🥭</Text>
             <AppText
               variant="mdSemi"
               color={COLORS.primary}
               style={styles.suitabilityTitle}
             >
-              {props.suitabilityHeadline ?? suitability?.headline ?? (isFil ? 'Mangga: Angkop sa Kasalukuyan' : 'Mango: Highly Suitable')}
+              {props.suitabilityHeadline ?? (isFil ? 'Mangga: Angkop sa Kasalukuyan' : 'Mango: Highly Suitable')}
             </AppText>
           </View>
           <StatusBadge
-            variant={
-              suitability?.verdict === 'insufficient_data'
-                ? 'warning'
-                : suitability?.verdict === 'unsuitable'
-                ? 'severe'
-                : 'healthy'
-            }
+            variant="healthy"
             label={
               props.seasonLabel ??
-              (suitability?.verdict === 'suitable'
-                ? (isFil ? 'Dry Period' : 'Induction Season')
-                : suitability?.verdict === 'insufficient_data'
-                ? (isFil ? 'Kakulangan ng Datos' : 'Provisional Data')
-                : suitability?.verdict === 'unsuitable'
-                ? (isFil ? 'Hindi Angkop' : 'Off Season')
-                : (isFil ? 'Dry Period' : 'Induction Season'))
+              (isFil ? 'Dry Period' : 'Induction Season')
             }
           />
         </View>
 
         <Text style={styles.rationaleText}>
-          {props.rationale ?? suitability?.detail ?? (isFil
+          {props.rationale ?? (isFil
             ? 'Ang temperatura na 29°C at mababang ulan ay mainam para sa pamumulaklak ng Carabao mango ayon sa PAGASA agronomic models.'
             : 'Current 29°C temperature and lower precipitation window support floral bud development for Carabao mango.')}
         </Text>
-
-        {suitability?.verdict === 'insufficient_data' ? (
-          <Card style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a', marginTop: 8 }}>
-            <Row gap={SPACING.xs} align="center">
-              <Icon name="warning" size={16} color="#b45309" />
-              <AppText variant="xsSemi" color="#b45309">
-                {t.insufficientDataNotice}
-              </AppText>
-            </Row>
-          </Card>
-        ) : null}
-
-        {suitability ? (
-          <View style={{ marginTop: 8, gap: 4 }}>
-            {suitability.provisional !== undefined ? (
-              <AppText variant="xs" color="#8a4b00">
-                {suitability.provisional !== false ? t.climateProvisionalWarning : t.climateNoCropRequirements}
-              </AppText>
-            ) : null}
-            {(suitability.missingFields?.length ?? 0) > 0 ? (
-              <AppText variant="xs" color="#8a4b00">
-                {t.climateMissingEvidence((suitability.missingFields ?? []).map(field =>
-                  field === 'elevation' ? t.elevation
-                    : field === 'temperature' ? t.meanAnnualTemperature
-                    : field === 'rainfall' ? t.annualTotal
-                    : field === 'crop requirements' ? t.climateCropRequirements
-                    : t.climateHistoricalData,
-                ).join(', '))}
-              </AppText>
-            ) : null}
-          </View>
-        ) : null}
-
-        {suitability?.evidence && suitability.evidence.length > 0 ? (
-          <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 8 }}>
-            {suitability.evidence.map((ev, i) => {
-              const statusText = ev.status === 'optimal' ? t.evidenceOptimal
-                : ev.status === 'tolerated' ? t.evidenceTolerated
-                : ev.status === 'outside' ? t.evidenceOutside
-                : t.evidenceUnknown;
-              return (
-                <View key={ev.label}>
-                  {i > 0 ? <Divider /> : null}
-                  <Row gap={SPACING.sm + 2} style={{ paddingVertical: 8 }} align="center">
-                    <Icon name={ev.icon} size={16} color={COLORS.textSecondary} />
-                    <Col gap={2} style={{ flex: 1 }}>
-                      <AppText variant="sm">{ev.label}</AppText>
-                      <AppText variant="xs" color={COLORS.textSecondary}>{ev.rangeLabel}</AppText>
-                    </Col>
-                    <Col gap={2} align="flex-end">
-                      <AppText variant="smSemi">{ev.value}</AppText>
-                      <Row gap={4} align="center">
-                        <EvidencePill status={ev.status} />
-                        <AppText variant="xs" color={COLORS.textSecondary}>{`(${statusText})`}</AppText>
-                      </Row>
-                    </Col>
-                  </Row>
-                </View>
-              );
-            })}
-          </View>
-        ) : null}
-
-        {suitability ? (
-          <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 8, gap: 4 }}>
-            {suitability.evidenceFetchedAt != null ? (
-              <AppText variant="xs" color={COLORS.textSecondary}>
-                {suitability.evidenceCached
-                  ? t.climateCachedEvidence(new Date(suitability.evidenceFetchedAt).toISOString().slice(0, 10))
-                  : t.climateEvidenceUpdated(new Date(suitability.evidenceFetchedAt).toISOString().slice(0, 10))}
-              </AppText>
-            ) : (
-              <AppText variant="xs" color="#8a4b00">
-                {t.climateEvidenceDateUnavailable}
-              </AppText>
-            )}
-            <AppText variant="xs" color={COLORS.textSecondary}>
-              {suitability.evidencePeriod
-                ? t.climateEvidencePeriod(suitability.evidencePeriod.fromYear, suitability.evidencePeriod.toYear)
-                : t.climateEvidencePeriodUnavailable}
-            </AppText>
-            <AppText variant="xs" color={COLORS.textSecondary}>
-              {suitability.evidenceSource
-                ? t.climateHistoricalSource(suitability.evidenceSource)
-                : t.climateEvidenceSourceUnavailable}
-            </AppText>
-            {suitability.basisLabel ? (
-              <Tile style={{ marginTop: 4 }}>
-                <Col gap={SPACING.xs}>
-                  <AppText variant="xs" color={COLORS.textSecondary}>{suitability.basisLabel}</AppText>
-                  <AppText variant="xs" color={COLORS.textSecondary}>{suitability.sourceLabel}</AppText>
-                </Col>
-              </Tile>
-            ) : null}
-          </View>
-        ) : null}
       </FrostedCard>
 
       {/* 3. Climate Metrics with Clear Units (3-Column Grid) */}
@@ -382,7 +191,7 @@ export function ClimateScreen(props: ClimateScreenProps) {
             {isFil ? '12-Buwang Karaniwang Ulan (Open-Meteo Normals)' : '12-Month Rainfall Normals'}
           </Text>
           <Text style={styles.baselineLabel}>
-            {normals?.fetchedLabel ?? '1991–2020 Baseline'}
+            1991–2020 Baseline
           </Text>
         </View>
 
@@ -420,19 +229,6 @@ export function ClimateScreen(props: ClimateScreenProps) {
             <Text key={idx} style={styles.monthLabelText}>{m}</Text>
           ))}
         </View>
-
-        {normals ? (
-          <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 8, gap: 4 }}>
-            <Row justify="space-between">
-              <AppText variant="xs" color={COLORS.textSecondary}>{t.annualTotal}</AppText>
-              <AppText variant="smSemi">{normals.annualRainMm.toLocaleString()} mm</AppText>
-            </Row>
-            <Row justify="space-between">
-              <AppText variant="xs" color={COLORS.textSecondary}>{t.meanAnnualTemperature}</AppText>
-              <AppText variant="smSemi">{normals.meanTemperatureC} °C</AppText>
-            </Row>
-          </View>
-        ) : null}
       </FrostedCard>
 
       {/* 5. Action CTA */}

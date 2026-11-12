@@ -14,11 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BtnForestFull,
   BtnSubtle,
-  COLORS,
   FONTS,
   FrostedCard,
   GreenTopCell,
-  Icon,
   SPACING,
   StatusBadge,
   useLanguage,
@@ -155,7 +153,7 @@ export function LocationPickerScreen({
       style={[styles.container, style]}
       contentContainerStyle={[
         styles.content,
-        { paddingTop: insets.top + SPACING.sm, paddingBottom: insets.bottom + SPACING.xl },
+        { paddingBottom: insets.bottom + SPACING.xl },
       ]}
       keyboardShouldPersistTaps="handled"
     >
@@ -186,7 +184,6 @@ export function LocationPickerScreen({
             {isFil ? 'Lungsod o Munisipalidad' : 'City or Municipality'}
           </Text>
           <View style={styles.inputWrapper}>
-            <Icon name="search" size={16} color={COLORS.textLight} />
             <TextInput
               style={styles.formInput}
               value={query}
@@ -280,14 +277,6 @@ export function LocationPickerScreen({
           </Text>
         </FrostedCard>
       ) : null}
-
-      {/* Privacy Guarantee Note */}
-      <FrostedCard style={styles.card}>
-        <View style={styles.noteRow}>
-          <Icon name="shield" size={16} color={COLORS.textSecondary} />
-          <Text style={styles.infoCaveat}>{t.coarseCoordinateNote}</Text>
-        </View>
-      </FrostedCard>
 
       {/* 3. Action CTA: Use Device GPS */}
       <BtnForestFull

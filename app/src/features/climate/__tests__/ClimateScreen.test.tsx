@@ -80,34 +80,59 @@ it('triggers onChangeLocation and onBackHome callbacks', async () => {
   expect(onBackHome).toHaveBeenCalledTimes(1);
 });
 
-test.each([
-  ['EN', 'Provisional suitability only', 'Missing Elevation', 'Using historical data saved on 2026-09-20', 'Historical data period: 2023–2024'],
-  ['FIL', 'Pansamantala lamang ang pagiging angkop', 'Taas sa dagat', 'na-save noong 2026-09-20', 'Panahon ng makasaysayang datos: 2023–2024'],
-] as const)('Climate keeps provisional cached provenance visible in %s', (language, provisional, missing, cached, period) => {
-  const suitability: Suitability = {
-    ...preview.SUITABILITY,
-    provisional: true,
-    missingFields: ['elevation'],
-    evidenceFetchedAt: fetchedAt,
-    evidenceSource: 'Open-Meteo Best Match (reanalysis)',
-    evidencePeriod: { fromYear: 2023, toYear: 2024 },
-    evidenceCached: true,
-    evidenceStatus: 'cached',
-  };
-  const tree = renderClimate(language, suitability);
-  const text = textOf(tree.root);
+test.each(['EN', 'FIL'] as const)(
+  'Climate renders strictly the 5 prototype v2 elements in %s without legacy provenance rows',
+  language => {
+    const suitability: Suitability = {
+      ...preview.SUITABILITY,
+      provisional: true,
+      missingFields: ['elevation'],
+      evidenceFetchedAt: fetchedAt,
+      evidenceSource: 'Open-Meteo Best Match (reanalysis)',
+      evidencePeriod: { fromYear: 2023, toYear: 2024 },
+      evidenceCached: true,
+      evidenceStatus: 'cached',
+    };
+    const tree = renderClimate(language, suitability);
+    const text = textOf(tree.root);
 
-  expect(text).toContain(provisional);
-  expect(text).toContain(missing);
-  expect(text).toContain(cached);
-  expect(text).toContain(period);
-  expect(text).toContain('Open-Meteo Best Match');
-});
+    expect(text).toContain(language === 'FIL' ? 'Panahon & Kaangkupan' : 'Climate & Suitability');
+    expect(text).toContain(
+      language === 'FIL' ? 'Mangga: Angkop sa Kasalukuyan' : 'Mango: Highly Suitable',
+    );
+    expect(text).toContain(
+      language === 'FIL'
+        ? '12-Buwang Karaniwang Ulan (Open-Meteo Normals)'
+        : '12-Month Rainfall Normals',
+    );
+    expect(text).toContain('1991–2020 Baseline');
+    expect(text).toContain(language === 'FIL' ? 'Bumalik sa Home' : 'Back to Home');
+    expect(text).not.toContain('Provisional suitability only');
+    expect(text).not.toContain('Pansamantala lamang ang pagiging angkop');
+    expect(text).not.toContain(preview.CLIMATE.coordsLabel);
+    expect(text).not.toContain('Annual total');
+    expect(text).not.toContain('Open-Meteo Best Match');
+  },
+);
 
-test.each([
-  ['EN', 'retrieval date is unavailable'],
-  ['FIL', 'Walang petsa kung kailan kinuha'],
-] as const)('Climate discloses a missing historical retrieval date in %s', (language, warning) => {
-  const tree = renderClimate(language, { ...preview.SUITABILITY, evidenceFetchedAt: null });
-  expect(textOf(tree.root)).toContain(warning);
+it('renders prototype v2 default climate view even when hasLocation is false', async () => {
+  await render(
+    <ClimateScreen
+      climate={null}
+      normals={null}
+      suitability={null}
+      hasLocation={false}
+      onChangeLocation={jest.fn()}
+      onBackHome={jest.fn()}
+    />,
+  );
+  expect(screen.getByText(/Climate & Suitability/i)).toBeTruthy();
+  expect(screen.getByText(/Davao City, Region XI/i)).toBeTruthy();
+  expect(screen.getByText(/Mango: Highly Suitable/i)).toBeTruthy();
+  expect(screen.getByText('78%')).toBeTruthy();
+  expect(screen.getByText('1.4 mm')).toBeTruthy();
+  expect(screen.getByText('32 m')).toBeTruthy();
+  expect(screen.getByText(/12-Month Rainfall Normals/i)).toBeTruthy();
+  expect(screen.getByText(/Back to Home/i)).toBeTruthy();
+  expect(screen.queryByText('No location set')).toBeNull();
 });

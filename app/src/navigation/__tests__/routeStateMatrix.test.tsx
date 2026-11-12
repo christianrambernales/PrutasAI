@@ -53,15 +53,17 @@ describe('Climate route states', () => {
     return { tree, text: textOf(tree.root), shell };
   }
 
-  test('no-location empty state with Choose location action', () => {
+  test('no-location state renders prototype default location with Change location action', () => {
     const { text, tree, shell } = renderClimate(s => {
       s.app.savedLocation = null;
       s.nav.push = jest.fn();
     });
-    expect(text).toContain('No location set');
+    expect(text).toContain('Climate & Suitability');
+    expect(text).toContain('Davao City, Region XI');
+    expect(text).not.toContain('No location set');
     
     act(() => {
-      findPressable(tree, 'Choose a location').props.onPress();
+      findPressable(tree, 'Change location').props.onPress();
     });
     expect(shell.nav.push).toHaveBeenCalledWith({ name: 'locationPicker' });
   });
@@ -120,18 +122,21 @@ describe('Climate route states', () => {
 });
 
 describe('VarietyInfo route states', () => {
-  function renderVarietyInfo(customize: (shell: ReturnType<typeof makeShell>) => void) {
+  function renderVarietyInfo(
+    fruitKey: string,
+    customize: (shell: ReturnType<typeof makeShell>) => void,
+  ) {
     let tree!: ReactTestRenderer;
     const shell = makeShell();
     customize(shell);
     act(() => {
-      tree = renderer.create(<RouteBody shell={shell} route={{ name: 'varietyInfo', fruitKey: 'missing' }} />);
+      tree = renderer.create(<RouteBody shell={shell} route={{ name: 'varietyInfo', fruitKey }} />);
     });
     return { tree, text: textOf(tree.root), shell };
   }
 
   test('unknown/missing compiled content with safe Back action', () => {
-    const { text, tree, shell } = renderVarietyInfo(s => {
+    const { text, tree, shell } = renderVarietyInfo('missing', s => {
       s.data.fruits = [];
       s.nav.back = jest.fn();
     });
@@ -141,5 +146,27 @@ describe('VarietyInfo route states', () => {
       findPressable(tree, 'Go back').props.onPress();
     });
     expect(shell.nav.back).toHaveBeenCalled();
+  });
+
+  test('known crop route wires selectedCrop, onSelectCrop, onScanCrop, and onBackHome', () => {
+    const { text, tree, shell } = renderVarietyInfo('papaya', s => {
+      s.data.fruits = [
+        { key: 'papaya', emoji: '🍈', nameEn: 'Papaya', nameFil: 'Papaya', varietyCount: 2 },
+      ];
+      s.nav.replace = jest.fn();
+      s.nav.push = jest.fn();
+      s.nav.selectTab = jest.fn();
+    });
+    expect(text).toContain('Red Lady Papaya');
+    expect(text).toContain('Agronomic Thresholds');
+
+    act(() => {
+      findPressable(tree, '🍌 Banana').props.onPress();
+      findPressable(tree, 'Scan this Crop').props.onPress();
+      findPressable(tree, '← Home').props.onPress();
+    });
+    expect(shell.nav.replace).toHaveBeenCalledWith({ name: 'varietyInfo', fruitKey: 'banana' });
+    expect(shell.nav.push).toHaveBeenCalledWith({ name: 'capture' });
+    expect(shell.nav.selectTab).toHaveBeenCalledWith('home');
   });
 });

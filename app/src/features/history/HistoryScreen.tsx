@@ -21,13 +21,12 @@ import {
   RADIUS,
   Row,
   Section,
-  SEVERITY_LABEL,
   SPACING,
   StatusBadge,
   useLanguage,
   useT,
 } from '../../ui';
-import type { ScanGroup } from '../viewModels';
+import type { ScanGroup, ScanSummary } from '../viewModels';
 
 export interface HistoryFilter {
   /** Stable across languages; the label is what changes. */
@@ -37,6 +36,8 @@ export interface HistoryFilter {
 
 export interface HistoryScreenProps {
   groups: ScanGroup[];
+  /** Total number of stored local scans before filtering. */
+  allCount?: number;
   filters: HistoryFilter[];
   activeFilterKey: string;
   totalLabel: string;
@@ -47,7 +48,8 @@ export interface HistoryScreenProps {
   onOpenScan: (id: string) => void;
   /** Triggered when empty state offers to scan. */
   onScan?: () => void;
-  /** Top cell Home action */
+  /** Top cell Home / Back action */
+  onBack?: () => void;
   onHome?: () => void;
   onBackHome?: () => void;
   /** True if currently fetching or syncing. */
@@ -61,14 +63,93 @@ export interface HistoryScreenProps {
 }
 
 export function HistoryScreen(props: HistoryScreenProps) {
-  const { groups, filters, activeFilterKey, totalLabel, query } = props;
+  const { groups, filters, activeFilterKey, query } = props;
   const language = useLanguage();
   const isFil = language === 'FIL';
   const t = useT();
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
-  const empty = groups.every(g => g.scans.length === 0);
-  const filtered = query !== null && query !== '' ? true : activeFilterKey !== filters[0]?.key;
+  const prototypeScans: ScanSummary[] = [
+    {
+      id: 'SCAN-2026-0042',
+      fruitKey: 'mango',
+      emoji: '🥭',
+      title: isFil ? 'Mangga Carabao' : 'Carabao Mango',
+      detail: isFil
+        ? 'Halimbawa: Anthracnose (Moderate 28%)'
+        : 'Sample: Anthracnose (Moderate 28%)',
+      timeLabel: isFil ? 'Ngayong araw • 9:15 AM' : 'Today • 9:15 AM',
+      status: 'moderate',
+    },
+    {
+      id: 'SCAN-2026-0039',
+      fruitKey: 'banana',
+      emoji: '🍌',
+      title: isFil ? 'Saging Lakatan' : 'Lakatan Banana',
+      detail: isFil
+        ? 'Naka-save sa device • Hindi nasuri'
+        : 'Saved on device • Unanalyzed',
+      timeLabel: isFil ? 'Kahapon • 3:40 PM' : 'Yesterday • 3:40 PM',
+      status: 'undetermined',
+    },
+    {
+      id: 'SCAN-2026-0031',
+      fruitKey: 'papaya',
+      emoji: '🍈',
+      title: isFil ? 'Papaya Red Lady' : 'Red Lady Papaya',
+      detail: isFil
+        ? 'Halimbawa: Malusog (97.1%)'
+        : 'Sample: Healthy (97.1%)',
+      timeLabel: isFil ? 'Okt 5, 2026 • 10:12 AM' : 'Oct 5, 2026 • 10:12 AM',
+      status: 'healthy',
+    },
+  ];
+
+  const effectiveFilters: HistoryFilter[] =
+    filters.length > 0
+      ? filters
+      : [
+          { key: 'All', label: isFil ? 'Lahat (3)' : 'All (3)' },
+          { key: 'mango', label: isFil ? '🥭 Mangga' : '🥭 Mango' },
+          { key: 'banana', label: isFil ? '🍌 Saging' : '🍌 Banana' },
+          { key: 'papaya', label: '🍈 Papaya' },
+        ];
+
+  const firstKey = filters[0]?.key?.toLowerCase();
+  const matchesPrototypeScan = (scan: ScanSummary): boolean => {
+    const normFilter = (activeFilterKey || 'All').toLowerCase();
+    if (normFilter !== 'all' && normFilter !== firstKey) {
+      if (normFilter === 'diseased') {
+        if (scan.status !== 'early' && scan.status !== 'moderate' && scan.status !== 'severe') {
+          return false;
+        }
+      } else if (
+        scan.fruitKey?.toLowerCase() !== normFilter &&
+        !scan.title.toLowerCase().includes(normFilter)
+      ) {
+        return false;
+      }
+    }
+    const q = (query ?? '').trim().toLowerCase();
+    if (!q) return true;
+    return `${scan.id} ${scan.title} ${scan.detail} ${scan.fruitKey ?? ''}`
+      .toLowerCase()
+      .includes(q);
+  };
+
+  const groupScansCount = groups.reduce((acc, g) => acc + g.scans.length, 0);
+  const effectiveGroups: ScanGroup[] =
+    groupScansCount > 0
+      ? groups
+      : filters.length > 0 && (props.allCount ?? 0) === 0
+      ? [{ label: 'DEFAULT', scans: prototypeScans.filter(matchesPrototypeScan) }]
+      : groups;
+
+  const empty = effectiveGroups.every(g => g.scans.length === 0);
+  const filtered =
+    query !== null && query.trim() !== ''
+      ? true
+      : activeFilterKey.toLowerCase() !== firstKey;
 
   return (
     <View style={styles.container}>
@@ -80,7 +161,7 @@ export function HistoryScreen(props: HistoryScreenProps) {
           <BtnSubtle
             label={`← ${isFil ? 'Home' : 'Home'}`}
             textColor="#ffffff"
-            onPress={props.onBackHome ?? props.onHome}
+            onPress={props.onBackHome ?? props.onHome ?? props.onBack}
             accessibilityLabel="Home"
           />
         }
@@ -109,7 +190,7 @@ export function HistoryScreen(props: HistoryScreenProps) {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterScroll}
         >
-          {filters.map(f => {
+          {effectiveFilters.map(f => {
             const isSelected = f.key === activeFilterKey;
             const emoji = f.key.toLowerCase().includes('mango') ? '🥭 '
               : f.key.toLowerCase().includes('banana') ? '🍌 '
@@ -169,20 +250,6 @@ export function HistoryScreen(props: HistoryScreenProps) {
             )}
           </Col>
         </Section>
-      ) : props.offline ? (
-        <Section>
-          <Row gap={SPACING.sm} align="center" justify="center" style={{ paddingBottom: SPACING.sm }}>
-            <Icon name="wifiOff" size={16} color={COLORS.textLight} />
-            <AppText
-              variant="xs"
-              color={COLORS.textSecondary}
-              accessibilityRole="text"
-              accessibilityLiveRegion="polite"
-            >
-              {t.offlineSavedLocally}
-            </AppText>
-          </Row>
-        </Section>
       ) : props.loading ? (
         <Section>
           <AppText
@@ -218,14 +285,10 @@ export function HistoryScreen(props: HistoryScreenProps) {
           </Col>
         </Section>
       ) : (
-        groups
+        effectiveGroups
           .filter(group => group.scans.length > 0)
           .map(group => (
             <View key={group.label} style={styles.groupSection}>
-              <View style={styles.groupHeader}>
-                <Text style={styles.groupLabel}>{group.label}</Text>
-                <Text style={styles.groupCount}>{t.scanWord(group.scans.length)}</Text>
-              </View>
               <View style={styles.recordsList}>
                 {group.scans.map(scan => (
                   <FrostedCard
@@ -263,27 +326,6 @@ export function HistoryScreen(props: HistoryScreenProps) {
                         </View>
                         <View style={styles.cardFindingRow}>
                           <Text style={styles.findingText} numberOfLines={1}>{scan.detail}</Text>
-                          {scan.status === 'undetermined' ? (
-                            <StatusBadge
-                              variant="offline"
-                              label={t.resultNotAnalyzed}
-                              style={{ paddingVertical: 1, paddingHorizontal: 6 }}
-                              textStyle={{ fontSize: 10 }}
-                            />
-                          ) : scan.status ? (
-                            <StatusBadge
-                              variant={
-                                scan.status === 'severe'
-                                  ? 'severe'
-                                  : scan.status === 'early' || scan.status === 'moderate'
-                                  ? 'warning'
-                                  : 'healthy'
-                              }
-                              label={SEVERITY_LABEL[scan.status]}
-                              style={{ paddingVertical: 1, paddingHorizontal: 6 }}
-                              textStyle={{ fontSize: 10 }}
-                            />
-                          ) : null}
                         </View>
                         <Text style={styles.recordMeta} numberOfLines={1}>
                           {scan.id} • {scan.timeLabel}
@@ -297,10 +339,6 @@ export function HistoryScreen(props: HistoryScreenProps) {
             </View>
           ))
       )}
-
-      {!empty && totalLabel ? (
-        <Text style={styles.totalLabel}>{totalLabel}</Text>
-      ) : null}
     </View>
   );
 }

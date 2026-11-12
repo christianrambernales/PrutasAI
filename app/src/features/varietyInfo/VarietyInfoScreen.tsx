@@ -12,8 +12,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   BtnOrangeFull,
   BtnSubtle,
-  Chip,
-  COLORS,
   FONTS,
   FrostedCard,
   GreenTopCell,
@@ -170,14 +168,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
 
   const {
     fruit,
-    modelVarieties = [],
-    informationOnly = [],
     diseases = [],
-    requirements = [],
-    requirementsVerified = true,
-    sources = [],
-    expandedVarietyKey,
-    onOpenVariety,
     onBack,
     selectedCrop,
     onSelectCrop,
@@ -186,12 +177,12 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
     style,
   } = props;
 
-  // If fruit is explicitly null and no selectedCrop passed, render missing content card
-  if (fruit === null && !selectedCrop) {
+  // If fruit is explicitly null and no valid selectedCrop passed, render missing content card
+  if (fruit === null && (!selectedCrop || !(selectedCrop.toLowerCase() in CROP_PROFILES))) {
     return (
       <ScrollView
         style={[styles.container, style]}
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + SPACING.sm }]}
+        contentContainerStyle={styles.content}
       >
         <FrostedCard style={styles.card}>
           <Text
@@ -247,7 +238,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
       style={[styles.container, style]}
       contentContainerStyle={[
         styles.content,
-        { paddingTop: insets.top + SPACING.sm, paddingBottom: insets.bottom + SPACING.xl },
+        { paddingBottom: insets.bottom + SPACING.xl },
       ]}
     >
       {/* 1. GreenTopCell */}
@@ -265,18 +256,6 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
           ) : undefined
         }
       />
-
-      {/* Fruit summary primary/alternate names when fruit prop is provided */}
-      {fruit ? (
-        <View style={styles.fruitMetaRow}>
-          <Text accessibilityRole="header" style={styles.fruitPrimaryName}>
-            {isFil ? fruit.nameFil : fruit.nameEn}
-          </Text>
-          <Text style={styles.fruitAlternateName}>
-            {isFil ? fruit.nameEn : fruit.nameFil}
-          </Text>
-        </View>
-      ) : null}
 
       {/* 2. Crop Selector Tabs */}
       <View style={styles.tabsRow} accessibilityRole="tablist">
@@ -311,20 +290,9 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
 
       {/* 3. Agronomic Thresholds */}
       <FrostedCard style={styles.card}>
-        <View style={styles.headerWithBadge}>
-          <Text accessibilityRole="header" style={styles.sectionHeader}>
-            {isFil ? 'Agronomic Thresholds (Pangangailangan)' : 'Agronomic Thresholds'}
-          </Text>
-          {!requirementsVerified ? (
-            <Chip label={t.unverified} tone="warning" />
-          ) : null}
-        </View>
-
-        {!requirementsVerified ? (
-          <Text style={styles.infoCaveat}>
-            Awaiting agriculturist sign-off — shown with a caveat until crop-requirements.yaml carries a citation.
-          </Text>
-        ) : null}
+        <Text accessibilityRole="header" style={styles.sectionHeader}>
+          {isFil ? 'Agronomic Thresholds (Pangangailangan)' : 'Agronomic Thresholds'}
+        </Text>
 
         <View style={styles.thresholdGrid}>
           <View style={styles.thresholdTile}>
@@ -352,25 +320,11 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
             </Text>
           </View>
         </View>
-
-        {requirements.length > 0 ? (
-          <View style={styles.requirementsList} accessibilityRole="list">
-            {requirements.map(req => (
-              <View key={req.label} style={styles.reqItem}>
-                <Text style={styles.reqLabel}>{req.label}</Text>
-                <Text style={styles.reqValue}>{req.value}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
       </FrostedCard>
 
       {/* 4. Key Vulnerabilities */}
       <FrostedCard style={styles.card}>
         <Text accessibilityRole="header" style={styles.sectionHeader}>
-          {t.diseases}
-        </Text>
-        <Text style={styles.sectionSubheader}>
           {isFil ? 'Mga Pangunahing Sakit (Local Knowledge)' : 'Key Vulnerabilities'}
         </Text>
         <View style={styles.vulnerabilitiesCol} accessibilityRole="list">
@@ -415,93 +369,7 @@ export function VarietyInfoScreen(props: VarietyInfoScreenProps) {
         </View>
       </FrostedCard>
 
-      {/* 5. Model Classes & Information-Only (When provided from database / preview) */}
-      {isPropFruit && modelVarieties.length > 0 ? (
-        <FrostedCard style={styles.card}>
-          <Text accessibilityRole="header" style={styles.sectionHeader}>
-            {t.identifiedByModel ?? 'Identified by the model'}
-          </Text>
-          <View style={styles.varietiesList} accessibilityRole="list">
-            {modelVarieties.map(v => {
-              const vName = isFil ? v.nameFil : v.nameEn;
-              const isSelected = v.key === expandedVarietyKey;
-              return (
-                <Pressable
-                  key={v.key}
-                  accessibilityRole="button"
-                  accessibilityLabel={vName}
-                  accessibilityState={{ selected: isSelected }}
-                  onPress={() => onOpenVariety?.(v.key)}
-                  style={[styles.varietyItem, isSelected && styles.varietyItemSelected]}
-                >
-                  <View style={styles.varietyItemRow}>
-                    <Text style={styles.varietyName}>{vName}</Text>
-                    {v.note ? <Text style={styles.varietyNote}>{v.note}</Text> : null}
-                  </View>
-                  {isSelected ? (
-                    <View style={styles.expandedVariety}>
-                      <View style={styles.expandedRow}>
-                        <Text style={styles.expandedLabel}>{t.filipinoName}</Text>
-                        <Text style={styles.expandedValue}>{v.nameFil}</Text>
-                      </View>
-                      <View style={styles.expandedRow}>
-                        <Text style={styles.expandedLabel}>{t.classIndex}</Text>
-                        <Text style={styles.expandedValue}>{v.mlClassIndex}</Text>
-                      </View>
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        </FrostedCard>
-      ) : null}
-
-      {isPropFruit && informationOnly.length > 0 ? (
-        <FrostedCard style={styles.card}>
-          <View style={styles.headerWithBadge}>
-            <Text accessibilityRole="header" style={styles.sectionHeader}>
-              {t.informationOnly ?? 'Information only'}
-            </Text>
-            <Chip label={t.notPredicted} tone="outline" />
-          </View>
-          <Text style={styles.infoCaveat}>
-            Clonal selections that cannot be told apart in a photograph, so the classifier never predicts them — they live in the information layer only.
-          </Text>
-          <View style={styles.varietiesList} accessibilityRole="list">
-            {informationOnly.map(v => {
-              const vName = isFil ? v.nameFil : v.nameEn;
-              return (
-                <View key={v.key} style={styles.varietyItem}>
-                  <Text style={styles.varietyName}>{vName}</Text>
-                  {v.parentName ? <Text style={styles.varietyParent}>→ {v.parentName}</Text> : null}
-                </View>
-              );
-            })}
-          </View>
-        </FrostedCard>
-      ) : null}
-
-      {isPropFruit && sources.length > 0 ? (
-        <FrostedCard style={styles.card}>
-          <Text accessibilityRole="header" style={styles.sectionHeader}>
-            {t.sources ?? 'Sources & Citations'}
-          </Text>
-          <View style={styles.sourcesList} accessibilityRole="list">
-            {sources.map((s, idx) => (
-              <View key={s.citation || idx} style={styles.sourceItem}>
-                <Text style={styles.sourceCitation}>{s.citation}</Text>
-                {s.detail ? <Text style={styles.sourceDetail}>{s.detail}</Text> : null}
-                {s.retrievedLabel ? (
-                  <Text style={styles.sourceRetrieved}>{s.retrievedLabel}</Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        </FrostedCard>
-      ) : null}
-
-      {/* 6. Action CTA: Scan this Crop */}
+      {/* 5. Action CTA: Scan this Crop */}
       <BtnOrangeFull
         label={isFil ? `Kumuha ng Scan para sa ${cropDisplayName}` : 'Scan this Crop'}
         icon={<Icon name="camera" size={18} color="#ffffff" />}

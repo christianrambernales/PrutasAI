@@ -138,6 +138,7 @@ export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route
       return (
         <VarietyInfoScreen
           fruit={fruit}
+          selectedCrop={r.fruitKey as 'mango' | 'banana' | 'papaya'}
           modelVarieties={r.fruitKey ? varietiesByFruit[r.fruitKey] ?? [] : []}
           informationOnly={r.fruitKey ? strainsByFruit[r.fruitKey] ?? [] : []}
           diseases={r.fruitKey ? diseasesByFruit[r.fruitKey] ?? [] : []}
@@ -150,6 +151,9 @@ export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route
           sources={r.fruitKey ? sourcesByFruit[r.fruitKey] ?? [] : []}
           expandedVarietyKey={openVariety}
           onOpenVariety={key => setOpenVariety(current => (current === key ? null : key))}
+          onSelectCrop={fruitKey => replace({ name: 'varietyInfo', fruitKey })}
+          onScanCrop={() => push({ name: 'capture' })}
+          onBackHome={() => selectTab('home')}
           onBack={back}
         />
       );
