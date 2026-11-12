@@ -290,17 +290,18 @@ describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', (
       );
 
       const text = textOf(tree.root);
-      expect(text).toContain(t.welcomeHeaderTitle);
+      expect(text).toContain('Maligayang Pagdating sa PrutasAI');
       expect(text).toContain(t.welcomePathOfflineTitle);
       expect(text).toContain(t.welcomePathAccountTitle);
+      expect(text).not.toContain(t.onboardingStepMode);
+      expect(text).not.toContain(t.welcomeTitle);
 
       // Language toggle
       press(tree, 'FIL');
       expect(onSelectLanguage).toHaveBeenCalledWith('FIL');
 
-      // Offline card selection and submit
-      press(tree, 'Use offline');
-      await pressAsync(tree, t.onboardingFinishSetup);
+      // Immediate 1-tap offline card selection
+      await pressAsync(tree, t.welcomePathOfflineTitle);
       expect(onContinueOffline).toHaveBeenCalledTimes(1);
 
       // Login link
@@ -318,8 +319,7 @@ describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', (
         </LanguageProvider>,
       );
 
-      press(tree, 'Sign in or create an account');
-      await pressAsync(tree, t.onboardingReviewConsent);
+      await pressAsync(tree, t.welcomePathAccountTitle);
       expect(onCreateAccount).toHaveBeenCalledTimes(1);
     });
 

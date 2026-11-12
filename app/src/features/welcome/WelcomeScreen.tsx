@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   AppText,
-  BtnForestFull,
   BtnSubtle,
   Button,
   Col,
@@ -10,7 +9,6 @@ import {
   FONTS,
   FrostedCard,
   GreenTopCell,
-  Row,
   SPACING,
   useLanguage,
   useT,
@@ -21,11 +19,12 @@ export interface WelcomeScreenProps {
   currentLanguage?: Language;
   onChooseAccount?: () => void | Promise<void>;
   onChooseOffline?: () => void | Promise<void>;
+  onChooseLocal?: () => void | Promise<void>;
   onCreateAccount?: () => void | Promise<void>;
   onContinueOffline?: () => void | Promise<void>;
   onSignIn?: () => void | Promise<void>;
   onLogin?: () => void | Promise<void>;
-  onSelectLanguage?: (lang: Language) => void;
+  onSelectLanguage?: (lang: Language) => void | Promise<void>;
 }
 
 export function WelcomeScreen(props: WelcomeScreenProps) {
@@ -33,6 +32,7 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
     currentLanguage,
     onChooseAccount,
     onChooseOffline,
+    onChooseLocal,
     onCreateAccount,
     onContinueOffline,
     onSignIn,
@@ -48,21 +48,19 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [choice, setChoice] = useState<'account' | 'offline' | null>(null);
+  const [lastPath, setLastPath] = useState<'account' | 'offline' | null>(null);
 
-  const handleOffline = onContinueOffline ?? onChooseOffline;
+  const handleOffline = onContinueOffline ?? onChooseLocal ?? onChooseOffline;
   const handleAccount = onCreateAccount ?? onChooseAccount;
 
-  const handleSubmit = async () => {
-    if (!choice || busy) return;
+  const handlePathPress = async (path: 'account' | 'offline') => {
+    if (busy) return;
+    setLastPath(path);
     setBusy(true);
     setError(null);
     try {
-      if (choice === 'account') {
-        if (handleAccount) await handleAccount();
-      } else {
-        if (handleOffline) await handleOffline();
-      }
+      const fn = path === 'account' ? handleAccount : handleOffline;
+      if (fn) await fn();
     } catch (e) {
       setError(e instanceof Error ? e : new Error('Unknown error'));
     } finally {
@@ -89,32 +87,17 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Accessible Step Indicator */}
-      <AppText variant="smSemi" color={COLORS.textSecondary}>
-        {t.onboardingStepMode}
-      </AppText>
-
       {/* 1:1 Prototype Green Top Cell Header */}
       <GreenTopCell
         centered
         headerIcon={headerIcon}
-        title={t.welcomeHeaderTitle}
+        title="Maligayang Pagdating sa PrutasAI"
         subtitle={
           isFil
             ? 'Pangsuporta sa desisyon sa pananim na Mangga, Saging, at Papaya'
             : 'Decision-support tool for Mango, Banana, and Papaya growers'
         }
       />
-
-      {/* Bilingual prototype title support for verification */}
-      <View style={styles.srOnly} pointerEvents="none">
-        <Text>Maligayang Pagdating sa PrutasAI</Text>
-        <Text>Welcome to PrutasAI</Text>
-      </View>
-
-      <AppText variant="sm" color={COLORS.textSecondary} center>
-        {t.welcomeTitle}
-      </AppText>
 
       {/* 1:1 Prototype Language Selector Card */}
       <FrostedCard style={styles.langCard}>
@@ -168,15 +151,19 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
 
       {/* 1:1 Prototype Path 1: Recommended Offline Guest */}
       <FrostedCard
-        onPress={() => setChoice('offline')}
+        onPress={() => handlePathPress('offline')}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={t.welcomeChooseOffline}
-        accessibilityState={{ selected: choice === 'offline', disabled: busy }}
+        accessibilityLabel={
+          isFil
+            ? 'Magpatuloy nang Ganap na Offline (Rekomendado)'
+            : 'Continue Fully Offline (Recommended)'
+        }
+        accessibilityState={{ selected: lastPath === 'offline', disabled: busy }}
         style={[
           styles.pathCard,
           styles.path1Card,
-          choice === 'offline' && styles.pathCardSelected,
+          lastPath === 'offline' && styles.pathCardSelected,
         ]}
       >
         <View style={styles.pathRow}>
@@ -192,21 +179,24 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
                 ? 'Walang account o internet na kailangan. Lahat ng litrato at tala ay mananatili lamang sa telepono.'
                 : 'No registration needed. Photographs and records remain completely on-device.'}
             </Text>
-            <Text style={styles.hiddenText}>{t.welcomeChooseOffline}</Text>
           </View>
         </View>
       </FrostedCard>
 
       {/* 1:1 Prototype Path 2: Optional Account Registration */}
       <FrostedCard
-        onPress={() => setChoice('account')}
+        onPress={() => handlePathPress('account')}
         disabled={busy}
         accessibilityRole="button"
-        accessibilityLabel={t.welcomeAccountTitle}
-        accessibilityState={{ selected: choice === 'account', disabled: busy }}
+        accessibilityLabel={
+          isFil
+            ? 'Gumawa ng Account (Opsyonal na Cloud Sync)'
+            : 'Create Account (Optional Sync)'
+        }
+        accessibilityState={{ selected: lastPath === 'account', disabled: busy }}
         style={[
           styles.pathCard,
-          choice === 'account' && styles.pathCardSelected,
+          lastPath === 'account' && styles.pathCardSelected,
         ]}
       >
         <View style={styles.pathRow}>
@@ -222,7 +212,6 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
                 ? 'I-sync ang monitoring notes sa pagitan ng mga telepono gamit ang iyong email.'
                 : 'Sync monitoring checkpoints across devices using your email.'}
             </Text>
-            <Text style={styles.hiddenText}>{t.welcomeAccountTitle}</Text>
           </View>
         </View>
       </FrostedCard>
@@ -238,18 +227,14 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
           >
             {t.onboardingSaveFailed}
           </AppText>
-          <Button label={t.retry} onPress={handleSubmit} variant="secondary" />
+          <Button
+            label={t.retry}
+            onPress={() => {
+              if (lastPath) void handlePathPress(lastPath);
+            }}
+            variant="secondary"
+          />
         </Col>
-      )}
-
-      {/* Submit Choice */}
-      {choice && (
-        <BtnForestFull
-          label={choice === 'offline' ? t.onboardingFinishSetup : t.onboardingReviewConsent}
-          onPress={handleSubmit}
-          disabled={busy}
-          accessibilityLabel={choice === 'offline' ? t.onboardingFinishSetup : t.onboardingReviewConsent}
-        />
       )}
 
       {busy ? (
@@ -274,8 +259,10 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: SPACING.md,
-    gap: SPACING.md,
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   iconCircle: {
     width: 52,
@@ -381,22 +368,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     color: '#64748b',
     marginTop: 3,
-  },
-  hiddenText: {
-    fontSize: 1,
-    color: 'transparent',
-    height: 0,
-    width: 0,
-    overflow: 'hidden',
-  },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    opacity: 0,
   },
   footerRow: {
     alignItems: 'center',

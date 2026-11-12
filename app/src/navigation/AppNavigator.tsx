@@ -376,28 +376,27 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
         saveSetting(db, SETTING_KEYS.languagePicked, '1');
         setLanguagePicked(true);
       }}
-      onChooseOffline={() => { setSyncMode(db, 'offline'); setSyncModeState('offline'); }}
+      onChooseOffline={() => {
+        setSyncMode(db, 'offline');
+        setSyncModeState('offline');
+        setAccountRequested(false);
+      }}
       onChooseAccount={() => {
         setSyncMode(db, 'account');
         setSyncModeState('account');
-        // The consent screen pushes the account route itself on acknowledge.
-        // On an install that already consented under the old first-run flow
-        // that screen never renders, so nothing would push and the button
-        // would look dead.
-        if (consented) pushAccountRoute({ name: 'account' });
+        setAccountRequested(false);
+        push({ name: 'signup' });
       }}
       onAcknowledgeConsent={() => {
         recordConsent(db, new Date().toISOString());
-        // An offline user can request account sync from Settings. Apply that
-        // choice only after they acknowledge what changes, then take them to
-        // Account with their selected preference intact.
-        if (accountRequested && syncMode === 'offline') {
-          setSyncMode(db, 'account');
-          setSyncModeState('account');
-        }
         setConsented(true);
         setAccountRequested(false);
-        pushAccountRoute({ name: 'account' });
+      }}
+      onSignIn={() => {
+        setSyncMode(db, 'account');
+        setSyncModeState('account');
+        setAccountRequested(false);
+        replace({ name: 'login' });
       }}
     />
   );
