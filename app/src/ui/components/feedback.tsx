@@ -71,9 +71,9 @@ export function MonthlyBars({ values, highlightFrom }: { values: number[]; highl
 export type EvidenceStatus = 'optimal' | 'tolerated' | 'outside' | 'unknown';
 
 const EVIDENCE_TONE: Record<EvidenceStatus, { bg: string; fg: string }> = {
-  optimal: { bg: '#e6f2ec', fg: '#1f6146' },
-  tolerated: { bg: '#fdf1e3', fg: '#8a4b00' },
-  outside: { bg: '#fbe6e6', fg: '#a01c1c' },
+  optimal: { bg: COLORS.healthySurface, fg: COLORS.healthy },
+  tolerated: { bg: COLORS.warningSurface, fg: COLORS.warningText },
+  outside: { bg: COLORS.errorSurface, fg: COLORS.error },
   unknown: { bg: COLORS.surfaceAlt, fg: COLORS.textSecondary },
 };
 
@@ -81,7 +81,7 @@ export function EvidencePill({ status }: { status: EvidenceStatus }) {
   const tone = EVIDENCE_TONE[status];
   return (
     <View style={[styles.pill, { backgroundColor: tone.bg }]}>
-      <AppText variant="xsSemi" color={tone.fg} style={{ fontSize: 10 }}>
+      <AppText variant="xsSemi" color={tone.fg}>
         {status}
       </AppText>
     </View>
@@ -106,5 +106,5 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.text,
   },
   chart: { height: 74 },
-  pill: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: RADIUS.full, alignSelf: 'flex-start' },
+  pill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: RADIUS.full, alignSelf: 'flex-start' },
 });

@@ -7,11 +7,9 @@ export function buildMonitoringView(
   sourceScan: StoredScan,
   now: number = Date.now()
 ): MonitoringView {
-  // Map Day 1
-  const day1Date = session.checkpoints.length > 0 
-    ? session.checkpoints[0].scheduledDate - (session.checkpoints[0].dayNumber - 1) * 86400000 
-    : now;
-
+  // Day 1 is the persisted scan timestamp. Do not reverse-engineer it from a
+  // later slot: a repaired/migrated session must retain the original baseline.
+  const day1Date = session.sourceCreatedAt;
   const day1: MonitoringCheckpointView = {
     id: `base-${sourceScan.id}`,
     dayNumber: 1,
@@ -25,19 +23,18 @@ export function buildMonitoringView(
   };
 
   const laterCheckpoints = session.checkpoints.map(cp => {
+    // A scheduled slot is due through its calendar instant. Once that instant
+    // has passed without a self-report it is incomplete; we do not infer any
+    // agricultural change from either state.
     let status: MonitoringCheckpointStatus = 'due';
-    
     if (cp.completedDate) {
       if (cp.completedDate > cp.scheduledDate) {
         status = 'completed_late';
       } else {
         status = 'completed';
       }
-    } else if (now >= cp.scheduledDate) { // Or maybe now > scheduledDate + some grace period? tests say "Day 6" for "incomplete"
-      // Wait, test says: "now = BASE_TIME + 5 * MS_PER_DAY + 1000", scheduled for Day 5 is BASE + 4 days, so it is well past due.
-      if (now > cp.scheduledDate) {
-         status = 'incomplete';
-      }
+    } else if (now > cp.scheduledDate) {
+      status = 'incomplete';
     }
 
     // missing fields

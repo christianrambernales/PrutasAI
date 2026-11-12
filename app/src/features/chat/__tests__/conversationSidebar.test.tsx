@@ -44,6 +44,15 @@ test('the new-conversation row calls onNew and closes', () => {
   expect(onClose).toHaveBeenCalledTimes(1);
 });
 
+test('the empty sidebar names Conversations and still offers a new conversation', () => {
+  const { tree } = render({ conversations: [] });
+  const text = require('../../../testing/interaction').textOf(tree.root);
+  expect(text).toContain('Conversations');
+  expect(text).toContain('No saved conversations yet');
+  expect(text).toContain('Start a new conversation when you are ready.');
+  expect(text).toContain('New conversation');
+});
+
 test('when not visible, nothing is rendered', () => {
   const { tree } = render({ visible: false });
   expect(tree.toJSON()).toBeNull();

@@ -1,6 +1,7 @@
-import { matchIntent } from './intent';
+import { classifyAssistantPolicy, matchIntent, type GeneralPolicy } from './intent';
 
 export type Tier = 'grounded' | 'general';
+export type TopicPolicy = 'grounded' | GeneralPolicy;
 
 /**
  * One decision per question.
@@ -19,7 +20,13 @@ const GROUNDED = new Set([
   'crop_suitability', 'variety_info', 'fruit_info', 'climate_now', 'model_status',
 ]);
 
-export function routeQuestion(question: string): { tier: Tier } {
+export function routeQuestion(question: string): { tier: Tier; policy: TopicPolicy } {
   const { intent } = matchIntent(question);
-  return { tier: GROUNDED.has(intent) ? 'grounded' : 'general' };
+  // Crop-health uncertainty takes precedence over a coincidental grounded
+  // keyword, so a question about a sick named variety cannot bypass the guard.
+  const topicPolicy = classifyAssistantPolicy(question);
+  if (topicPolicy === 'restricted') return { tier: 'general', policy: 'restricted' };
+  return GROUNDED.has(intent)
+    ? { tier: 'grounded', policy: 'grounded' }
+    : { tier: 'general', policy: 'general' };
 }

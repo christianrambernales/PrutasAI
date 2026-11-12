@@ -4,7 +4,7 @@
  * and so no navigation dependency is needed for an offline-first app.
  */
 
-export type TabKey = 'home' | 'climate' | 'chat' | 'history';
+export type TabKey = 'home' | 'monitoring' | 'chat' | 'account';
 
 export type CaptureTarget = 
   | { type: 'baseline' } 
@@ -21,6 +21,10 @@ export type Route =
   | { name: 'modelStatus' }
   | { name: 'locationPicker' }
   | { name: 'account' }
+  | { name: 'history' }
+  | { name: 'climate' }
+  | { name: 'login' }
+  | { name: 'forgotPassword' }
   | { name: 'signup' }
   | { name: 'trash' }
   | { name: 'resetPassword' };

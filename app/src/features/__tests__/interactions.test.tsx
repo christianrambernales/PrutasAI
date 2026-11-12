@@ -27,12 +27,25 @@ beforeEach(() => {
   seedSyncMode();
 });
 
-function render(element: React.ReactElement): ReactTestRenderer {
-  let tree!: ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(element);
+let currentTree: ReactTestRenderer | null = null;
+
+afterEach(async () => {
+  if (currentTree) {
+    act(() => {
+      currentTree?.unmount();
+    });
+    currentTree = null;
+  }
+  await act(async () => {
+    await Promise.resolve();
   });
-  return tree;
+});
+
+function render(element: React.ReactElement): ReactTestRenderer {
+  act(() => {
+    currentTree = renderer.create(element);
+  });
+  return currentTree!;
 }
 
 function screenText(tree: ReactTestRenderer): string {
@@ -41,7 +54,7 @@ function screenText(tree: ReactTestRenderer): string {
 
 // --- the systemic guard -----------------------------------------------------
 
-test.each(['Home', 'Climate', 'Chat', 'History'])(
+test.each(['Home', 'Climate', 'Assistant', 'History'])(
   'every control on the %s tab has a press handler',
   tab => {
     const tree = render(<AppNavigator />);
@@ -68,7 +81,7 @@ test('every control has an accessibility label or visible text', () => {
 
 test('typing a question and sending it adds the question to the transcript', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   typeInto(tree, 'Ask about', 'What varieties of mango are there?');
   press(tree, 'Send');
@@ -78,7 +91,7 @@ test('typing a question and sending it adds the question to the transcript', () 
 
 test('sending a question produces an answer', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   const before = screenText(tree);
   typeInto(tree, 'Ask about', 'What varieties of mango are there?');
@@ -92,7 +105,7 @@ test('sending a question produces an answer', () => {
 
 test('sending clears the input so the question is not sent twice', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   typeInto(tree, 'Ask about', 'What varieties of mango are there?');
   press(tree, 'Send');
@@ -106,7 +119,7 @@ test('sending clears the input so the question is not sent twice', () => {
 
 test('an empty message is not sent', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   const before = screenText(tree);
   typeInto(tree, 'Ask about', '   ');
@@ -117,7 +130,7 @@ test('an empty message is not sent', () => {
 
 test('tapping a suggestion asks it', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   const suggestion = 'Anthracnose remedy';
   press(tree, suggestion);
@@ -129,9 +142,9 @@ test('tapping a suggestion asks it', () => {
 
 // --- conversation sidebar ----------------------------------------------------
 
-test('the menu icon opens the sidebar showing the conversation just started', () => {
+test('the Conversations action opens the sidebar showing the conversation just started', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   // A fresh conversation is only a row in the database once its first
   // message is sent — this is what proves the sidebar's list keeps up with
@@ -142,7 +155,7 @@ test('the menu icon opens the sidebar showing the conversation just started', ()
 
   // Already once, from the sent bubble in the transcript.
   const beforeMenu = screenText(tree).split(question).length - 1;
-  press(tree, 'menu');
+  press(tree, 'Conversations');
   const afterMenu = screenText(tree).split(question).length - 1;
 
   // A second occurrence, from the sidebar row titled after that question.
@@ -158,13 +171,13 @@ test('the menu icon opens the sidebar showing the conversation just started', ()
  */
 test('a reply in an older conversation moves it back to the top of the sidebar', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   const older = 'What varieties of mango are there?';
   typeInto(tree, 'Ask about', older);
   press(tree, 'Send');
 
-  press(tree, 'menu');
+  press(tree, 'Conversations');
   press(tree, 'New conversation');
   typeInto(tree, 'Ask about', 'What varieties of banana are there?');
   press(tree, 'Send');
@@ -177,7 +190,7 @@ test('a reply in an older conversation moves it back to the top of the sidebar',
   expect(titles()[0]).toContain('banana');
 
   // Reopen the older conversation and add a turn to it.
-  press(tree, 'menu');
+  press(tree, 'Conversations');
   press(tree, older);
   typeInto(tree, 'Ask about', 'What varieties of papaya are there?');
   press(tree, 'Send');
@@ -202,9 +215,9 @@ test('switching the language to Filipino selects it', () => {
   const tree = render(<AppNavigator />);
   press(tree, 'Settings');
 
-  press(tree, 'FIL');
+  press(tree, 'Filipino');
 
-  expect(findPressable(tree, 'FIL').props.accessibilityState?.selected).toBe(true);
+  expect(findPressable(tree, 'Filipino').props.accessibilityState?.selected).toBe(true);
 });
 
 test('the AI assistant toggle flips when pressed', () => {
@@ -255,7 +268,7 @@ test('capturing does not fabricate a diagnosis while no model is installed', asy
   await pressAsync(tree, 'Take photo');
 
   const content = screenText(tree);
-  expect(content).toContain('Detection model not installed');
+  expect(content).toContain('Analysis unavailable');
   // The preview verdict must never reach a screen that claims a detection.
   expect(content).not.toContain('Anthracnose');
   expect(content).not.toContain('0.96');
@@ -287,7 +300,7 @@ test('opening a stored scan reports what was stored and nothing more', () => {
 
   // The same honest state a fresh capture shows: the row carries a photo and a
   // time, and no model has ever run over it.
-  expect(content).toContain('Detection model not installed');
+  expect(content).toContain('Analysis unavailable');
   expect(content).toContain('No disease model');
   // A stored confidence is not a diagnosis and must never be shown as one.
   expect(content).not.toContain('Anthracnose');
@@ -304,12 +317,13 @@ test('a captured photo is in history afterwards', async () => {
   press(tree, 'Scan a fruit');
   await pressAsync(tree, 'Take photo');
 
+  press(tree, 'Home');
   press(tree, 'History');
   const content = screenText(tree);
   // Stored, and stored honestly — the row claims no fruit, because none was
   // identified.
   expect(content).toContain('Unidentified');
-  expect(content).toContain('Not identified — no model installed');
+  expect(content).toContain('Not identified because no approved model is installed.');
   expect(content).not.toContain('No scans yet');
 });
 

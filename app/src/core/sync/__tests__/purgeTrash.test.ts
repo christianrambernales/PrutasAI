@@ -109,6 +109,22 @@ test('deleteConversationEverywhere keeps the local rows when the remote call fai
   expect(listMessages(db, 'c1')).toHaveLength(1);
 });
 
+test('scoped permanent delete never contacts remote or deletes another account conversation', async () => {
+  const db = freshDb();
+  insertConversation(db, {
+    uuid: 'account-b', title: 'Private', deviceId: 'dev-1',
+    createdAt: CREATED, updatedAt: CREATED, accountId: 'b',
+  });
+  softDeleteConversation(db, 'account-b', CREATED, { activeAccountId: 'b' });
+  const deleteRemote = jest.fn(async () => {});
+
+  await expect(deleteConversationEverywhere(
+    db, 'account-b', deleteRemote, { activeAccountId: 'a' },
+  )).resolves.toBe(false);
+  expect(deleteRemote).not.toHaveBeenCalled();
+  expect(listTrashedConversations(db, { activeAccountId: 'b' })).toHaveLength(1);
+});
+
 test('the retention sweep deletes the remote row for every purged conversation', async () => {
   const db = freshDb();
   insertConversation(db, { uuid: 'old', title: 'Old', deviceId: 'dev-1', createdAt: CREATED, updatedAt: CREATED });

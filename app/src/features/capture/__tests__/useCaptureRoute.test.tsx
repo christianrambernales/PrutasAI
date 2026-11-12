@@ -49,6 +49,24 @@ describe('baseline capture', () => {
     });
   });
 
+  test.each([
+    ['camera', 'file:///camera-source.jpg'],
+    ['gallery', 'file:///gallery-source.jpg'],
+  ])('%s input follows the same copy-before-insert lifecycle', async (_source, uri) => {
+    const db = freshDb();
+    const photoStore = new MockPhotoStore();
+    const copyToOwned = photoStore.copyToOwned;
+    const insert = jest.spyOn(db, 'all');
+    const capture = run(db, photoStore, null, jest.fn(), jest.fn());
+
+    await act(async () => { await capture.onCaptured(uri); });
+
+    expect(copyToOwned).toHaveBeenCalledWith(uri);
+    expect(insert).toHaveBeenCalled();
+    expect(copyToOwned.mock.invocationCallOrder[0]).toBeLessThan(insert.mock.invocationCallOrder[0]);
+    expect(countScans(db)).toBe(1);
+  });
+
   test('a captured photo records the saved location and the manifest version', async () => {
     const db = freshDb();
     const photoStore = new MockPhotoStore();
@@ -82,12 +100,15 @@ describe('baseline capture', () => {
     const photoStore = new MockPhotoStore();
     const capture = run(db, photoStore, null, replace, notify);
 
-    await act(async () => { await capture.onCaptured('file:///photo.jpg'); });
+    await act(async () => {
+      await expect(capture.onCaptured('file:///photo.jpg')).rejects.toThrow('Failed to save the captured photo.');
+    });
 
     expect(photoStore.copyToOwned).toHaveBeenCalledWith('file:///photo.jpg');
     expect(photoStore.deleteOwned).toHaveBeenCalledWith('file:///owned/photo.jpg');
+    expect(photoStore.deleteOwned).not.toHaveBeenCalledWith('file:///pre-existing-photo.jpg');
     expect(replace).not.toHaveBeenCalled();
-    expect(notify).toHaveBeenCalledWith('Failed to save the captured photo.');
+    expect(notify).not.toHaveBeenCalled();
   });
 });
 
@@ -114,6 +135,26 @@ describe('checkpoint capture', () => {
     });
   });
 
+  test('a Day 10 gallery checkpoint stays staged and does not mutate a scan or checkpoint', async () => {
+    const db = freshDb();
+    const replace = jest.fn();
+    const photoStore = new MockPhotoStore();
+    const target: CaptureTarget = { type: 'checkpoint', sessionId: 'sess-day-10', dayNumber: 10 };
+    const capture = run(db, photoStore, null, replace, jest.fn(), null, target);
+
+    await act(async () => { await capture.onCaptured('file:///gallery-day-10.jpg'); });
+
+    expect(countScans(db)).toBe(0);
+    expect(db.all('SELECT id FROM monitoring_checkpoint')).toEqual([]);
+    expect(photoStore.deleteOwned).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledWith({
+      name: 'monitoring',
+      sessionId: 'sess-day-10',
+      dayNumber: 10,
+      stagedPhotoUri: 'file:///owned/gallery-day-10.jpg',
+    });
+  });
+
   test('checkpoint copy failure deletes only the attempted file and stays on capture', async () => {
     const db = freshDb();
     const replace = jest.fn();
@@ -124,11 +165,13 @@ describe('checkpoint capture', () => {
     const target: CaptureTarget = { type: 'checkpoint', sessionId: 'sess-123', dayNumber: 5 };
     const capture = run(db, photoStore, null, replace, notify, null, target);
 
-    await act(async () => { await capture.onCaptured('file:///checkpoint.jpg'); });
+    await act(async () => {
+      await expect(capture.onCaptured('file:///checkpoint.jpg')).rejects.toThrow('Failed to save the captured photo.');
+    });
 
     expect(countScans(db)).toBe(0);
     expect(replace).not.toHaveBeenCalled();
-    expect(notify).toHaveBeenCalledWith('Failed to save the captured photo.');
+    expect(notify).not.toHaveBeenCalled();
     // No owned URI created since copy threw before assignment, so deleteOwned isn't called,
     // but the test ensures we stay on capture and notify error.
   });

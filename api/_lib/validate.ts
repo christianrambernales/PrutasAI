@@ -25,6 +25,19 @@ export type Validation =
   | { ok: true; value: ScanRow }
   | { ok: false; error: string };
 
+export type AssistantPolicy = 'general' | 'restricted';
+
+export interface AssistantReply {
+  on_topic: boolean;
+  text: string;
+  policy: AssistantPolicy;
+  warning: boolean;
+}
+
+export type AssistantReplyValidation =
+  | { ok: true; value: AssistantReply }
+  | { ok: false; error: string };
+
 const ALLOWED = new Set([
   'uuid', 'created_at', 'updated_at', 'deleted_at', 'image_uri', 'fruit_key', 'fruit_conf',
   'variety_key', 'variety_conf', 'bbox_json', 'manifest_version', 'lat', 'lon',
@@ -33,6 +46,60 @@ const ALLOWED = new Set([
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const KEY = /^[a-z0-9_]{1,40}$/;
 const MAX_TEXT = 512;
+const MAX_ASSISTANT_TEXT = 1000;
+
+const RESTRICTED_QUESTION = /\b(?:disease|diseases|sick|symptom|symptoms|diagnos\w*|anthrac\w*|powdery mildew|rust|scab|blight|mold\w*|mould\w*|amag|rot|rott\w*|bulok|gamot|gamutin|lunas|pest|pesticide|fungicide|insecticide|spray|dose|dosage|chemical|sakit|peste|spots?|wilt|yellow(?:ing)?)\b|\b(?:what is wrong|what is this|ano ito|anong sakit)\b/i;
+const OBSERVATION = /\b(?:i see|i saw|i notice|i noticed|there (?:is|are)|these|my .{1,60}\b(?:has|have|looks?|appears?|seems?)|with|covered|growing on|on|sa|may|nakikita|napansin)\b/i;
+const VISIBLE_FEATURE = /\b(?:growth|patch(?:es)?|mark(?:s)?|coating|film|fuzz|fuzzy|cottony|powdery|raised|pale|white|black|brown|orange|gray|grey|discolou?r\w*|texture|crust|bump(?:s)?|lump(?:s)?|streak(?:s)?|pattern(?:s)?|ooze|sticky|curl\w*|droop\w*|shrivel\w*|weird|strange|unusual|wrong|bad)\b/i;
+const RESTRICTED_REPLY_CONTENT = /\b(?:diagnos\w*|anthrac\w*|mildew|rust|scab|blight|fung\w*|bacter\w*|virus|viral|infection|infect\w*|disease|pest|mite|aphid|larva|caterpillar|canker|lesion|fungicide|pesticide|insecticide|chemical|treat\w*|cure\w*|spray\w*|apply|application|dose|dosage|ml|gram|grams|lit(?:er|re)s?|kill|eradicate|gamot|gamutin|lunas|dosis|wisik|ipahid|ilagay|mix|dilute|concentrat\w*|capful|teaspoon|tablespoon)\b|\b\d+(?:\.\d+)?\s*(?:%|mg|g|ml|l|lit(?:er|re)s?)\b/i;
+const REFERRAL = /\b(?:local agriculturist|agriculturist|agricultural extension worker|extension worker|local expert|agriculturista|extension worker)\b/i;
+const CLEAR_CROP_CARE = /\b(?:plant\w*|grow\w*|space\w*|water\w*|irrigat\w*|soil|fertili[sz]\w*|nutrient\w*|compost|prun\w*|mulch|weed\w*|shade|sunlight|sun exposure|rainfall|temperature|climate|season|seed(?:ling)?s?|transplant\w*|harvest\w*|ripen\w*)\b/i;
+
+/** Server-owned classification. A client-provided policy flag is never authority. */
+export function classifyAssistantPolicy(question: unknown): AssistantPolicy {
+  if (typeof question !== 'string' || question.trim() === '') return 'restricted';
+  const normalized = question.normalize('NFKC');
+  const plantPartMentioned = /\b(?:plant|crop|fruit|leaf|leaves|stem|trunk|root|roots|bark|flower|blossom|seed|seedling|tree|dahon|bunga|ugat|tangkay)\b/i.test(normalized);
+  return RESTRICTED_QUESTION.test(normalized)
+    || (plantPartMentioned && OBSERVATION.test(normalized) && VISIBLE_FEATURE.test(normalized))
+    ? 'restricted'
+    : 'general';
+}
+
+/** The unrestricted model tier is reserved for recognizable benign crop care. */
+export function isClearCropCareQuestion(question: unknown): boolean {
+  return typeof question === 'string' && CLEAR_CROP_CARE.test(question.normalize('NFKC'));
+}
+
+/** Validate the provider envelope and reject restricted content before it reaches a client. */
+export function validateAssistantReply(input: unknown, policy: AssistantPolicy): AssistantReplyValidation {
+  if (input === null || typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, error: 'reply must be an object' };
+  }
+  const body = input as Record<string, unknown>;
+  if (body.on_topic !== true) {
+    return { ok: true, value: { on_topic: false, text: '', policy, warning: false } };
+  }
+  if (typeof body.text !== 'string') return { ok: false, error: 'text must be a string' };
+  const text = body.text.trim();
+  if (text.length === 0 || text.length > MAX_ASSISTANT_TEXT) return { ok: false, error: 'text length is invalid' };
+
+  if (policy === 'restricted') {
+    if (body.policy !== 'restricted' || body.warning !== true) {
+      return { ok: false, error: 'restricted reply metadata is invalid' };
+    }
+    if (RESTRICTED_REPLY_CONTENT.test(text) || !REFERRAL.test(text)) {
+      return { ok: false, error: 'restricted reply is unsafe or has no referral' };
+    }
+    return { ok: true, value: { on_topic: true, text, policy, warning: true } };
+  }
+
+  if (RESTRICTED_REPLY_CONTENT.test(text)) {
+    return { ok: false, error: 'general reply contains restricted content' };
+  }
+
+  return { ok: true, value: { on_topic: true, text, policy, warning: true } };
+}
 
 function fail(error: string): Validation {
   return { ok: false, error };

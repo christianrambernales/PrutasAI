@@ -1,4 +1,4 @@
-/**
+﻿/**
  * `useChat`'s persisted-conversation lifecycle: a conversation is created on
  * first send, every message is persisted, and later questions in the same
  * conversation carry the prior turns as history — but never the question
@@ -13,14 +13,14 @@
 import React from 'react';
 import renderer, { act } from 'react-test-renderer';
 
-import { useChat } from '../useChat';
+import { useChat, titleFrom } from '../useChat';
 import { freshDb } from '../../../core/db/testing/scanFixtures';
 import {
   insertConversation, insertMessage, listActiveConversations, listMessages,
 } from '../../../core/db/repositories/conversations';
 import * as preview from '../../../preview/previewContent';
 import type { ChatContext } from '../../../core/chat/answer';
-import type { ChatProvider, HistoryTurn } from '../../../core/chat/providers/types';
+import type { ChatProvider, GeneralRequestOptions } from '../../../core/chat/providers/types';
 import type { LocalAccountScope } from '../../../core/db/repositories/scans';
 
 const CONTEXT: ChatContext = {
@@ -54,8 +54,8 @@ function fakeProvider(overrides: Partial<ChatProvider> = {}): ChatProvider {
     id: 'fake',
     remote: true,
     isAvailable: () => true,
-    rephrase: async a => a.text,
-    answerGeneral: async () => ({ onTopic: true, text: 'answer', error: null, errorKind: null }),
+    rephrase: async a => ({ status: 'accepted', text: a.text }),
+    answerGeneral: async () => ({ onTopic: true, text: 'answer', error: null, errorKind: null, policy: 'general', warning: true }),
     ...overrides,
   };
 }
@@ -134,15 +134,17 @@ test('an account switch cannot reopen another account\'s retained conversation i
 // rather than passed as `[]` — this is the only test that pins that down.
 test('a first question omits the history argument entirely', async () => {
   const db = freshDb();
-  const answerGeneral = jest.fn(async () => (
-    { onTopic: true, text: 'answer', error: null, errorKind: null }
+  const answerGeneral = jest.fn(async (_q: string, _c: string, _options?: GeneralRequestOptions) => (
+    { onTopic: true, text: 'answer', error: null, errorKind: null, policy: 'general' as const, warning: true }
   ));
   const h = harness(db, fakeProvider({ answerGeneral }));
 
   await sendMessage(h, 'How do I care for a banana plant?');
 
   expect(answerGeneral).toHaveBeenCalledTimes(1);
-  expect(answerGeneral.mock.calls[0]).toHaveLength(2);
+  const options = answerGeneral.mock.calls[0][2]!;
+  expect(options).toMatchObject({ policy: 'general', language: 'EN' });
+  expect(options.history).toBeUndefined();
 });
 
 test('a second question in the same conversation sends the first exchange as history', async () => {
@@ -152,20 +154,98 @@ test('a second question in the same conversation sends the first exchange as his
   // below expects that turn to have said. Typed with the real parameter list
   // (rather than left as the zero-arg `async () => ...` shorthand) so
   // `mock.calls[n]` is a 3-element tuple and the destructure below type-checks.
-  const answerGeneral = jest.fn(async (_q: string, _c: string, _h?: HistoryTurn[]) => (
-    { onTopic: true, text: 'second answer', error: null, errorKind: null }
+  const answerGeneral = jest.fn(async (_q: string, _c: string, _options?: GeneralRequestOptions) => (
+    { onTopic: true, text: 'second answer', error: null, errorKind: null, policy: 'general' as const, warning: true }
   ));
-  answerGeneral.mockResolvedValueOnce({ onTopic: true, text: 'answer', error: null, errorKind: null });
+  answerGeneral.mockResolvedValueOnce({ onTopic: true, text: 'answer', error: null, errorKind: null, policy: 'general', warning: true });
   const h = harness(db, fakeProvider({ answerGeneral }));
 
   await sendMessage(h, 'first question');
   await sendMessage(h, 'second question');
 
-  const [, , history] = answerGeneral.mock.calls[1];
-  expect(history).toEqual([
+  const options = answerGeneral.mock.calls[1][2]!;
+  expect(options.history).toEqual([
     { role: 'user', text: 'first question' },
     { role: 'assistant', text: 'answer' },
   ]);
+});
+
+test('restricted answers carry a per-answer awareness warning kind and survive conversation restore', async () => {
+  const db = freshDb();
+  const answerGeneral = jest.fn(async (_q: string, _c: string, _options?: GeneralRequestOptions) => ({
+    onTopic: true,
+    text: 'Visible signs can have several causes. Consult a local agriculturist.',
+    error: null,
+    errorKind: null,
+    policy: 'restricted' as const,
+    warning: true,
+  }));
+  const h = harness(db, fakeProvider({ answerGeneral }));
+
+  await sendMessage(h, 'Anong gamot sa sakit ng mangga?');
+
+  expect(answerGeneral.mock.calls[0][2]!).toMatchObject({ policy: 'restricted', language: 'EN' });
+  expect(h.current.messages[1].kind).toBe('restricted');
+  const conversationId = listActiveConversations(db)[0].uuid;
+  expect(listMessages(db, conversationId)[1].kind).toBe('restricted');
+  act(() => { h.current.openConversation(conversationId); });
+  expect(h.current.messages[1].kind).toBe('restricted');
+});
+
+test('a server-restricted outcome remains warned when the local question classifier missed it', async () => {
+  const db = freshDb();
+  const answerGeneral = jest.fn(async (_q: string, _c: string, _options?: GeneralRequestOptions) => ({
+    onTopic: true,
+    text: 'Server fallback wording.',
+    error: null,
+    errorKind: null,
+    policy: 'restricted' as const,
+    warning: true,
+  }));
+  const h = harness(db, fakeProvider({ answerGeneral }));
+  await sendMessage(h, 'How far apart should I space mango seedlings?');
+
+  expect(h.current.messages).toHaveLength(2);
+  expect(answerGeneral.mock.calls[0][2]!).toMatchObject({ policy: 'general' });
+  expect(h.current.messages[1]).toMatchObject({ kind: 'restricted' });
+  expect(h.current.messages[1].text).toContain('local agriculturist');
+});
+
+test('offline restricted questions get local awareness and the harvested mold caution', async () => {
+  const db = freshDb();
+  const answerGeneral = jest.fn();
+  const h = harness(db, fakeProvider({ remote: false, answerGeneral }));
+
+  await sendMessage(h, 'The harvested mango is moldy and rotting.');
+
+  expect(answerGeneral).not.toHaveBeenCalled();
+  expect(h.current.messages[1].kind).toBe('restricted');
+  expect(h.current.messages[1].text).toContain('do not eat or sell');
+  expect(h.current.messages[1].text).toContain('local agriculturist');
+});
+
+test('a retry re-asks the failed general question without duplicating the user turn', async () => {
+  const db = freshDb();
+  const answerGeneral = jest.fn()
+    .mockResolvedValueOnce({
+      onTopic: false, text: '', error: 'too many', errorKind: 'rateLimited', policy: 'general', warning: false,
+    })
+    .mockResolvedValueOnce({
+      onTopic: true, text: 'Space them evenly.', error: null, errorKind: null, policy: 'general', warning: true,
+    });
+  const h = harness(db, fakeProvider({ answerGeneral }));
+
+  await sendMessage(h, 'How far apart should I space banana suckers?');
+  expect(h.current.messages[1].kind).toBe('notice');
+  expect(h.current.retry).toBeDefined();
+  await act(async () => { await h.current.retry!(); });
+
+  expect(answerGeneral).toHaveBeenCalledTimes(2);
+  expect(h.current.messages.map(message => message.role)).toEqual(['user', 'assistant', 'assistant']);
+  expect(h.current.messages[2].kind).toBe('general');
+  expect(h.current.retry).toBeUndefined();
+  const conversationId = listActiveConversations(db)[0].uuid;
+  expect(listMessages(db, conversationId).filter(message => message.role === 'user')).toHaveLength(1);
 });
 
 test('startNewConversation clears messages and the active conversation id', async () => {
@@ -270,21 +350,47 @@ test('adding a message moves its conversation to the top of the sidebar', async 
  * holds. Re-inserting under the same uuid looks right and does nothing:
  * `insertMessage` is INSERT OR IGNORE.
  */
-test('a reworded grounded reply replaces the curated wording in storage', async () => {
+test('a rejected grounded rephrase keeps the curated answer and persists a visible notice', async () => {
   const db = freshDb();
   const h = harness(
     db,
-    fakeProvider({ rephrase: async () => 'Reworded by the model.' }),
+    fakeProvider({ rephrase: async () => ({ status: 'rejected', reason: 'protected_content_changed' }) }),
     GROUNDED_CONTEXT,
   );
 
   await sendMessage(h, 'What varieties of mango are there?');
 
   const conversationId = listActiveConversations(db)[0].uuid;
-  const [, reply] = listMessages(db, conversationId);
+  const [, reply, notice] = listMessages(db, conversationId);
   expect(reply.role).toBe('assistant');
-  expect(reply.text).toBe('Reworded by the model.');
-  expect(h.current.messages[1].text).toBe('Reworded by the model.');
+  expect(reply.kind).toBe('grounded');
+  expect(reply.text).toContain('varieties');
+  expect(notice.role).toBe('assistant');
+  expect(notice.kind).toBe('notice');
+  expect(notice.text).toMatch(/original.*kept/i);
+  expect(h.current.messages[1].text).toBe(reply.text);
+  expect(h.current.messages[2].text).toBe(notice.text);
+
+  const reopened = harness(db, fakeProvider(), GROUNDED_CONTEXT);
+  act(() => { reopened.current.openConversation(conversationId); });
+  expect(reopened.current.messages.map(message => message.kind)).toEqual([undefined, 'grounded', 'notice']);
+});
+
+test('the chat boundary rejects a provider that labels changed text as accepted', async () => {
+  const db = freshDb();
+  const h = harness(
+    db,
+    fakeProvider({ rephrase: async () => ({ status: 'accepted', text: 'Mango is guaranteed to be suitable.' }) }),
+    GROUNDED_CONTEXT,
+  );
+
+  await sendMessage(h, 'What varieties of mango are there?');
+
+  const rows = listMessages(db, listActiveConversations(db)[0].uuid);
+  expect(rows[1].kind).toBe('grounded');
+  expect(rows[1].text).toBe(h.current.messages[1].text);
+  expect(rows[1].text).not.toContain('guaranteed');
+  expect(rows[2]).toMatchObject({ role: 'assistant', kind: 'notice' });
 });
 
 test('a stored verdict reopens as an object, not as a JSON string', async () => {
@@ -332,4 +438,19 @@ test('onPersisted does not fire when nothing was written', async () => {
   await sendMessage(h, '   ');
 
   expect(onPersisted).not.toHaveBeenCalled();
+});
+
+describe('titleFrom', () => {
+  test('trims and normalizes whitespace', () => {
+    expect(titleFrom('  too   much   \n whitespace  ')).toBe('too much whitespace');
+  });
+
+  test('truncates to 40 characters and adds an ellipsis', () => {
+    const long = 'This is a very long question that will definitely exceed the forty character limit.';
+    expect(titleFrom(long)).toBe('This is a very long question that will d…');
+  });
+
+  test('returns the original string if under 40 characters', () => {
+    expect(titleFrom('Short question')).toBe('Short question');
+  });
 });

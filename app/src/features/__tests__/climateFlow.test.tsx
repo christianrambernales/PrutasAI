@@ -44,6 +44,19 @@ function archiveDays() {
 }
 
 let fetchCalls: string[] = [];
+let currentTree: ReactTestRenderer | null = null;
+
+afterEach(async () => {
+  if (currentTree) {
+    act(() => {
+      currentTree?.unmount();
+    });
+    currentTree = null;
+  }
+  await act(async () => {
+    await Promise.resolve();
+  });
+});
 
 beforeEach(() => {
   resetAppDatabase();
@@ -61,11 +74,10 @@ beforeEach(() => {
 });
 
 function render(): ReactTestRenderer {
-  let tree!: ReactTestRenderer;
   act(() => {
-    tree = renderer.create(<AppNavigator />);
+    currentTree = renderer.create(<AppNavigator />);
   });
-  return tree;
+  return currentTree!;
 }
 
 function screenText(tree: ReactTestRenderer): string {
@@ -164,7 +176,7 @@ test('the assistant answers suitability from the fetched normals', async () => {
   const tree = render();
   await chooseDavao(tree);
 
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
   press(tree, 'Anong mga uri ng saging?');
   expect(screenText(tree)).toContain('Lakatan');
 });

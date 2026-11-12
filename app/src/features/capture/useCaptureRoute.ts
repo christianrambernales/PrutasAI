@@ -69,7 +69,7 @@ export function useCaptureRoute(input: CaptureRouteInput): CaptureRoute {
           // Ignore cleanup errors
         }
       }
-      notify('Failed to save the captured photo.');
+      throw new Error('Failed to save the captured photo.');
     }
   }, [db, photoStore, savedLocation, bumpData, replace, notify, accountId, target]);
 

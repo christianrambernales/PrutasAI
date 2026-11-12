@@ -66,6 +66,7 @@ export const CLIMATE: ClimateSnapshot = {
   humidityPct: 74,
   rainTodayMm: 2.5,
   elevationM: 21,
+  fetchedAt: Date.parse('2026-06-12T00:00:00.000Z'),
 };
 
 export const NORMALS: ClimateNormals = {
@@ -83,6 +84,15 @@ export const SUITABILITY: Suitability = {
   detail: 'Within tolerated ranges, outside optimal on one parameter.',
   basisLabel: NORMALS.fetchedLabel,
   sourceLabel: 'Ranges unverified · Data: Open-Meteo (CC BY 4.0)',
+  provisional: true,
+  warning: 'Provisional suitability only. Crop ranges have not been verified by an agriculturist.',
+  missingFields: [],
+  evidenceFetchedAt: Date.parse('2026-06-12T00:00:00.000Z'),
+  evidenceSource: 'Open-Meteo Best Match (reanalysis)',
+  evidencePeriod: { fromYear: 2021, toYear: 2025 },
+  evidenceCached: true,
+  evidenceStatus: 'cached',
+  evidenceAgeMs: 2 * 60 * 60 * 1000,
   evidence: [
     { label: 'Mean temperature', value: '27.4 °C', rangeLabel: 'optimal 26–30 °C', status: 'optimal', icon: 'thermometer' },
     { label: 'Annual rainfall', value: '2,930 mm', rangeLabel: 'optimal 1,800–2,600 mm', status: 'tolerated', icon: 'cloudRain' },

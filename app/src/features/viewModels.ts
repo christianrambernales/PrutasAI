@@ -48,11 +48,19 @@ export interface DiseaseSummary {
 
 export interface ScanSummary {
   id: string;
+  imageUri?: string;
+  /** Source fields for language-aware display; stored records never infer a diagnosis. */
+  createdAtIso?: string;
+  fruitNameEn?: string | null;
+  fruitNameFil?: string | null;
+  varietyNameEn?: string | null;
+  varietyNameFil?: string | null;
   emoji: string;
   title: string;
   status: SeverityKey;
   detail: string;
   timeLabel: string;
+  fruitKey?: string | null;
 }
 
 export type Freshness = 'live' | 'cached' | 'stale' | 'unavailable';
@@ -67,7 +75,9 @@ export interface ClimateSnapshot {
   feelsLikeLabel: string;
   humidityPct: number;
   rainTodayMm: number;
-  elevationM: number;
+  elevationM: number | null;
+  /** Fetch time for current conditions, independent of historical evidence. */
+  fetchedAt?: number | null;
 }
 
 export interface ClimateNormals {
@@ -96,6 +106,15 @@ export interface Suitability {
   evidence: Evidence[];
   basisLabel: string;
   sourceLabel: string;
+  provisional?: boolean;
+  warning?: string;
+  missingFields?: string[];
+  evidenceFetchedAt?: number | null;
+  evidenceSource?: string | null;
+  evidencePeriod?: { fromYear: number; toYear: number } | null;
+  evidenceCached?: boolean;
+  evidenceStatus?: 'live' | 'cached' | 'stale' | 'unavailable';
+  evidenceAgeMs?: number | null;
 }
 
 export interface DetectionStage {
@@ -154,11 +173,12 @@ export interface ChatMessage {
    * How the answer was produced, so the screen can label it honestly.
    *
    * `grounded` traces to a knowledge-base row. `general` is model-generated and
-   * carries a visible caveat. `refusal` is the app's own wording for an
+   * carries a visible caveat. `restricted` is awareness/referral output for
+   * unreviewed crop-health topics. `refusal` is the app's own wording for an
    * off-topic question — never the model's. `notice` reports a failure and
    * never stands in for an answer.
    */
-  kind?: 'grounded' | 'general' | 'refusal' | 'notice';
+  kind?: 'grounded' | 'general' | 'restricted' | 'refusal' | 'notice';
   /**
    * Attached when the answer computed a suitability verdict, so the evidence
    * card renders under the message it belongs to rather than at a fixed index.

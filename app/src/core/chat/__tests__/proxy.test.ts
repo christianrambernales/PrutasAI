@@ -26,11 +26,52 @@ const reply = (body: unknown, status = 200) =>
 // --- the general tier -------------------------------------------------------
 
 test('a general answer is returned with its topic flag', async () => {
-  const p = provider(reply({ on_topic: true, text: 'Remove infected fruit.' }));
+  const p = provider(reply({
+    on_topic: true,
+    policy: 'restricted',
+    warning: true,
+    text: 'Describe visible signs and consult a local agriculturist.',
+  }));
   const answer = await p.answerGeneral('How do I control anthracnose?', 'ctx');
   expect(answer.onTopic).toBe(true);
-  expect(answer.text).toBe('Remove infected fruit.');
+  expect(answer.text).toBe('Describe visible signs and consult a local agriculturist.');
+  expect(answer.policy).toBe('restricted');
+  expect(answer.warning).toBe(true);
   expect(answer.error).toBeNull();
+});
+
+test('an unsafe or untrusted restricted reply becomes the local awareness and referral fallback', async () => {
+  const unsafe = provider(reply({
+    on_topic: true,
+    policy: 'restricted',
+    warning: true,
+    text: 'Spray fungicide at 5 ml per litre to treat anthracnose.',
+  }));
+  const answer = await unsafe.answerGeneral('How do I treat anthracnose?', 'ctx');
+  expect(answer.policy).toBe('restricted');
+  expect(answer.warning).toBe(true);
+  expect(answer.text).toContain('local agriculturist');
+  expect(answer.text.toLowerCase()).not.toContain('fungicide');
+  expect(answer.text).not.toContain('5 ml');
+
+  const missingMetadata = provider(reply({ on_topic: true, text: 'Untrusted model text.' }));
+  await expect(missingMetadata.answerGeneral('Anong gamot sa sakit ng mangga?', 'ctx', { policy: 'restricted', language: 'FIL' }))
+    .resolves.toMatchObject({ policy: 'restricted', warning: true, text: expect.stringContaining('agriculturista') });
+});
+
+test('a server-restricted fallback overrides the client policy when local classification missed a symptom', async () => {
+  const p = provider(reply({
+    on_topic: true,
+    policy: 'restricted',
+    warning: true,
+    text: 'Visible plant symptoms can have several causes. Describe them to a local agriculturist.',
+  }));
+  const answer = await p.answerGeneral('I see white fuzzy growth on leaves', 'ctx', {
+    policy: 'general', language: 'EN',
+  });
+
+  expect(answer).toMatchObject({ policy: 'restricted', warning: true, onTopic: true });
+  expect(answer.text).toContain('local agriculturist');
 });
 
 test('an off-topic question yields a refusal and discards the model text', async () => {
@@ -45,7 +86,7 @@ test('no API key is ever sent — only the device id', async () => {
   let headers: Record<string, string> = {};
   const p = provider((async (_u: string, init: { headers: Record<string, string> }) => {
     headers = init.headers;
-    return { ok: true, status: 200, json: async () => ({ on_topic: true, text: 'ok' }) };
+    return { ok: true, status: 200, json: async () => ({ on_topic: true, policy: 'general', warning: true, text: 'ok' }) };
   }) as unknown as typeof fetch);
   await p.answerGeneral('q', 'ctx');
 
@@ -60,7 +101,12 @@ test('the question and the context are what the proxy is asked about', async () 
   const p = provider((async (url: string, init: { body: string }) => {
     sentUrl = url;
     sentBody = init.body;
-    return { ok: true, status: 200, json: async () => ({ on_topic: true, text: 'ok' }) };
+    return { ok: true, status: 200, json: async () => ({
+      on_topic: true,
+      policy: 'restricted',
+      warning: true,
+      text: 'Visible signs can have several causes. Ask a local agriculturist.',
+    }) };
   }) as unknown as typeof fetch);
   await p.answerGeneral('How do I control anthracnose?', 'Grower is in Bacoor.');
 
@@ -71,6 +117,8 @@ test('the question and the context are what the proxy is asked about', async () 
     mode: 'general',
     question: 'How do I control anthracnose?',
     context: 'Grower is in Bacoor.',
+    policy: 'restricted',
+    language: 'EN',
   });
 });
 
@@ -137,14 +185,18 @@ test('history is included in the request body when provided', async () => {
   let sentBody: unknown;
   const fetchImpl = jest.fn(async (_url: string, init: RequestInit) => {
     sentBody = JSON.parse(init.body as string);
-    return new Response(JSON.stringify({ on_topic: true, text: 'ok' }), { status: 200 });
+    return new Response(JSON.stringify({ on_topic: true, policy: 'general', warning: true, text: 'ok' }), { status: 200 });
   }) as unknown as typeof fetch;
   const provider = createProxyProvider({ baseUrl: BASE, deviceId: 'dev-1', fetchImpl });
 
-  await provider.answerGeneral('second question', '', [
-    { role: 'user', text: 'first question' },
-    { role: 'assistant', text: 'first answer' },
-  ]);
+  await provider.answerGeneral('second question', '', {
+    policy: 'general',
+    language: 'EN',
+    history: [
+      { role: 'user', text: 'first question' },
+      { role: 'assistant', text: 'first answer' },
+    ],
+  });
 
   expect(sentBody).toMatchObject({
     mode: 'general',
@@ -168,50 +220,49 @@ test('an absent history is simply omitted from the body', async () => {
 
 // --- the grounded tier, guards unchanged ------------------------------------
 
-test('rephrase still passes the grounded guards', async () => {
-  const p = provider(reply({ text: 'Banana suits this area.', verdict_echo: 'potentially_suitable' }));
-  await expect(p.rephrase(ANSWER)).resolves.toBe('Banana suits this area.');
+test('only whitespace formatting can pass the grounded rephrase guard', async () => {
+  const formatted = ANSWER.text.replace('\n', '\r\n').replace('Annual rainfall', 'Annual   rainfall');
+  const p = provider(reply({ text: formatted, verdict_echo: 'potentially_suitable' }));
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'accepted', text: ANSWER.text });
 });
 
 test('a rephrase that changes the verdict falls back to curated wording', async () => {
   const p = provider(reply({ text: 'Perfect!', verdict_echo: 'suitable' }));
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'verdict_changed' });
 });
 
 test('a rephrase that invents a number falls back to curated wording', async () => {
   const p = provider(reply({ text: 'Rainfall reaches 5,000 mm.', verdict_echo: 'potentially_suitable' }));
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'protected_content_changed' });
 });
 
-test('a rephrase that reuses the supplied numbers is allowed through', async () => {
+test('a rephrase that changes wording is rejected even when it reuses supplied numbers', async () => {
   const p = provider(
     reply({ text: 'Rainfall is 2,930 mm against an optimal 1,800–2,600 mm.', verdict_echo: 'potentially_suitable' }),
   );
-  await expect(p.rephrase(ANSWER)).resolves.toBe(
-    'Rainfall is 2,930 mm against an optimal 1,800–2,600 mm.',
-  );
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'protected_content_changed' });
 });
 
 test('an empty rephrase falls back to curated wording', async () => {
   const p = provider(reply({ text: '   ', verdict_echo: 'potentially_suitable' }));
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'malformed_response' });
 });
 
 test('a rephrase network error falls back to curated wording', async () => {
   const p = provider((async () => { throw new Error('offline'); }) as unknown as typeof fetch);
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'unavailable' });
 });
 
 test('an HTTP error on rephrase falls back to curated wording', async () => {
   const p = provider(reply({ error: 'quota exhausted' }, 429));
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'unavailable' });
 });
 
 test('an unparseable rephrase body falls back to curated wording', async () => {
   const p = provider(
     (async () => ({ ok: true, status: 200, json: async () => { throw new Error('not json'); } })) as unknown as typeof fetch,
   );
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'malformed_response' });
 });
 
 test('rephrase sends only the facts and the verdict, never the raw question', async () => {
@@ -231,6 +282,18 @@ test('rephrase sends only the facts and the verdict, never the raw question', as
   expect(sent.verdict).toBe('potentially_suitable');
   expect(sent.facts).toContain('2,930 mm');
   expect(sent.question).toBeUndefined();
+  expect(Object.keys(sent).sort()).toEqual(['curated', 'facts', 'mode', 'verdict']);
+});
+
+test('a timeout rejects rephrasing with a safe fallback reason', async () => {
+  const p = provider(
+    (async (_url: string, init: { signal: AbortSignal }) =>
+      new Promise((_resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(new Error('aborted')));
+      })) as unknown as typeof fetch,
+    { timeoutMs: 10 },
+  );
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'unavailable' });
 });
 
 test('an unconfigured proxy rephrases to the curated wording without a request', async () => {
@@ -240,7 +303,7 @@ test('an unconfigured proxy rephrases to the curated wording without a request',
     deviceId: 'dev-1',
     fetchImpl: (async () => { called = true; throw new Error('should not be called'); }) as unknown as typeof fetch,
   });
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'unavailable' });
   expect(called).toBe(false);
 });
 
@@ -265,20 +328,21 @@ test('an HTTP failure on rephrase is reported with its status', async () => {
   expect(seen[0]).toContain('502');
 });
 
-test('a guard rejection stays silent — that is the safety net working, not a fault', async () => {
+test('a guard rejection carries a safe reason and never logs untrusted model text', async () => {
   const seen: string[] = [];
   const p = provider(reply({ text: 'Rainfall is 9,999 mm.', verdict_echo: 'potentially_suitable' }), {
     onDiagnostic: (m: string) => seen.push(m),
   });
-  await expect(p.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'rejected', reason: 'protected_content_changed' });
   expect(seen).toEqual([]);
 });
 
-test('a successful rephrase reports nothing', async () => {
+test('a format-only accepted response reports nothing', async () => {
   const seen: string[] = [];
-  const p = provider(reply({ text: 'Banana suits this area.', verdict_echo: 'potentially_suitable' }), {
+  const formatted = ANSWER.text.replace('\n', '\r\n').replace('Annual rainfall', 'Annual   rainfall');
+  const p = provider(reply({ text: formatted, verdict_echo: 'potentially_suitable' }), {
     onDiagnostic: (m: string) => seen.push(m),
   });
-  await expect(p.rephrase(ANSWER)).resolves.toBe('Banana suits this area.');
+  await expect(p.rephrase(ANSWER)).resolves.toEqual({ status: 'accepted', text: ANSWER.text });
   expect(seen).toEqual([]);
 });

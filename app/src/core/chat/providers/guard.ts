@@ -1,50 +1,57 @@
-/**
- * Output guards — step 5 of design spec §12.
- *
- * A reworded answer is only allowed through if it says the same thing the
- * deterministic layer computed. Two checks, both cheap and both refusals by
- * default:
- *
- *   1. `verdict_echo` must equal the computed verdict. A model that changed the
- *      conclusion is discarded outright.
- *   2. Every numeric token in the reworded text must already appear in the
- *      supplied facts. This is what stops an invented dosage, rainfall figure or
- *      confidence from reaching a farmer.
- *
- * Returning `null` means "use the template instead" — never "show this anyway".
- */
+/** Safe, non-sensitive reasons used to decide what fallback notice to persist. */
+export type RephraseRejectionReason =
+  | 'malformed_response'
+  | 'verdict_changed'
+  | 'protected_content_changed'
+  | 'unavailable';
 
-export interface Rephrasing {
+export type RephraseOutcome =
+  | { status: 'accepted'; text: string }
+  | { status: 'rejected'; reason: RephraseRejectionReason };
+
+export interface Guarded {
   text: string;
-  verdict_echo: string | null;
-}
-
-interface Guarded {
   facts: string[];
   verdict: string | null;
 }
 
-/** Digit runs, keeping separators so "2,930" and "1.5" stay single tokens. */
-const NUMBER = /\d[\d.,]*/g;
-
-/** Trailing separators are punctuation, not part of the number. */
-function trimNumber(token: string): string {
-  return token.replace(/[.,]+$/, '');
+/**
+ * This API deliberately accepts no semantic paraphrase. Word and punctuation
+ * changes cannot be verified without semantic inference, so the only accepted
+ * candidate is the curated wording with whitespace formatting normalized.
+ * Curated text remains the value returned to the UI in every accepted case.
+ */
+function normalizeFormatting(text: string): string {
+  return text
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\t ]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
-export function guardRephrasing(candidate: Rephrasing, answer: Guarded): string | null {
-  const text = typeof candidate?.text === 'string' ? candidate.text.trim() : '';
-  if (text === '') return null;
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
 
-  // 1. The conclusion must survive the rewording unchanged.
-  if (answer.verdict !== null && candidate.verdict_echo !== answer.verdict) return null;
+function rejected(reason: RephraseRejectionReason): RephraseOutcome {
+  return { status: 'rejected', reason };
+}
 
-  // 2. No number may appear that the facts did not supply.
-  const supplied = answer.facts.join(' ');
-  const suppliedNumbers = new Set((supplied.match(NUMBER) ?? []).map(trimNumber));
-  for (const token of text.match(NUMBER) ?? []) {
-    if (!suppliedNumbers.has(trimNumber(token))) return null;
+export function guardRephrasing(candidate: unknown, answer: Guarded): RephraseOutcome {
+  if (!isObject(candidate)) return rejected('malformed_response');
+  const keys = Object.keys(candidate);
+  if (keys.length !== 2 || !keys.includes('text') || !keys.includes('verdict_echo')) {
+    return rejected('malformed_response');
+  }
+  if (typeof candidate.text !== 'string' || candidate.text.trim() === '' || candidate.text.length > 4000) {
+    return rejected('malformed_response');
+  }
+  if (candidate.verdict_echo !== answer.verdict) return rejected('verdict_changed');
+
+  if (normalizeFormatting(candidate.text) !== normalizeFormatting(answer.text)) {
+    return rejected('protected_content_changed');
   }
 
-  return text;
+  return { status: 'accepted', text: answer.text };
 }

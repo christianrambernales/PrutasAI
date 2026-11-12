@@ -86,7 +86,7 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
     cropName ?? (isFil ? 'Mangga (Carabao)' : 'Mango (Carabao)');
   const displayCropScientific = cropScientific ?? 'Mangifera indica';
   const displayCropEmoji = cropEmoji ?? '🥭';
-  const displayMatchPercentage = matchPercentage ?? '96%';
+  const displayMatchPercentage = matchPercentage ?? (record ? null : '96%');
   const displayRecordId = recordId ?? (record?.title ? record.title : 'SCAN-2026-0043');
   const displayCoords = locationCoords ?? '14.17°N, 121.24°E';
 
@@ -143,7 +143,7 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
         rightAction={
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={isFil ? 'Kumuha Ulit' : 'Retake'}
+            accessibilityLabel="Go back"
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             onPress={handleRetake}
             style={({ pressed }) => [
@@ -174,12 +174,14 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
               <Text style={styles.detectedLabel}>
                 {isFil ? 'Awtomatikong Na-detect na Pananim' : 'Auto-Detected Fruit Crop'}
               </Text>
-              <StatusBadge
-                variant="healthy"
-                label={`${displayMatchPercentage} ${isFil ? 'Tugma' : 'Match'}`}
-                style={styles.matchBadge}
-                textStyle={{ fontSize: 11 }}
-              />
+              {displayMatchPercentage ? (
+                <StatusBadge
+                  variant="healthy"
+                  label={`${displayMatchPercentage} ${isFil ? 'Tugma' : 'Match'}`}
+                  style={styles.matchBadge}
+                  textStyle={{ fontSize: 11 }}
+                />
+              ) : null}
             </View>
             <Text style={styles.detectedCropTitle}>{displayCropName}</Text>
             <Text style={styles.detectedMorphology}>

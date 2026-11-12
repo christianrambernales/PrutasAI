@@ -36,6 +36,9 @@ import { RouteBar, RouteBody } from './render/routes';
 import { TabBar, TabBody, tabItems } from './render/tabs';
 import type { Shell } from './shell';
 import { useHistoryFilters } from '../features/history/useHistoryFilters';
+import { localizeScanGroups } from '../features/history/localizeScan';
+import { useMonitoring } from '../features/monitoring/useMonitoring';
+import { useMonitoringList } from '../features/monitoring/useMonitoringList';
 
 export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/driver').SqlDriver } = {}) {
   // Opened once. History is read from here, so what the app shows is what the
@@ -125,9 +128,32 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
   // context its children consume.
   const t = strings(app.language);
 
-  const push = useCallback((r: Route) => dispatch({ type: 'push', route: r }), []);
+  const backInterceptorRef = React.useRef<(() => boolean) | null>(null);
+  const pendingNavigationRef = React.useRef<(() => void) | null>(null);
+  const resumingNavigationRef = React.useRef(false);
+  const navigate = useCallback((action: () => void) => {
+    if (!resumingNavigationRef.current && backInterceptorRef.current?.()) {
+      pendingNavigationRef.current = action;
+      return;
+    }
+    pendingNavigationRef.current = null;
+    action();
+  }, []);
+  const push = useCallback((r: Route) => {
+    const action = () => dispatch({ type: 'push', route: r });
+    // The explicit checkpoint camera preserves the mounted monitoring draft.
+    if (r.name === 'capture' && r.target?.type === 'checkpoint') action();
+    else navigate(action);
+  }, [navigate]);
   const replace = useCallback((r: Route) => dispatch({ type: 'replace', route: r }), []);
-  const back = useCallback(() => dispatch({ type: 'back' }), []);
+  const pushAccountRoute = useCallback((r: Route) => {
+    if (r.name === 'account') navigate(() => dispatch({ type: 'selectTab', tab: 'account' }));
+    else push(r);
+  }, [navigate, push]);
+
+  const back = useCallback(() => {
+    navigate(() => dispatch({ type: 'back' }));
+  }, [navigate]);
   // Straight to the reducer, not through `dispatchApp`: a notice persists
   // nothing, and this keeps the empty dependency array honest. A useReducer
   // dispatch is stable; `dispatchApp` is rebuilt whenever `useLocation` or
@@ -138,7 +164,7 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
   );
 
   const accountSync = useAccountSync({
-    db, t, notify, push, back, consented, dataVersion,
+    db, t, notify, push: pushAccountRoute, back, consented, syncMode, dataVersion,
     bumpData,
     onSyncModeChange: setSyncModeState,
     onAccountRequested: () => setAccountRequested(true),
@@ -148,8 +174,8 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
     [accountSync.account.userId],
   );
   const scanGroups = useMemo(
-    () => listScanGroups(db, accountScope),
-    [db, dataVersion, accountScope],
+    () => localizeScanGroups(listScanGroups(db, accountScope), app.language, t),
+    [db, dataVersion, accountScope, app.language, t],
   );
   const allScans = useMemo(() => scanGroups.flatMap(g => g.scans), [scanGroups]);
   const trashedConversations = useMemo(
@@ -159,10 +185,20 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
 
   const navRef = React.useRef(nav);
   navRef.current = nav;
+  const conversationSidebarRef = React.useRef({
+    open: false,
+    close: () => {},
+  });
 
-  // Android hardware back mirrors the in-app back button.
+  // Android hardware back dismisses the conversation overlay before changing
+  // route or tab. The ref keeps the native listener current without replacing
+  // it while the overlay opens or closes.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (conversationSidebarRef.current.open) {
+        conversationSidebarRef.current.close();
+        return true;
+      }
       if (!canGoBack(navRef.current)) return false;
       back();
       return true;
@@ -178,7 +214,7 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
 
   // --- climate ---------------------------------------------------------------
 
-  const climateViews = useClimateViews({ savedLocation: app.savedLocation, fruits });
+  const climateViews = useClimateViews({ savedLocation: app.savedLocation, fruits, db });
 
   const { chat, aiAvailable } = useChatRuntime({
     db, notify, app, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit,
@@ -189,15 +225,77 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
   const conversations = useConversationsUi({
     db, chat, dataVersion, bumpData, scope: accountScope,
   });
+  conversationSidebarRef.current = {
+    open: conversations.sidebarOpen,
+    close: conversations.closeSidebar,
+  };
 
   // --- history ---------------------------------------------------------------
 
   const history = useHistoryFilters({
     scanGroups, allScans, historyFilter: app.historyFilter, historyQuery: app.historyQuery, t,
   });
+  const monitoringList = useMonitoringList({ db, scope: accountScope, dataVersion });
+  useEffect(() => {
+    // A detail visit may create a new persisted session without saving a
+    // checkpoint. Refresh the root list when it becomes visible again.
+    if (nav.tab === 'monitoring' && !route) void monitoringList.reload();
+  }, [nav.tab, route?.name, monitoringList.reload]);
 
   // Using ExpoPhotoStore for handling scan images
   const photoStore = useMemo(() => new ExpoPhotoStore(), []);
+
+  // Keep the draft mounted while the camera temporarily covers Monitoring.
+  const monitoringScanId = [...nav.stack].reverse().find(entry => entry.name === 'monitoring');
+  const monitoring = useMonitoring({
+    db, photoStore, scope: accountScope,
+    sessionId: monitoringScanId?.name === 'monitoring' ? monitoringScanId.sessionId : null,
+    bumpData,
+  });
+  const monitoringForRoute = {
+    ...monitoring,
+    cancelDiscard: () => {
+      pendingNavigationRef.current = null;
+      monitoring.cancelDiscard();
+    },
+    discard: async () => {
+      const discarded = await monitoring.discard();
+      if (discarded && pendingNavigationRef.current) {
+        const resume = pendingNavigationRef.current;
+        pendingNavigationRef.current = null;
+        // AccountSync can call the navigation adapter inside this action.
+        // Discard has succeeded; the prior render's interceptor is now stale.
+        resumingNavigationRef.current = true;
+        try { resume(); } finally { resumingNavigationRef.current = false; }
+      }
+      return discarded;
+    },
+  };
+
+  useEffect(() => {
+    if (route?.name !== 'monitoring' || !route.stagedPhotoUri || !route.dayNumber) return;
+    void monitoring.acceptStagedPhoto(route.dayNumber, route.stagedPhotoUri);
+    // Capture replaced only the camera route; reveal the original Monitoring
+    // entry so Back does not land on a duplicate timeline.
+    dispatch({ type: 'back' });
+  }, [route, monitoring.acceptStagedPhoto]);
+
+  useEffect(() => {
+    if (route?.name !== 'monitoring') return;
+    backInterceptorRef.current = () => {
+      if (!monitoring.hasUnsavedChanges) {
+        return false;
+      }
+      void monitoring.requestBack();
+      return true;
+    };
+    return () => {
+      backInterceptorRef.current = null;
+    };
+  }, [route?.name, monitoring.hasUnsavedChanges, monitoring.requestBack]);
+  useEffect(() => {
+    pendingNavigationRef.current = null;
+  }, [route?.name, accountScope.activeAccountId]);
 
   const capture = useCaptureRoute({
     db,
@@ -207,15 +305,21 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
     replace,
     notify,
     accountId: accountScope.activeAccountId,
+    target: route?.name === 'capture' ? route.target : undefined,
   });
 
   const shell: Shell = {
     t,
     nav: {
       push, replace, back, notify,
-      selectTab: tab => dispatch({ type: 'selectTab', tab }),
+      selectTab: tab => navigate(() => {
+        conversations.closeSidebar();
+        if (tab === 'account') accountSync.openAccount();
+        else conversations.selectTab(tab, next => dispatch({ type: 'selectTab', tab: next }));
+      }),
       openVariety, setOpenVariety,
       openCheckpoint, setOpenCheckpoint,
+      setBackIntercept: (fn) => { backInterceptorRef.current = fn; },
     },
     data: {
       db, accountScope, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit,
@@ -228,6 +332,7 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
     dispatchApp,
     climate: climateViews,
     history,
+    monitoringList,
     account: accountSync,
     chat,
     conversations,
@@ -253,13 +358,20 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
         // On an install that already consented under the old first-run flow
         // that screen never renders, so nothing would push and the button
         // would look dead.
-        if (consented) push({ name: 'account' });
+        if (consented) pushAccountRoute({ name: 'account' });
       }}
       onAcknowledgeConsent={() => {
         recordConsent(db, new Date().toISOString());
+        // An offline user can request account sync from Settings. Apply that
+        // choice only after they acknowledge what changes, then take them to
+        // Account with their selected preference intact.
+        if (accountRequested && syncMode === 'offline') {
+          setSyncMode(db, 'account');
+          setSyncModeState('account');
+        }
         setConsented(true);
         setAccountRequested(false);
-        push({ name: 'account' });
+        pushAccountRoute({ name: 'account' });
       }}
     />
   );
@@ -271,12 +383,14 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
 
   if (route?.name === 'capture') {
     return (
-      <CameraCapture onClose={back} onCaptured={capture.onCaptured} onError={notify} />
+      <LanguageProvider language={app.language}>
+        <CameraCapture onClose={back} onCaptured={capture.onCaptured} />
+      </LanguageProvider>
     );
   }
 
   const body = route
-    ? <RouteBody shell={shell} route={route} />
+    ? <RouteBody shell={shell} route={route} monitoring={monitoringForRoute} />
     : <TabBody shell={shell} tab={nav.tab} />;
   const bar = route
     ? <RouteBar shell={shell} route={route} />
@@ -303,7 +417,7 @@ export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/drive
       <BottomNav
         tabs={tabItems(t)}
         active={nav.tab}
-        onSelect={key => conversations.selectTab(key as TabKey, tab => dispatch({ type: 'selectTab', tab }))}
+        onSelect={key => shell.nav.selectTab(key as TabKey)}
         onScan={() => push({ name: 'capture' })}
       />
       <ConversationSidebar

@@ -54,6 +54,19 @@ jest.mock('../../core/auth/session', () => ({
 }));
 
 let db: SqlDriver;
+let renderedTrees: ReactTestRenderer[] = [];
+
+afterEach(async () => {
+  for (const tree of renderedTrees) {
+    act(() => {
+      tree.unmount();
+    });
+  }
+  renderedTrees = [];
+  await act(async () => {
+    await Promise.resolve();
+  });
+});
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -70,13 +83,15 @@ async function render(): Promise<ReactTestRenderer> {
   await act(async () => {
     tree = renderer.create(<AppNavigator />);
   });
+  renderedTrees.push(tree);
   return tree;
 }
 
-/** Settings → Account → press "Sign in". The mocked signIn always succeeds. */
+/** Settings → Account → Log In → press "Sign in". The mocked signIn always succeeds. */
 async function signInFromSettings(tree: ReactTestRenderer): Promise<void> {
   press(tree, 'Settings');
   press(tree, 'Account');
+  press(tree, 'Sign in');
   await act(async () => { press(tree, 'Sign in'); });
 }
 
@@ -183,10 +198,12 @@ test('forgot password sends a reset request and shows a neutral confirmation', a
   const tree = await render();
   press(tree, 'Settings');
   press(tree, 'Account');
+  press(tree, 'Sign in');
+  press(tree, 'Forgot password?');
 
   const emailField = textInputs(tree).find(n => n.props.accessibilityLabel === 'Email');
   await act(async () => { emailField!.props.onChangeText('grower@example.test'); });
-  await act(async () => { press(tree, 'Forgot password?'); });
+  await act(async () => { press(tree, 'Send Reset Link'); });
 
   expect(resetPassword).toHaveBeenCalledWith('grower@example.test');
   expect(textOf(tree.root)).toContain('If an account exists for that email, a reset link has been sent.');
@@ -234,8 +251,8 @@ test('mode toggles in Settings do not replay onboarding and preserve data', asyn
   expect(getSyncMode(db)).toBe('offline');
   expect(textOf(tree.root)).not.toContain('What PrutasAI sends'); // Not replaying onboarding consent
 
-  // Switch back to account. Note: We changed 'Account' to 'Cloud Sync' in SettingsScreen segmented control.
-  await act(async () => { press(tree, 'Cloud Sync'); });
+  // Switch back to account using the typed, localized mode label.
+  await act(async () => { press(tree, 'Use account sync'); });
 
   expect(getSyncMode(db)).toBe('account');
   expect(textOf(tree.root)).not.toContain('What PrutasAI sends'); // Not replaying onboarding

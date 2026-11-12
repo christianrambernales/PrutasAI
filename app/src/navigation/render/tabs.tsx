@@ -1,8 +1,9 @@
 import React from 'react';
-import { AppBar, TabItem } from '../../ui';
+import { Pressable, StyleSheet } from 'react-native';
+import { AppBar, AppText, COLORS, TabItem } from '../../ui';
 import { ChatScreen } from '../../features/chat/ChatScreen';
-import { ClimateScreen } from '../../features/climate/ClimateScreen';
-import { HistoryScreen } from '../../features/history/HistoryScreen';
+import { MonitoringListScreen } from '../../features/monitoring/MonitoringListScreen';
+import { RouteBody } from './routes';
 import { HomeScreen } from '../../features/home/HomeScreen';
 import * as preview from '../../preview/previewContent';
 import type { TabKey } from '../navState';
@@ -14,52 +15,41 @@ type Strings = Shell['t'];
 export function tabItems(t: Strings): TabItem[] {
   return [
     { key: 'home', label: t.tabHome, icon: 'home' },
-    { key: 'climate', label: t.tabClimate, icon: 'cloud' },
-    { key: 'chat', label: t.tabChat, icon: 'chat' },
-    { key: 'history', label: t.tabHistory, icon: 'history' },
+    { key: 'monitoring', label: t.tabMonitoring, icon: 'monitoring' },
+    { key: 'chat', label: t.tabAssistant, icon: 'chat' },
+    { key: 'account', label: t.tabAccount, icon: 'account' },
   ];
 }
 
 function tabTitle(t: Strings): Record<TabKey, string> {
   return {
     home: 'PrutasAI',
-    climate: t.tabClimate,
+    monitoring: t.titleMonitoring,
     chat: t.titleAssistant,
-    history: t.tabHistory,
+    account: t.titleAccount,
   };
 }
 
 export function TabBar({ shell, tab }: { shell: Shell; tab: TabKey }) {
-  const { t, app, dispatchApp, climate, chat, conversations } = shell;
-  const { notify } = shell.nav;
+  const { t, app, chat, conversations } = shell;
   const TAB_TITLE = tabTitle(t);
+  const conversationsAction = React.useRef<any>(null);
 
   if (tab === 'home') return null;
-  if (tab === 'climate') {
+  if (tab === 'monitoring') {
     return (
       <AppBar
-        title={TAB_TITLE.climate}
-        action="refresh"
-        actionLabel={t.refreshClimate}
-        onAction={() => {
-          if (!app.savedLocation) {
-            notify('Choose a location first — there is nothing to refresh yet.');
-            return;
-          }
-          climate.climate.refresh();
-        }}
+        title={TAB_TITLE.monitoring}
       />
     );
   }
-  if (tab === 'history') {
+  if (tab === 'account') {
     return (
       <AppBar
-        title={TAB_TITLE.history}
-        action="search"
-        actionLabel={t.searchScans}
-        onAction={() =>
-          dispatchApp({ type: app.historyQuery === null ? 'openSearch' : 'closeSearch' })
-        }
+        title={TAB_TITLE.account}
+        action="gear"
+        actionLabel={t.titleSettings}
+        onAction={() => shell.nav.push({ name: 'settings' })}
       />
     );
   }
@@ -71,8 +61,17 @@ export function TabBar({ shell, tab }: { shell: Shell; tab: TabKey }) {
           ? t.onlineSubtitle
           : t.groundedSubtitle
       }
-      menu="menu"
-      onMenu={conversations.openSidebar}
+      right={(
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t.openConversations}
+          ref={conversationsAction}
+          onPress={() => conversations.openSidebar(conversationsAction.current)}
+          style={styles.conversationsAction}
+        >
+          <AppText variant="xsSemi" color={COLORS.surface}>{t.chatConversations}</AppText>
+        </Pressable>
+      )}
       action="trash"
       actionLabel={t.clearConversation}
       onAction={chat.clear}
@@ -81,7 +80,7 @@ export function TabBar({ shell, tab }: { shell: Shell; tab: TabKey }) {
 }
 
 export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
-  const { t, app, dispatchApp, climate, history, chat, conversations } = shell;
+  const { t, app, dispatchApp, climate, chat, conversations, monitoringList } = shell;
   const { push, notify: _notify, selectTab } = shell.nav;
   const { fruits, allScans, statuses, readyCount, aiAvailable } = shell.data;
 
@@ -106,32 +105,22 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           onOpenFruit={fruitKey => push({ name: 'varietyInfo', fruitKey })}
           onOpenScan={scanId => push({ name: 'result', scanId })}
           onOpenSettings={() => push({ name: 'settings' })}
-          onOpenClimate={() => selectTab('climate')}
-          onViewAllScans={() => selectTab('history')}
+          onOpenClimate={() => push({ name: 'climate' })}
+          onViewAllScans={() => push({ name: 'history' })}
           onOpenChat={() => selectTab('chat')}
-          onOpenMonitoring={() => {
-            if (allScans.length > 0) {
-              push({ name: 'monitoring', sessionId: allScans[0].id });
-            } else {
-              selectTab('history');
-            }
-          }}
+          onOpenMonitoring={() => selectTab('monitoring')}
         />
       );
-    case 'climate':
+    case 'monitoring':
       return (
-        <ClimateScreen
-          climate={climate.snapshot}
-          normals={climate.normals}
-          suitability={climate.suitabilityFor(app.suitabilityFruit)}
-          fruits={fruits}
-          selectedFruitKey={app.suitabilityFruit}
-          status={climate.climate.status}
-          error={climate.climate.error}
-          hasLocation={app.savedLocation !== null}
-          onSelectFruit={fruitKey => dispatchApp({ type: 'setSuitabilityFruit', fruitKey })}
-          onChangeLocation={() => push({ name: 'locationPicker' })}
-          onRetry={climate.climate.refresh}
+        <MonitoringListScreen
+          rows={monitoringList.rows}
+          loading={monitoringList.loading}
+          error={monitoringList.error}
+          onRetry={() => void monitoringList.reload()}
+          onOpen={sourceScanId => push({ name: 'monitoring', sessionId: sourceScanId })}
+          onScan={() => push({ name: 'capture' })}
+          onOpenHistory={() => push({ name: 'history' })}
         />
       );
     case 'chat':
@@ -145,21 +134,21 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           onChangeDraft={chat.setDraft}
           onSend={chat.send}
           onSuggestion={chat.ask}
+          onRetry={chat.retry}
           edgeSwipeHandlers={conversations.edgeSwipe.panHandlers}
+          onOpenConversations={conversations.openSidebar}
+          onNewConversation={chat.clear}
         />
       );
-    case 'history':
-      return (
-        <HistoryScreen
-          groups={history.visibleGroups}
-          filters={history.filters}
-          activeFilterKey={app.historyFilter}
-          query={app.historyQuery}
-          totalLabel={t.scansShown(history.visibleCount, allScans.length)}
-          onChangeQuery={query => dispatchApp({ type: 'setHistoryQuery', query })}
-          onFilter={key => dispatchApp({ type: 'setHistoryFilter', filter: key })}
-          onOpenScan={scanId => push({ name: 'result', scanId })}
-        />
-      );
+    case 'account':
+      return <RouteBody shell={shell} route={{ name: 'account' }} />;
   }
 }
+
+const styles = StyleSheet.create({
+  conversationsAction: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+});

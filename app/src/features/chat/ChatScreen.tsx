@@ -163,12 +163,18 @@ export function ChatScreen(props: ChatScreenProps) {
           </View>
         </View>
 
-        {curatedWording && messages.length > 0 ? (
-          <View style={{ paddingHorizontal: SPACING.md, marginBottom: 4 }}>
-            <AppText variant="xs" color={COLORS.textSecondary}>
-              {t.curatedBanner}
-            </AppText>
-          </View>
+        {curatedWording ? (
+          messages.length > 0 ? (
+            <View style={{ paddingHorizontal: SPACING.md, marginBottom: 4 }}>
+              <AppText variant="xs" color={COLORS.textSecondary}>
+                {t.curatedBanner}
+              </AppText>
+            </View>
+          ) : (
+            <View style={styles.srOnly} pointerEvents="none" accessible={false}>
+              <Text>{t.curatedBanner}</Text>
+            </View>
+          )
         ) : null}
 
         {/* 3. Transcript Messages List or Blank-first Welcome View */}
@@ -653,5 +659,12 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     minHeight: 48,
     justifyContent: 'center',
+  },
+  srOnly: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0.01,
+    overflow: 'hidden',
   },
 });

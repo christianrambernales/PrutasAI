@@ -29,6 +29,8 @@ export interface Match {
   slots: Slots;
 }
 
+export type GeneralPolicy = 'general' | 'restricted';
+
 /** Fruit names the knowledge base carries, in both languages. */
 const FRUIT_WORDS: Record<string, string[]> = {
   banana: ['banana', 'bananas', 'saging'],
@@ -79,6 +81,26 @@ const BARE_MENTION_WORDS = 4;
 
 function normalise(text: string): string {
   return text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+}
+
+const RESTRICTED_TOPIC = /\b(?:disease|diseases|sick|symptom|symptoms|diagnos\w*|anthrac\w*|powdery mildew|rust|scab|blight|mold\w*|mould\w*|amag|rot|rott\w*|bulok|gamot|gamutin|lunas|pest|pesticide|fungicide|insecticide|spray|dose|dosage|chemical|sakit|peste|spots?|wilt|yellow(?:ing)?)\b|\b(?:what is wrong|what is this|ano ito|anong sakit)\b/i;
+
+// Treat descriptions of observed plant parts as uncertain health questions,
+// even when the grower uses words outside a fixed symptom vocabulary (for
+// example, "cottony patches on mango leaves"). This is a structure check:
+// an observed plant part plus a visible-feature description is restricted.
+const PLANT_PART = /\b(?:plant|crop|fruit|leaf|leaves|stem|trunk|root|roots|bark|flower|blossom|seed|seedling|tree|dahon|bunga|ugat|tangkay)\b/i;
+const OBSERVATION = /\b(?:i see|i saw|i notice|i noticed|there (?:is|are)|these|my .{1,60}\b(?:has|have|looks?|appears?|seems?)|with|covered|growing on|on|sa|may|nakikita|napansin)\b/i;
+const VISIBLE_FEATURE = /\b(?:growth|patch(?:es)?|mark(?:s)?|coating|film|fuzz|fuzzy|cottony|powdery|raised|pale|white|black|brown|orange|gray|grey|discolou?r\w*|texture|crust|bump(?:s)?|lump(?:s)?|streak(?:s)?|pattern(?:s)?|ooze|sticky|curl\w*|droop\w*|shrivel\w*|weird|strange|unusual|wrong|bad)\b/i;
+
+/** Conservative client-side policy classification for open crop-health questions. */
+export function classifyAssistantPolicy(raw: string): GeneralPolicy {
+  const text = normalise(raw);
+  if (RESTRICTED_TOPIC.test(text)) return 'restricted';
+  if (PLANT_PART.test(text) && OBSERVATION.test(text) && VISIBLE_FEATURE.test(text)) {
+    return 'restricted';
+  }
+  return 'general';
 }
 
 function containsAny(haystack: string, needles: string[]): boolean {

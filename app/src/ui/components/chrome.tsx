@@ -139,12 +139,13 @@ export function BottomNav({
 
   const item = (tab: TabItem) => {
     const on = tab.key === active;
+    const tabLabel = tab.key === 'account' ? `${tab.label}, Settings` : tab.label;
     return (
       <Pressable
         key={tab.key}
         accessibilityRole="tab"
         accessibilityState={{ selected: on }}
-        accessibilityLabel={tab.label}
+        accessibilityLabel={tabLabel}
         onPress={() => onSelect(tab.key)}
         onFocus={() => setFocused(tab.key)}
         onBlur={() => setFocused(null)}

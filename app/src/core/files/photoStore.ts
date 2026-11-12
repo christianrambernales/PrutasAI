@@ -1,13 +1,13 @@
 export interface PhotoStore {
   /**
-   * Copies the given source URI to an app-owned persistent location.
-   * Returns the app-owned URI.
+   * Copies the source to app-owned persistent storage and returns a displayable
+   * URI. On web, the returned data URI is persisted with its local SQLite row.
    */
   copyToOwned(sourceUri: string): Promise<string>;
 
   /**
-   * Deletes the app-owned file at the given URI.
-   * Tolerates if the file is already gone.
+   * Deletes the app-owned photo at the given URI when stored separately.
+   * Tolerates if the photo is already gone or owned by its SQLite row.
    */
   deleteOwned(ownedUri: string): Promise<void>;
 

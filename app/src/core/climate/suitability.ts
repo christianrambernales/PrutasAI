@@ -79,6 +79,9 @@ export interface SuitabilityVerdict {
   evidence: EvidenceRow[];
   basisLabel: string;
   sourceLabel: string;
+  provisional: boolean;
+  warning: string;
+  missingFields: string[];
 }
 
 const HEADLINE: Record<Verdict, string> = {
@@ -108,7 +111,11 @@ export interface JudgeInput {
 export function judgeSuitability({ fruitKey, normals, elevationM }: JudgeInput): SuitabilityVerdict {
   const req = CROP_REQUIREMENTS[fruitKey];
 
-  if (!req || !normals) {
+  const hasYearSpan = Boolean(normals && Number.isInteger(normals.fromYear) && normals.fromYear > 0
+    && Number.isInteger(normals.toYear) && normals.toYear >= normals.fromYear);
+  if (!req || !normals || !hasYearSpan) {
+    const missingFields = [!normals || !hasYearSpan ? 'historical climate evidence' : '', !req ? 'crop requirements' : '']
+      .filter(Boolean);
     return {
       verdict: 'insufficient_data',
       headline: HEADLINE.insufficient_data,
@@ -118,27 +125,32 @@ export function judgeSuitability({ fruitKey, normals, elevationM }: JudgeInput):
       evidence: [],
       basisLabel: '',
       sourceLabel: '',
+      provisional: Boolean(req),
+      warning: req
+        ? 'Crop suitability ranges are unverified.'
+        : 'No verified crop-requirement data is available for this fruit.',
+      missingFields,
     };
   }
 
   const evidence: EvidenceRow[] = [
     {
       label: 'Mean temperature',
-      value: `${normals.meanTemperatureC} °C`,
+      value: Number.isFinite(normals.meanTemperatureC) ? `${normals.meanTemperatureC} °C` : 'unknown',
       rangeLabel: `optimal ${req.temperature.optimal[0]}–${req.temperature.optimal[1]} °C`,
       status: classify(normals.meanTemperatureC, req.temperature),
       icon: 'thermometer',
     },
     {
       label: 'Annual rainfall',
-      value: `${number(normals.annualRainMm)} mm`,
+      value: Number.isFinite(normals.annualRainMm) ? `${number(normals.annualRainMm)} mm` : 'unknown',
       rangeLabel: `optimal ${number(req.rainfall.optimal[0])}–${number(req.rainfall.optimal[1])} mm`,
       status: classify(normals.annualRainMm, req.rainfall),
       icon: 'cloudRain',
     },
     {
       label: 'Elevation',
-      value: elevationM === null ? 'unknown' : `${number(elevationM)} m`,
+      value: elevationM === null || !Number.isFinite(elevationM) ? 'unknown' : `${number(elevationM)} m`,
       rangeLabel: `optimal below ${number(req.elevation.optimal[1])} m`,
       status: classify(elevationM, req.elevation),
       icon: 'mountain',
@@ -168,12 +180,21 @@ export function judgeSuitability({ fruitKey, normals, elevationM }: JudgeInput):
             .filter(Boolean)
             .join(' ');
 
+  const missingFields = evidence
+    .filter(row => row.status === 'unknown')
+    .map(row => row.label === 'Mean temperature' ? 'temperature' : row.label === 'Annual rainfall' ? 'rainfall' : 'elevation');
+
   return {
     verdict,
     headline: HEADLINE[verdict],
     detail,
     evidence,
-    basisLabel: `Computed from ${normals.toYear - normals.fromYear + 1}-year normals, ${normals.fromYear}–${normals.toYear} — not from today's weather.`,
+    basisLabel: `${normals.toYear - normals.fromYear + 1}-year mean from ${normals.fromYear}–${normals.toYear} — not from today's weather.`,
     sourceLabel: `Ranges unverified · ${req.citation} · Climate: Open-Meteo (CC BY 4.0)`,
+    provisional: true,
+    warning: missingFields.length > 0
+      ? `Provisional suitability only. Missing ${missingFields.join(', ')}; crop ranges are unverified by an agriculturist.`
+      : 'Provisional suitability only. Crop ranges are unverified by an agriculturist.',
+    missingFields,
   };
 }

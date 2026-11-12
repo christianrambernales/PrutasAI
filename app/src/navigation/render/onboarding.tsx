@@ -63,6 +63,7 @@ export function OnboardingGate(props: OnboardingGateProps): React.ReactElement |
             <WelcomeScreen
               onChooseOffline={props.onChooseOffline}
               onChooseAccount={props.onChooseAccount}
+              onSelectLanguage={props.onPickLanguage}
             />
           </ScreenBody>
         </Screen>

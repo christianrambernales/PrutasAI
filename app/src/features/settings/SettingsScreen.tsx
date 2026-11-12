@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
-  AppText, Chip, Col, COLORS, Icon, IconName, PressableRow, RADIUS, Row,
+  AppText, Button, Chip, Col, COLORS, Icon, IconName, PressableRow, RADIUS, Row,
   Section, Segmented, SHADOWS, SPACING, Toggle, useT,
 } from '../../ui';
 
@@ -28,7 +28,9 @@ export interface SettingsScreenProps {
   onOpenAccount: () => void;
   onOpenTrash: () => void;
   syncMode?: 'offline' | 'account' | null;
-  onSetSyncMode?: (mode: 'offline' | 'account') => void;
+  onSetSyncMode?: (mode: 'offline' | 'account') => void | Promise<void>;
+  modeChangeBusy?: boolean;
+  modeChangeError?: boolean;
 }
 
 function Group({ children }: { children: React.ReactNode }) {
@@ -66,7 +68,14 @@ function GroupRow({
       {right}
     </Row>
   );
-  return onPress ? <PressableRow onPress={onPress}>{body}</PressableRow> : body;
+  return onPress ? (
+    <PressableRow
+      accessibilityLabel={[title, detail].filter(Boolean).join(', ')}
+      onPress={onPress}
+    >
+      {body}
+    </PressableRow>
+  ) : body;
 }
 
 export function SettingsScreen(props: SettingsScreenProps) {
@@ -86,16 +95,38 @@ export function SettingsScreen(props: SettingsScreenProps) {
           />
           <GroupRow
             icon="cloud"
-            title={t.cloudSyncEnabled === 'Cloud sync is on' || t.welcomeOfflineTitle === 'Use offline' ? 'Sync mode' : 'Modo ng pag-sync'}
-            right={
-              <Segmented
-                options={[t.welcomeOfflineTitle, 'Cloud Sync']}
-                value={props.syncMode === 'offline' ? t.welcomeOfflineTitle : 'Cloud Sync'}
-                onChange={(val) => props.onSetSyncMode?.(val === t.welcomeOfflineTitle ? 'offline' : 'account')}
-              />
-            }
+            title={t.syncMode}
+            detail={props.syncMode === 'offline' ? t.syncModeOfflineDetail : t.syncModeAccountDetail}
           />
+          <View style={styles.syncModeControl}>
+            <Segmented
+              options={[
+                { value: 'offline', label: t.syncModeOffline },
+                { value: 'account', label: t.syncModeAccount },
+              ]}
+              value={props.syncMode === 'offline' ? 'offline' : 'account'}
+              fullWidth
+              onChange={(mode) => {
+                if (!props.modeChangeBusy) {
+                  void props.onSetSyncMode?.(mode === 'offline' ? 'offline' : 'account');
+                }
+              }}
+            />
+          </View>
         </Group>
+        {props.modeChangeBusy ? (
+          <AppText variant="xs" color={COLORS.textSecondary}>{t.syncModeSaving}</AppText>
+        ) : null}
+        {props.modeChangeError ? (
+          <Col gap={SPACING.xs}>
+            <AppText variant="xs" color={COLORS.error}>{t.syncModeChangeFailed}</AppText>
+            <Button
+              label={t.retry}
+              variant="secondary"
+              onPress={() => void props.onSetSyncMode?.(props.syncMode === 'offline' ? 'account' : 'offline')}
+            />
+          </Col>
+        ) : null}
       </Section>
 
       <Section gap={SPACING.sm + 2}>
@@ -105,7 +136,16 @@ export function SettingsScreen(props: SettingsScreenProps) {
             first
             icon="globe"
             title={t.appLanguage}
-            right={<Segmented options={['EN', 'FIL']} value={props.language} onChange={props.onChangeLanguage} />}
+            right={(
+              <Segmented
+                options={[
+                  { value: 'EN', label: t.languageEnglish },
+                  { value: 'FIL', label: t.languageFilipino },
+                ]}
+                value={props.language}
+                onChange={props.onChangeLanguage}
+              />
+            )}
           />
         </Group>
       </Section>
@@ -223,11 +263,11 @@ export function SettingsScreen(props: SettingsScreenProps) {
           <GroupRow
             first
             icon="leaf"
-            title="PrutasAI"
+            title={t.brandName}
             detail={t.aboutBlurb}
           />
           <GroupRow
-            title="Climate data by Open-Meteo, CC BY 4.0. Variety data from PCAARRD-DOST, DA and UPLB IPB."
+            title={t.aboutSources}
           />
         </Group>
       </Section>
@@ -246,4 +286,5 @@ const styles = StyleSheet.create({
   },
   row: { paddingHorizontal: SPACING.md - 4, paddingVertical: SPACING.md - 4 },
   rowDivided: { borderTopWidth: 1, borderTopColor: COLORS.border },
+  syncModeControl: { paddingHorizontal: SPACING.md - 4, paddingBottom: SPACING.md - 4 },
 });

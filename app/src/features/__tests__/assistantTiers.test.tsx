@@ -53,7 +53,7 @@ function remote(answerGeneral: ChatProvider['answerGeneral']): ChatProvider {
     id: 'test-remote',
     remote: true,
     isAvailable: () => true,
-    rephrase: async answer => answer.text,
+    rephrase: async answer => ({ status: 'accepted', text: answer.text }),
     answerGeneral,
   };
 }
@@ -63,6 +63,8 @@ const general = (body: Partial<GeneralAnswer>): GeneralAnswer => ({
   text: '',
   error: null,
   errorKind: null,
+  policy: 'general',
+  warning: true,
   ...body,
 });
 
@@ -90,14 +92,15 @@ test('a knowledge-base question is answered from the knowledge base, unchanged',
   expect(generalCalls).toBe(0);
 });
 
-test('an open crop question is answered and labelled as general guidance', async () => {
+test('an unreviewed disease question becomes warning-bearing awareness and referral', async () => {
   const handle = mount(remote(async () => general({ onTopic: true, text: 'Remove infected fruit.' })));
 
   await ask(handle, 'How do I control anthracnose?');
 
   const reply = handle.chat().messages[1];
-  expect(reply.kind).toBe('general');
-  expect(reply.text).toBe('Remove infected fruit.');
+  expect(reply.kind).toBe('restricted');
+  expect(reply.text).toContain('local agriculturist');
+  expect(reply.text).not.toContain('Remove infected fruit.');
 });
 
 test('an off-topic answer is replaced by the app refusal, never the model text', async () => {
@@ -136,10 +139,10 @@ test('a rate limit is reported in the user language, not swallowed', async () =>
   expect(handle.chat().messages[1].text).toContain('too many questions');
 });
 
-test('with the assistant off, an open question says so instead of failing quietly', async () => {
+test('with the assistant off, an unrelated open question says so instead of failing quietly', async () => {
   const handle = mount(templateProvider);
 
-  await ask(handle, 'How do I control anthracnose?');
+  await ask(handle, 'How far apart should I space banana suckers?');
 
   const messages = handle.chat().messages;
   expect(messages[0].role).toBe('user');
@@ -164,7 +167,7 @@ test('the model never sees the raw question on the grounded path', async () => {
     isAvailable: () => true,
     rephrase: async answer => {
       seen.push(JSON.stringify(answer.facts));
-      return answer.text;
+      return { status: 'accepted', text: answer.text };
     },
     answerGeneral: async () => general({}),
   };

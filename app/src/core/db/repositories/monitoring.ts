@@ -14,6 +14,8 @@ export interface MonitoringCheckpoint {
 export interface MonitoringSession {
   id: string;
   sourceScanId: string;
+  /** Immutable Day 1 timestamp, read from the persisted source scan. */
+  sourceCreatedAt: number;
   checkpoints: MonitoringCheckpoint[];
 }
 
@@ -26,34 +28,78 @@ export async function createMonitoringSession(
   db: SqlDriver,
   sourceScanId: string,
   scope: LocalAccountScope = { activeAccountId: null },
-  baseDate: number = Date.now()
+  // Retained for call compatibility while Phase 4 routes converge. Schedules
+  // are deliberately derived from scan.created_at, never this caller value.
+  _legacyBaseDate?: number,
 ): Promise<MonitoringSession> {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const source = findAccessibleSourceScan(db, sourceScanId, scope);
+  if (!source) {
+    throw new Error('Source scan not found or access denied');
+  }
+
   const existing = await getMonitoringSessionForScan(db, sourceScanId, scope);
   if (existing) return existing;
 
   const sessionId = 'session_' + generateId();
-  const msPerDay = 24 * 60 * 60 * 1000;
-  
   db.transaction(() => {
+    // Check again inside the write transaction so retried callers do not make
+    // a second lifecycle for the same Day 1 scan.
+    const alreadyCreated = db.get<{ id: string }>(
+      'SELECT id FROM monitoring_session WHERE source_scan_id = ? AND account_id IS ?',
+      [sourceScanId, source.accountId],
+    );
+    if (alreadyCreated) return;
+
     db.get(
       'INSERT INTO monitoring_session (id, source_scan_id, account_id, created_at) VALUES (?, ?, ?, ?) RETURNING id',
-      [sessionId, sourceScanId, scope.activeAccountId, baseDate]
+      [sessionId, sourceScanId, source.accountId, Date.now()]
     );
 
-    // Day 5
+    // Day 1 is the source scan itself. Day 5 and Day 10 are calendar days
+    // five and ten in that timeline, hence +4 and +9 elapsed days.
     db.get(
       'INSERT INTO monitoring_checkpoint (id, session_id, day_number, scheduled_date) VALUES (?, ?, ?, ?) RETURNING id',
-      ['cp5_' + generateId(), sessionId, 5, baseDate + 5 * msPerDay]
+      ['cp5_' + generateId(), sessionId, 5, source.createdAt + 4 * msPerDay]
     );
 
-    // Day 10
     db.get(
       'INSERT INTO monitoring_checkpoint (id, session_id, day_number, scheduled_date) VALUES (?, ?, ?, ?) RETURNING id',
-      ['cp10_' + generateId(), sessionId, 10, baseDate + 10 * msPerDay]
+      ['cp10_' + generateId(), sessionId, 10, source.createdAt + 9 * msPerDay]
     );
   });
 
-  return (await getMonitoringSession(db, sessionId, scope))!;
+  return (await getMonitoringSessionForScan(db, sourceScanId, scope))!;
+}
+
+interface AccessibleSourceScan {
+  accountId: string | null;
+  createdAt: number;
+}
+
+/**
+ * The monitoring baseline is a real persisted scan, not a caller-provided
+ * timestamp. The same account predicate used by scan reads prevents a caller
+ * from attaching a checkpoint timeline to another local account's scan.
+ */
+function findAccessibleSourceScan(
+  db: SqlDriver,
+  sourceScanId: string,
+  scope: LocalAccountScope,
+): AccessibleSourceScan | null {
+  const { clause, params } = buildScopeCondition(scope, 's');
+  const row = db.get<{ account_id: string | null; created_at: string }>(
+    `SELECT s.account_id, s.created_at
+       FROM scan s
+      WHERE s.uuid = ? AND s.deleted_at IS NULL AND ${clause}`,
+    [sourceScanId, ...params],
+  );
+  if (!row) return null;
+  const createdAt = Date.parse(row.created_at);
+  if (!Number.isFinite(createdAt)) {
+    throw new Error('Source scan has an invalid created_at timestamp');
+  }
+  return { accountId: row.account_id, createdAt };
 }
 
 export async function getMonitoringSession(
@@ -62,13 +108,24 @@ export async function getMonitoringSession(
   scope: LocalAccountScope = { activeAccountId: null }
 ): Promise<MonitoringSession | null> {
   const { clause, params } = buildScopeCondition(scope, 'monitoring_session');
+  const sourceScope = buildScopeCondition(scope, 'scan');
   
-  const sessionRow = db.get<{ id: string; source_scan_id: string }>(
-    `SELECT id, source_scan_id FROM monitoring_session WHERE id = ? AND ${clause}`,
-    [sessionId, ...params]
+  const sessionRow = db.get<{ id: string; source_scan_id: string; source_created_at: string }>(
+    `SELECT monitoring_session.id, monitoring_session.source_scan_id, scan.created_at AS source_created_at
+       FROM monitoring_session
+       JOIN scan ON scan.uuid = monitoring_session.source_scan_id
+      WHERE monitoring_session.id = ?
+        AND scan.deleted_at IS NULL
+        AND ${clause}
+        AND ${sourceScope.clause}`,
+    [sessionId, ...params, ...sourceScope.params]
   );
 
   if (!sessionRow) return null;
+  const sourceCreatedAt = Date.parse(sessionRow.source_created_at);
+  if (!Number.isFinite(sourceCreatedAt)) {
+    throw new Error('Source scan has an invalid created_at timestamp');
+  }
 
   const checkpointRows = db.all<{
     id: string;
@@ -86,6 +143,7 @@ export async function getMonitoringSession(
   return {
     id: sessionRow.id,
     sourceScanId: sessionRow.source_scan_id,
+    sourceCreatedAt,
     checkpoints: checkpointRows.map(r => ({
       id: r.id,
       dayNumber: r.day_number,

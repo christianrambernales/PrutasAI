@@ -2,8 +2,25 @@ import React from 'react';
 import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 
 import { AppNavigator } from '../../navigation/AppNavigator';
+import { getSyncMode } from '../../core/db/syncMode';
 import { resetAppDatabase, seedConsent, seedLanguagePicked } from '../../testing/appDatabase';
-import { press, textOf } from '../../testing/interaction';
+import { ConsentScreen } from '../consent/ConsentScreen';
+import { press, pressAsync, textOf } from '../../testing/interaction';
+import { LanguageProvider } from '../../ui';
+
+let renderedTrees: ReactTestRenderer[] = [];
+
+afterEach(async () => {
+  for (const tree of renderedTrees) {
+    act(() => {
+      tree.unmount();
+    });
+  }
+  renderedTrees = [];
+  await act(async () => {
+    await Promise.resolve();
+  });
+});
 
 beforeEach(() => {
   resetAppDatabase();
@@ -12,8 +29,25 @@ beforeEach(() => {
 
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer;
-  act(() => { tree = renderer.create(<AppNavigator />); });
+  act(() => {
+    tree = renderer.create(<AppNavigator />);
+  });
+  renderedTrees.push(tree);
   return tree;
+}
+
+function chooseOffline(tree: ReactTestRenderer): void {
+  press(tree, 'Use offline');
+  press(tree, 'Finish setup and go to Home');
+}
+
+function chooseAccount(tree: ReactTestRenderer): void {
+  press(tree, 'Sign in or create an account');
+  press(tree, 'Review consent');
+}
+
+function acknowledgeConsent(tree: ReactTestRenderer): void {
+  press(tree, 'Finish setup and go to Home');
 }
 
 test('a fresh install sees the Welcome choice before anything else', () => {
@@ -27,7 +61,7 @@ test('a fresh install sees the Welcome choice before anything else', () => {
 
 test('choosing offline skips the disclosure entirely, since it sends nothing', () => {
   const tree = render();
-  press(tree, 'Use offline');
+  chooseOffline(tree);
   const content = textOf(tree.root);
   expect(content).not.toContain('What PrutasAI sends');
   expect(content).toContain('Open camera');
@@ -35,7 +69,7 @@ test('choosing offline skips the disclosure entirely, since it sends nothing', (
 
 test('choosing an account shows the disclosure before anything else', () => {
   const tree = render();
-  press(tree, 'Sign in or create an account');
+  chooseAccount(tree);
   const content = textOf(tree.root);
   expect(content).toContain('What PrutasAI sends');
   // The home screen is behind it, not beside it.
@@ -44,7 +78,7 @@ test('choosing an account shows the disclosure before anything else', () => {
 
 test('the disclosure names both what is sent and what never is', () => {
   const tree = render();
-  press(tree, 'Sign in or create an account');
+  chooseAccount(tree);
   const content = textOf(tree.root);
   expect(content).toContain('a coarse location');
   expect(content).toContain('Your photograph, your name, and your exact position.');
@@ -52,8 +86,8 @@ test('the disclosure names both what is sent and what never is', () => {
 
 test('acknowledging it, having chosen an account, opens sign-in rather than Home', () => {
   const tree = render();
-  press(tree, 'Sign in or create an account');
-  press(tree, 'Got it');
+  chooseAccount(tree);
+  acknowledgeConsent(tree);
   const content = textOf(tree.root);
   expect(content).toContain('Sign in');
   expect(content).not.toContain('What PrutasAI sends');
@@ -61,8 +95,8 @@ test('acknowledging it, having chosen an account, opens sign-in rather than Home
 
 test('it is not shown again after acknowledgement', () => {
   const first = render();
-  press(first, 'Sign in or create an account');
-  press(first, 'Got it');
+  chooseAccount(first);
+  acknowledgeConsent(first);
 
   // A second mount against the same database is the next app launch.
   const second = render();
@@ -76,7 +110,7 @@ test('an offline user reaching Settings then Account sees the disclosure first',
   // point at which it becomes true. Without this the whole local history
   // uploads on sign-in having never been disclosed.
   const tree = render();
-  press(tree, 'Use offline');
+  chooseOffline(tree);
   press(tree, 'Settings');
   press(tree, 'Account');
 
@@ -88,22 +122,38 @@ test('an offline user reaching Settings then Account sees the disclosure first',
 
 test('acknowledging it from Settings continues on to the account screen', () => {
   const tree = render();
-  press(tree, 'Use offline');
+  chooseOffline(tree);
   press(tree, 'Settings');
   press(tree, 'Account');
-  press(tree, 'Got it');
+  acknowledgeConsent(tree);
 
   const content = textOf(tree.root);
   expect(content).toContain('Sign in and your scan history follows you');
   expect(content).not.toContain('What PrutasAI sends');
 });
 
+test('choosing account sync from Settings retains that selection through consent', () => {
+  const db = resetAppDatabase();
+  seedLanguagePicked();
+  const tree = render();
+
+  chooseOffline(tree);
+  press(tree, 'Settings');
+  press(tree, 'Use account sync');
+  expect(textOf(tree.root)).toContain('What PrutasAI sends');
+
+  acknowledgeConsent(tree);
+  expect(getSyncMode(db)).toBe('account');
+  expect(textOf(tree.root)).toContain('Use offline');
+  expect(textOf(tree.root)).toContain('Sign in and sync are optional.');
+});
+
 test('an offline user is not asked a second time once they have acknowledged', () => {
   const tree = render();
-  press(tree, 'Use offline');
+  chooseOffline(tree);
   press(tree, 'Settings');
   press(tree, 'Account');
-  press(tree, 'Got it');
+  acknowledgeConsent(tree);
   press(tree, 'Home');
   press(tree, 'Settings');
   press(tree, 'Account');
@@ -121,7 +171,7 @@ test('an install that already consented still lands on sign-in when it picks the
   seedConsent();
 
   const tree = render();
-  press(tree, 'Sign in or create an account');
+  chooseAccount(tree);
 
   const content = textOf(tree.root);
   expect(content).not.toContain('What PrutasAI sends');
@@ -132,10 +182,33 @@ test('an install that already consented still lands on sign-in when it picks the
 
 test('the same disclosure stays discoverable in Settings', () => {
   const tree = render();
-  press(tree, 'Sign in or create an account');
-  press(tree, 'Got it');
+  chooseAccount(tree);
+  acknowledgeConsent(tree);
   // Landed on sign-in, not Home — go there to reach Settings.
   press(tree, 'Home');
   press(tree, 'Settings');
   expect(textOf(tree.root)).toContain('What is uploaded');
+});
+
+test('consent acknowledgement and retry are named controls; save failures are announced safely in Filipino', async () => {
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <LanguageProvider language="FIL">
+        <ConsentScreen onAcknowledge={async () => { throw new Error('raw database detail'); }} />
+      </LanguageProvider>,
+    );
+  });
+
+  const actionLabels = () => tree.root
+    .findAll(n => n.props.accessibilityRole === 'button')
+    .map(n => n.props.accessibilityLabel);
+  expect(actionLabels()).toContain('Tapusin ang setup at pumunta sa Home');
+  await pressAsync(tree, 'Tapusin ang setup at pumunta sa Home');
+
+  const alert = tree.root.findAll(n => n.props.accessibilityRole === 'alert');
+  expect(alert.some(n => n.props.accessibilityLiveRegion === 'assertive')).toBe(true);
+  expect(textOf(tree.root)).toContain('Hindi ma-save ang iyong pinili. Nananatili ang pinili mo rito.');
+  expect(textOf(tree.root)).not.toContain('raw database detail');
+  expect(actionLabels()).toContain('Subukang muli');
 });

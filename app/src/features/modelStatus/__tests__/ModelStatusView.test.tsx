@@ -137,4 +137,25 @@ describe.each<Language>(['EN', 'FIL'])('ModelStatusView (%s)', language => {
       }
     },
   );
+
+  test('A13 fruit and role status has headings and a complete accessible status label', () => {
+    const tree = renderStatus('banana-partial', language);
+    const headings = tree.root.findAll(node => node.props.accessibilityRole === 'header').map(node => {
+      const collect = (value: unknown): string => {
+        if (value == null || typeof value === 'boolean') return '';
+        if (typeof value === 'string' || typeof value === 'number') return String(value);
+        if (Array.isArray(value)) return value.map(collect).join('');
+        if (typeof value === 'object' && 'children' in value) return collect((value as { children?: unknown }).children);
+        return '';
+      };
+      return collect(node.children);
+    });
+    expect(headings.some(heading => heading.startsWith(t.modelFruitStatus))).toBe(true);
+    expect(headings).toContain(t.fruitBanana);
+
+    const statusRows = tree.root.findAll(node => node.props.accessible === true && Boolean(node.props.accessibilityLabel));
+    expect(statusRows.map(node => node.props.accessibilityLabel)).toContain(
+      `${t.fruitBanana}, ${t.modelRoleFruit}, ${t.modelBuildValidated}, ${t.modelStage(1)}`,
+    );
+  });
 });

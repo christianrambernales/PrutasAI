@@ -6,6 +6,8 @@ import disease_remedy from './migrations/004_knowledge_disease_remedy.sql';
 import scan_retention from './migrations/005_scan_retention.sql';
 import account_and_sync_security from './migrations/006_account_and_sync_security.sql';
 import monitoring from './migrations/007_monitoring.sql';
+import monitoring_scope_uniqueness from './migrations/008_monitoring_scope_uniqueness.sql';
+import climate_history_cache from './migrations/009_climate_history_cache.sql';
 
 export const MIGRATIONS: { version: number; sql: string }[] = [
   { version: 1, sql: initial },
@@ -15,6 +17,8 @@ export const MIGRATIONS: { version: number; sql: string }[] = [
   { version: 5, sql: scan_retention },
   { version: 6, sql: account_and_sync_security },
   { version: 7, sql: monitoring },
+  { version: 8, sql: monitoring_scope_uniqueness },
+  { version: 9, sql: climate_history_cache },
 ];
 
 export function migrate(driver: SqlDriver, migrations = MIGRATIONS): number {

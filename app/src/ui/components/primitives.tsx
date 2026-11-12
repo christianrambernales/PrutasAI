@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { createContext, useContext } from 'react';
 import { StyleSheet, Text, TextProps, View, ViewProps, ViewStyle } from 'react-native';
-import { COLORS, RADIUS, SHADOWS, SPACING, TEXT, TextVariant } from '../tokens';
+import { COLORS, FONTS, RADIUS, SHADOWS, SPACING, TEXT, TextVariant } from '../tokens';
+
+const FontsLoaded = createContext(false);
+export const FontProvider = FontsLoaded.Provider;
 
 interface AppTextProps extends TextProps {
   variant?: TextVariant;
@@ -9,7 +12,15 @@ interface AppTextProps extends TextProps {
 }
 
 export function AppText({ variant = 'md', color = COLORS.text, center, style, ...rest }: AppTextProps) {
-  return <Text {...rest} style={[TEXT[variant], { color }, center && { textAlign: 'center' }, style]} />;
+  const fontsLoaded = useContext(FontsLoaded);
+  const overrides = StyleSheet.flatten(style);
+  const weight = String(overrides?.fontWeight ?? TEXT[variant].fontWeight);
+  const fontFamily = weight === '800' || weight === '900' ? FONTS.extraBold
+    : weight === '700' || weight === 'bold' ? FONTS.bold
+      : weight === '600' ? FONTS.semiBold : weight === '500' ? FONTS.medium : FONTS.regular;
+  // Each static face has its own family; avoid synthetic weight on native.
+  const loadedFace = fontsLoaded && !overrides?.fontFamily ? { fontFamily, fontWeight: 'normal' as const } : null;
+  return <Text {...rest} style={[TEXT[variant], { color }, center && { textAlign: 'center' }, style, loadedFace]} />;
 }
 
 interface StackProps extends ViewProps {
@@ -80,8 +91,8 @@ export function Section({ gap = SPACING.sm, style, ...rest }: StackProps) {
 
 export function SectionHeader({ title, meta, metaColor }: { title: string; meta?: string; metaColor?: string }) {
   return (
-    <Row justify="space-between" align="baseline" gap={SPACING.sm}>
-      <AppText variant="lg">{title}</AppText>
+    <Row justify="space-between" align="baseline" gap={SPACING.sm} wrap>
+      <AppText variant="lg" accessibilityRole="header" style={{ flexShrink: 1 }}>{title}</AppText>
       {meta ? (
         <AppText variant={metaColor ? 'smSemi' : 'xs'} color={metaColor ?? COLORS.textSecondary}>
           {meta}
@@ -96,14 +107,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md - 4,
+    borderRadius: RADIUS.card,
+    padding: SPACING.md,
     ...SHADOWS.sm,
   },
   tile: {
     backgroundColor: COLORS.surfaceAlt,
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm + 2,
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm + 4,
   },
   divider: {
     height: StyleSheet.hairlineWidth * 2,

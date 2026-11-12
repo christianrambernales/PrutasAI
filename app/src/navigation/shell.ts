@@ -10,6 +10,7 @@ import type { AccountSync } from '../features/account/useAccountSync';
 import type { ClimateViews } from '../features/climate/useClimateViews';
 import type { ConversationsUi } from '../features/chat/useConversationsUi';
 import type { HistoryFilters } from '../features/history/useHistoryFilters';
+import type { useMonitoringList } from '../features/monitoring/useMonitoringList';
 import type {
   FruitSummary, ScanGroup, ScanSummary, Source, VarietySummary,
 } from '../features/viewModels';
@@ -44,6 +45,7 @@ export interface Shell {
     setOpenVariety: Dispatch<SetStateAction<string | null>>;
     openCheckpoint: number | null;
     setOpenCheckpoint: Dispatch<SetStateAction<number | null>>;
+    setBackIntercept: (intercept: (() => boolean) | null) => void;
   };
   /** What is stored or installed on this device, plus the invalidator for it. */
   data: {
@@ -70,6 +72,7 @@ export interface Shell {
   dispatchApp: (action: AppAction) => void;
   climate: ClimateViews;
   history: HistoryFilters;
+  monitoringList: ReturnType<typeof useMonitoringList>;
   account: AccountSync;
   chat: ReturnType<typeof useChat>;
   conversations: ConversationsUi;

@@ -27,6 +27,20 @@ function jsonResponse(body: unknown) {
   return async () => ({ ok: true, status: 200, json: async () => body });
 }
 
+function monthlyArchive(years: number[]) {
+  const time: string[] = [];
+  const precipitation_sum: number[] = [];
+  const temperature_2m_mean: number[] = [];
+  years.forEach((year, yearIndex) => {
+    for (let month = 0; month < 12; month += 1) {
+      time.push(`${year}-${String(month + 1).padStart(2, '0')}-01`);
+      precipitation_sum.push(yearIndex === 0 && month === 0 ? 10 : yearIndex === 1 && month === 0 ? 20 : 0);
+      temperature_2m_mean.push(yearIndex === 0 ? 25 : 27);
+    }
+  });
+  return { time, precipitation_sum, temperature_2m_mean };
+}
+
 // --- weather codes ----------------------------------------------------------
 
 test('WMO weather codes become readable conditions', () => {
@@ -53,6 +67,15 @@ test('current weather is read from the live response', async () => {
   expect(weather.precipitationMm).toBe(2.5);
   expect(weather.elevationM).toBe(29);
   expect(weather.condition).toBe('Partly cloudy');
+});
+
+test('missing elevation stays unknown instead of being fabricated as sea level', async () => {
+  const body = { ...CURRENT_BODY } as Record<string, unknown>;
+  delete body.elevation;
+  const weather = await fetchCurrentWeather(COORDS, {
+    fetchImpl: jsonResponse(body) as unknown as typeof fetch,
+  });
+  expect(weather.elevationM).toBeNull();
 });
 
 test('the request carries the coordinates and needs no API key', async () => {
@@ -90,47 +113,53 @@ test('a response missing the current block is rejected, not defaulted to zero', 
 
 test('monthly normals average each calendar month across the years supplied', () => {
   // Two Januaries: 10mm total and 20mm total → normal of 15mm.
-  const normals = computeNormals({
-    time: ['2020-01-01', '2020-01-02', '2021-01-01', '2021-01-02'],
-    precipitation_sum: [4, 6, 8, 12],
-    temperature_2m_mean: [25, 25, 27, 27],
-  });
+  const daily = monthlyArchive([2020, 2021]);
+  daily.time.splice(1, 0, '2020-01-02', '2021-01-02');
+  daily.precipitation_sum.splice(1, 0, 0, 0);
+  daily.temperature_2m_mean.splice(1, 0, 25, 27);
+  const normals = computeNormals(daily);
 
   expect(normals.monthlyRainMm[0]).toBe(15);
   expect(normals.meanTemperatureC).toBe(26);
 });
 
-test('months with no data report zero rather than NaN', () => {
-  const normals = computeNormals({
+test('an archive with missing monthly observations is rejected instead of filled with zero rainfall', () => {
+  expect(() => computeNormals({
     time: ['2020-01-01'],
     precipitation_sum: [5],
     temperature_2m_mean: [25],
-  });
-
-  expect(normals.monthlyRainMm).toHaveLength(12);
-  expect(normals.monthlyRainMm.every(v => Number.isFinite(v))).toBe(true);
-  expect(normals.monthlyRainMm[5]).toBe(0);
+  })).toThrow(/missing/i);
 });
 
 test('the annual total is the sum of the twelve monthly normals', () => {
+  const time = Array.from({ length: 12 }, (_, month) => `2020-${String(month + 1).padStart(2, '0')}-15`);
   const normals = computeNormals({
-    time: ['2020-01-15', '2020-02-15', '2020-03-15'],
-    precipitation_sum: [10, 20, 30],
-    temperature_2m_mean: [26, 27, 28],
+    time,
+    precipitation_sum: [10, 20, 30, ...Array(9).fill(0)],
+    temperature_2m_mean: Array(12).fill(27),
   });
 
   expect(normals.annualRainMm).toBe(60);
 });
 
 test('null readings in the archive are skipped, not counted as zero', () => {
+  const time = [...Array.from({ length: 12 }, (_, month) => `2020-${String(month + 1).padStart(2, '0')}-01`), '2020-01-02'];
   const normals = computeNormals({
-    time: ['2020-01-01', '2020-01-02'],
-    precipitation_sum: [10, null],
-    temperature_2m_mean: [26, null],
+    time,
+    precipitation_sum: [...[10, ...Array(11).fill(0)], null],
+    temperature_2m_mean: [...[26, ...Array(11).fill(20)], null],
   });
 
   expect(normals.monthlyRainMm[0]).toBe(10);
-  expect(normals.meanTemperatureC).toBe(26);
+  expect(normals.meanTemperatureC).toBeCloseTo(20.5);
+});
+
+test('an all-null archive is rejected as unavailable historical evidence', () => {
+  expect(() => computeNormals({
+    time: ['2020-01-01'],
+    precipitation_sum: [null],
+    temperature_2m_mean: [null],
+  })).toThrow(/missing/i);
 });
 
 test('normals are fetched from the archive endpoint over whole years', async () => {
@@ -143,9 +172,7 @@ test('normals are fetched from the archive endpoint over whole years', async () 
       return {
         ok: true,
         status: 200,
-        json: async () => ({
-          daily: { time: ['2021-01-01'], precipitation_sum: [4], temperature_2m_mean: [25] },
-        }),
+        json: async () => ({ daily: monthlyArchive([2021, 2022, 2023, 2024, 2025]) }),
       };
     }) as unknown as typeof fetch,
   });
@@ -164,11 +191,7 @@ test('normals report the period the returned data actually covers', async () => 
       ok: true,
       status: 200,
       json: async () => ({
-        daily: {
-          time: ['2021-06-01', '2023-06-01', '2025-06-01'],
-          precipitation_sum: [12, 14, 16],
-          temperature_2m_mean: [27, 27, 27],
-        },
+        daily: monthlyArchive([2021, 2023, 2025]),
       }),
     })) as unknown as typeof fetch,
   });
@@ -185,7 +208,7 @@ test('a short archive reports the narrower period rather than overstating covera
       ok: true,
       status: 200,
       json: async () => ({
-        daily: { time: ['2024-06-01'], precipitation_sum: [12], temperature_2m_mean: [27] },
+        daily: monthlyArchive([2024]),
       }),
     })) as unknown as typeof fetch,
   });

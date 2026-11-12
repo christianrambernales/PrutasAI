@@ -1,4 +1,4 @@
-﻿import type { SqlDriver } from '../driver';
+import type { SqlDriver } from '../driver';
 import { buildScopeCondition, type LocalAccountScope, type SyncStatus } from './scans';
 
 export type { LocalAccountScope, SyncStatus };
@@ -440,7 +440,7 @@ export function renameConversation(
   title: string,
   now: string,
   scope?: LocalAccountScope,
-): void {
+): boolean {
   let where = 'uuid = ?';
   const params: unknown[] = [title, now, uuid];
   if (scope) {
@@ -448,7 +448,7 @@ export function renameConversation(
     where += ` AND ${clause}`;
     params.push(...scopeParams);
   }
-  db.all(
+  const result = db.all<{ uuid: string }>(
     `UPDATE conversation
         SET title = ?,
             updated_at = ?,
@@ -458,6 +458,7 @@ export function renameConversation(
       RETURNING uuid`,
     params,
   );
+  return result.length > 0;
 }
 
 export function softDeleteConversation(
@@ -465,7 +466,7 @@ export function softDeleteConversation(
   uuid: string,
   now: string,
   scope?: LocalAccountScope,
-): void {
+): boolean {
   let where = 'uuid = ?';
   const params: unknown[] = [now, now, uuid];
   if (scope) {
@@ -473,7 +474,7 @@ export function softDeleteConversation(
     where += ` AND ${clause}`;
     params.push(...scopeParams);
   }
-  db.all(
+  const result = db.all<{ uuid: string }>(
     `UPDATE conversation
         SET deleted_at = ?,
             updated_at = ?,
@@ -483,6 +484,7 @@ export function softDeleteConversation(
       RETURNING uuid`,
     params,
   );
+  return result.length > 0;
 }
 
 export function restoreConversation(
@@ -490,7 +492,7 @@ export function restoreConversation(
   uuid: string,
   now: string,
   scope?: LocalAccountScope,
-): void {
+): boolean {
   let where = 'uuid = ?';
   const params: unknown[] = [now, uuid];
   if (scope) {
@@ -498,7 +500,7 @@ export function restoreConversation(
     where += ` AND ${clause}`;
     params.push(...scopeParams);
   }
-  db.all(
+  const result = db.all<{ uuid: string }>(
     `UPDATE conversation
         SET deleted_at = NULL,
             updated_at = ?,
@@ -508,6 +510,7 @@ export function restoreConversation(
       RETURNING uuid`,
     params,
   );
+  return result.length > 0;
 }
 
 /**

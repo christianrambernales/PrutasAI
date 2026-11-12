@@ -1,4 +1,4 @@
-﻿import type { SqlDriver } from '../driver';
+import type { SqlDriver } from '../driver';
 import type { ScanGroup, ScanSummary } from '../../../features/viewModels';
 
 export interface LocalAccountScope {
@@ -76,8 +76,10 @@ interface ScanRow {
   created_at: string;
   updated_at: string;
   fruit_name: string | null;
+  fruit_name_fil: string | null;
   fruit_emoji: string | null;
   variety_name: string | null;
+  variety_name_fil: string | null;
   account_id: string | null;
   sync_status: SyncStatus;
   sync_error_code: string | null;
@@ -86,7 +88,9 @@ interface ScanRow {
 }
 
 const SELECT_SCAN = `SELECT s.uuid, s.image_uri, s.fruit_key, s.variety_key, s.created_at, s.updated_at,
-                            f.name_en AS fruit_name, f.emoji AS fruit_emoji, v.name_en AS variety_name,
+                            f.name_en AS fruit_name, f.name_fil AS fruit_name_fil,
+                            f.emoji AS fruit_emoji, v.name_en AS variety_name,
+                            v.name_fil AS variety_name_fil,
                             s.account_id, s.sync_status, s.sync_error_code, s.retry_count, s.next_retry_at
                        FROM scan s
                        LEFT JOIN fruit f   ON f.key = s.fruit_key
@@ -185,6 +189,11 @@ function toSummary(row: ScanRow, now: Date): StoredScan {
     // never left that phone, so there is nothing here to show. The result
     // screen renders the absence rather than a stand-in.
     imageUri: row.image_uri,
+    createdAtIso: row.created_at,
+    fruitNameEn: row.fruit_name,
+    fruitNameFil: row.fruit_name_fil,
+    varietyNameEn: row.variety_name,
+    varietyNameFil: row.variety_name_fil,
     emoji: row.fruit_emoji ?? '🌱',
     title: row.fruit_name
       ? [row.fruit_name, row.variety_name].filter(Boolean).join(' · ')
@@ -192,6 +201,7 @@ function toSummary(row: ScanRow, now: Date): StoredScan {
     status: 'undetermined',
     detail: row.fruit_name ? 'No disease model' : 'Not identified — no model installed',
     timeLabel: timeLabel(row.created_at, now),
+    fruitKey: row.fruit_key,
     accountId: row.account_id,
     updatedAt: row.updated_at,
     syncStatus: row.sync_status,

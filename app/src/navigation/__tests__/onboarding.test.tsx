@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 
 import { OnboardingGate, type OnboardingGateProps } from '../render/onboarding';
-import { textOf } from '../../testing/interaction';
+import { findPressable, textOf } from '../../testing/interaction';
 
 const BASE: OnboardingGateProps = {
   language: 'EN',
@@ -60,7 +60,7 @@ test('D-01: LanguagePickScreen exposes correct CTA and handles loading/error', a
   expect(textOf(tree.root)).toContain('Step 1 of 3: Language');
   
   // Select English
-  const englishBtn = tree.root.findAll(node => node.props.label === 'English')[0];
+  const englishBtn = findPressable(tree, 'English');
   await act(async () => { englishBtn.props.onPress(); });
 
   // Submit
@@ -68,15 +68,16 @@ test('D-01: LanguagePickScreen exposes correct CTA and handles loading/error', a
   await act(async () => { ctaBtn.props.onPress(); });
   
   // Loading state
-  const loadingBtn = tree.root.findAll(node => node.props.label === 'Saving...')[0];
-  expect(loadingBtn.props.disabled).toBe(true);
+  const loadingBtn = findPressable(tree, 'Continue to mode selection');
+  expect(loadingBtn.props.accessibilityState?.disabled).toBe(true);
+  expect(textOf(tree.root)).toContain('Saving…');
 
   // Error injection
   await act(async () => { rejectSave(new Error('Network error')); });
   
   // Error state and retry
-  expect(textOf(tree.root)).toContain('Failed to save');
-  const retryBtn = tree.root.findAll(node => node.props.label === 'Retry')[0];
+  expect(textOf(tree.root)).toContain('Could not save your choice.');
+  const retryBtn = tree.root.findAll(node => node.props.label === 'Try again' || node.props.label === 'Retry')[0];
   
   // Try again
   await act(async () => { retryBtn.props.onPress(); });
@@ -97,7 +98,7 @@ test('D-02: WelcomeScreen exposes correct CTAs and handles error', async () => {
   expect(textOf(tree.root)).toContain('Step 2 of 3: Mode');
   
   // Select Account
-  const accountBtn = tree.root.findAll(node => typeof node.props.label === 'string' && node.props.label.includes('account'))[0];
+  const accountBtn = findPressable(tree, 'Sign in or create an account');
   await act(async () => { accountBtn.props.onPress(); });
 
   // Submit
@@ -105,7 +106,7 @@ test('D-02: WelcomeScreen exposes correct CTAs and handles error', async () => {
   await act(async () => { ctaBtn.props.onPress(); });
   
   await act(async () => { rejectSave(new Error('Failed!')); });
-  expect(textOf(tree.root)).toContain('Failed to save');
+  expect(textOf(tree.root)).toContain('Could not save your choice.');
 });
 
 test('D-02: ConsentScreen exposes exact CTAs and handles error', async () => {
@@ -125,5 +126,5 @@ test('D-02: ConsentScreen exposes exact CTAs and handles error', async () => {
   await act(async () => { ctaBtn.props.onPress(); });
   
   await act(async () => { rejectSave(new Error('Failed!')); });
-  expect(textOf(tree.root)).toContain('Failed to save');
+  expect(textOf(tree.root)).toContain('Could not save your choice.');
 });

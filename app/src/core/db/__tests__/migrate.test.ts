@@ -7,21 +7,21 @@ test('creates the content and user tables', () => {
   const names = db.all<{ name: string }>(
     "SELECT name FROM sqlite_master WHERE type='table'"
   ).map(r => r.name);
-  for (const t of ['source', 'fruit', 'variety', 'scan', 'setting', 'schema_version']) {
+  for (const t of ['source', 'fruit', 'variety', 'scan', 'setting', 'schema_version', 'climate_history_cache']) {
     expect(names).toContain(t);
   }
 });
 
 test('reports the resulting schema version', () => {
   const db = createTestDriver();
-  expect(migrate(db)).toBe(7);
+  expect(migrate(db)).toBe(9);
 });
 
 test('is idempotent', () => {
   const db = createTestDriver();
   migrate(db);
   expect(() => migrate(db)).not.toThrow();
-  expect(migrate(db)).toBe(7);
+  expect(migrate(db)).toBe(9);
 });
 
 test('adds lat/lon to scan, idempotently', () => {
@@ -46,7 +46,7 @@ test('rejects a variety whose fruit does not exist', () => {
 test('migrates to version 3 and creates the conversation tables', () => {
   const db = createTestDriver();
   const version = migrate(db);
-  expect(version).toBe(7);
+  expect(version).toBe(9);
 
   db.exec("INSERT INTO conversation (uuid, title, device_id, created_at, updated_at) VALUES ('c1', 'Hello', 'dev-1', '2026-08-30T00:00:00.000Z', '2026-08-30T00:00:00.000Z')");
   db.exec("INSERT INTO conversation_message (uuid, conversation_id, role, text, created_at) VALUES ('m1', 'c1', 'user', 'hi', '2026-08-30T00:00:01.000Z')");
@@ -82,7 +82,7 @@ test('a failing migration leaves neither its schema mutation nor version row', (
   migrate(db);
   
   const badMigrations = [
-    { version: 8, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
+    { version: 10, sql: 'CREATE TABLE dummy (id INTEGER); INSERT INTO non_existent_table VALUES (1);' }
   ];
   
   expect(() => migrate(db, badMigrations)).toThrow();
@@ -93,9 +93,9 @@ test('a failing migration leaves neither its schema mutation nor version row', (
   ).map(r => r.name);
   expect(names).not.toContain('dummy');
   
-  // Version 7 should not be in schema_version
+  // A failed version 10 migration must leave the completed version 9 state intact.
   const row = db.get<{ version: number }>('SELECT MAX(version) AS version FROM schema_version');
-  expect(row?.version).toBe(7);
+  expect(row?.version).toBe(9);
 });
 
 test('migration 006 upgrades schema v5, preserves rows and photos, backfills metadata and creates indexes', () => {
@@ -128,7 +128,7 @@ test('migration 006 upgrades schema v5, preserves rows and photos, backfills met
 
   // Now run full migration up to v6
   const finalVersion = migrate(db);
-  expect(finalVersion).toBe(7);
+  expect(finalVersion).toBe(9);
 
   // Verify scan table columns & backfill
   const scanCols = db.all<{ name: string }>('PRAGMA table_info(scan)').map(c => c.name);
@@ -206,7 +206,7 @@ test('migration 006 upgrades schema v5, preserves rows and photos, backfills met
   expect(indexNames).toContain('idx_conversation_message_account_sync');
 });
 
-test('migration 007 creates monitoring tables, prohibits ML columns, and failed-v7 rolls back', () => {
+test('migration 007 creates monitoring tables, migration 008 fixes anonymous uniqueness, and a failed monitoring migration rolls back', () => {
   const db = createTestDriver();
   const v6Migrations = MIGRATIONS.filter(m => m.version <= 6);
   migrate(db, v6Migrations);
@@ -219,7 +219,7 @@ test('migration 007 creates monitoring tables, prohibits ML columns, and failed-
   let names = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table'").map(r => r.name);
   expect(names).not.toContain('monitoring_session');
 
-  migrate(db); // Will run real v7
+  migrate(db); // Runs the real v7 schema followed by the v8 uniqueness fix.
   names = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table'").map(r => r.name);
   expect(names).toContain('monitoring_session');
   expect(names).toContain('monitoring_checkpoint');
@@ -232,4 +232,37 @@ test('migration 007 creates monitoring tables, prohibits ML columns, and failed-
   for (const p of prohibited) {
     expect(allCols).not.toContain(p);
   }
+
+  db.exec("INSERT INTO scan (uuid, image_uri, created_at) VALUES ('anonymous-scan', 'file:///photo.jpg', '2026-09-01T00:00:00.000Z')");
+  db.exec("INSERT INTO monitoring_session (id, source_scan_id, account_id, created_at) VALUES ('anonymous-first', 'anonymous-scan', NULL, 1)");
+  expect(() => db.exec("INSERT INTO monitoring_session (id, source_scan_id, account_id, created_at) VALUES ('anonymous-second', 'anonymous-scan', NULL, 2)")).toThrow();
+});
+
+test('migration 008 deterministically repairs duplicate anonymous v7 sessions before adding its unique index', () => {
+  const db = createTestDriver();
+  migrate(db, MIGRATIONS.filter(m => m.version <= 7));
+  db.exec(`
+    INSERT INTO scan (uuid, image_uri, created_at) VALUES ('legacy-anonymous-scan', 'file:///photo.jpg', '2026-09-01T00:00:00.000Z');
+    INSERT INTO monitoring_session (id, source_scan_id, account_id, created_at) VALUES ('session-early', 'legacy-anonymous-scan', NULL, 10);
+    INSERT INTO monitoring_session (id, source_scan_id, account_id, created_at) VALUES ('session-late', 'legacy-anonymous-scan', NULL, 20);
+    INSERT INTO monitoring_checkpoint (id, session_id, day_number, scheduled_date) VALUES ('early-day-5', 'session-early', 5, 100);
+    INSERT INTO monitoring_checkpoint (id, session_id, day_number, scheduled_date, completed_date, observation, note)
+      VALUES ('late-day-5', 'session-late', 5, 100, 150, 'better', 'Recorded observation');
+    INSERT INTO monitoring_checkpoint (id, session_id, day_number, scheduled_date) VALUES ('late-day-10', 'session-late', 10, 200);
+  `);
+
+  expect(migrate(db)).toBe(9);
+  const sessions = db.all<{ id: string }>(
+    "SELECT id FROM monitoring_session WHERE source_scan_id = 'legacy-anonymous-scan'",
+  );
+  expect(sessions).toEqual([{ id: 'session-early' }]);
+
+  const checkpoints = db.all<{ id: string; session_id: string; day_number: number; observation: string | null }>(
+    "SELECT id, session_id, day_number, observation FROM monitoring_checkpoint WHERE session_id = 'session-early' ORDER BY day_number",
+  );
+  expect(checkpoints).toEqual([
+    { id: 'late-day-5', session_id: 'session-early', day_number: 5, observation: 'better' },
+    { id: 'late-day-10', session_id: 'session-early', day_number: 10, observation: null },
+  ]);
+  expect(() => db.exec("INSERT INTO monitoring_session (id, source_scan_id, account_id, created_at) VALUES ('still-duplicate', 'legacy-anonymous-scan', NULL, 30)")).toThrow();
 });

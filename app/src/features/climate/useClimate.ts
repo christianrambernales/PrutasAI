@@ -6,83 +6,174 @@ import {
   fetchCurrentWeather,
   fetchNormals,
 } from '../../core/climate/openMeteo';
+import type { SqlDriver } from '../../core/db/driver';
+import {
+  CLIMATE_HISTORY_SOURCE,
+  climateCoordinateKey,
+  getHistoricalClimateCache,
+  saveHistoricalClimateCache,
+  updateHistoricalClimateElevation,
+} from '../../core/db/repositories/climate';
 
 export type ClimateStatus = 'idle' | 'loading' | 'ready' | 'error';
+export type ClimateEndpointStatus = ClimateStatus | 'cached' | 'stale';
 
 export interface ClimateData {
   status: ClimateStatus;
+  currentStatus: ClimateEndpointStatus;
+  historicalStatus: ClimateEndpointStatus;
   current: CurrentWeather | null;
   normals: ClimateNormalsData | null;
-  /** Device clock, used only for the "updated N ago" label. */
+  /** Backwards-compatible alias for the current observation's fetch time. */
   fetchedAt: number | null;
+  currentFetchedAt: number | null;
+  historicalFetchedAt: number | null;
+  historicalSource: string | null;
+  historicalElevationM: number | null;
+  locationKey: string | null;
   error: string | null;
   refresh: () => void;
 }
 
+function locationKey(location: SavedLocation | null): string | null {
+  if (!location) return null;
+  const rounded = climateCoordinateKey(location);
+  return rounded ? `${rounded.latitude},${rounded.longitude}` : null;
+}
+
 /**
- * Fetches current conditions and multi-year normals for the saved location.
- *
- * Two calls rather than one because they come from different Open-Meteo
- * endpoints and have very different lifetimes: conditions go stale in minutes,
- * normals in years. A failure keeps whatever was already fetched — showing a
- * slightly old reading beats blanking the screen — and says so through
- * `status`, so the UI never presents stale data as live.
+ * Fetch current conditions and archive evidence independently. The historical
+ * inputs are retained in SQLite and re-judged after a cold start so a verdict
+ * never outlives the range policy or loses its source/period metadata.
  */
-export function useClimate(location: SavedLocation | null): ClimateData {
+export function useClimate(location: SavedLocation | null, db: SqlDriver): ClimateData {
   const [status, setStatus] = useState<ClimateStatus>('idle');
+  const [currentStatus, setCurrentStatus] = useState<ClimateEndpointStatus>('idle');
+  const [historicalStatus, setHistoricalStatus] = useState<ClimateEndpointStatus>('idle');
   const [current, setCurrent] = useState<CurrentWeather | null>(null);
   const [normals, setNormals] = useState<ClimateNormalsData | null>(null);
-  const [fetchedAt, setFetchedAt] = useState<number | null>(null);
+  const [currentFetchedAt, setCurrentFetchedAt] = useState<number | null>(null);
+  const [historicalFetchedAt, setHistoricalFetchedAt] = useState<number | null>(null);
+  const [historicalSource, setHistoricalSource] = useState<string | null>(null);
+  const [historicalElevationM, setHistoricalElevationM] = useState<number | null>(null);
+  const [activeLocationKey, setActiveLocationKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Bumped to force a refetch; also lets an in-flight response be ignored.
   const [nonce, setNonce] = useState(0);
   const refresh = useCallback(() => setNonce(n => n + 1), []);
-
   const latest = useRef(0);
 
   useEffect(() => {
     if (!location) {
       setStatus('idle');
+      setCurrentStatus('idle');
+      setHistoricalStatus('idle');
       setCurrent(null);
       setNormals(null);
-      setFetchedAt(null);
+      setCurrentFetchedAt(null);
+      setHistoricalFetchedAt(null);
+      setHistoricalSource(null);
+      setHistoricalElevationM(null);
+      setActiveLocationKey(null);
       setError(null);
       return;
     }
 
     const run = ++latest.current;
     const controller = new AbortController();
+    const coords = { latitude: location.latitude, longitude: location.longitude };
+    const key = locationKey(location);
+    const cache = getHistoricalClimateCache(db, coords);
+
+    // Clear first, then hydrate only data keyed to this rounded saved site. This
+    // prevents a previous location's reading flashing under a new label.
+    setActiveLocationKey(key);
+    setCurrent(null);
+    setCurrentFetchedAt(null);
+    setCurrentStatus('loading');
+    setNormals(cache?.normals ?? null);
+    setHistoricalFetchedAt(cache?.fetchedAt ?? null);
+    setHistoricalSource(cache?.sourceModel ?? null);
+    setHistoricalElevationM(cache?.elevationM ?? null);
+    setHistoricalStatus(cache ? 'cached' : 'loading');
     setStatus('loading');
     setError(null);
 
-    const coords = { latitude: location.latitude, longitude: location.longitude };
+    let currentSucceeded = false;
+    let historicalSucceeded = false;
+    // Keep the latest elevation in the effect closure as well as in SQLite.
+    // If live weather resolves before the first archive row exists, the cache
+    // write below must still include that independently fetched value.
+    let elevationM = cache?.elevationM ?? null;
 
-    Promise.all([
-      fetchCurrentWeather(coords, { signal: controller.signal }),
-      fetchNormals(coords, { years: 5, signal: controller.signal }),
-    ])
-      .then(([nextCurrent, nextNormals]) => {
-        if (run !== latest.current) return;
-        setCurrent(nextCurrent);
-        setNormals(nextNormals);
-        setFetchedAt(Date.now());
-        setStatus('ready');
-      })
-      .catch((cause: unknown) => {
+    const currentRequest = fetchCurrentWeather(coords, { signal: controller.signal })
+      .then(value => {
         if (run !== latest.current || controller.signal.aborted) return;
-        setError(
-          cause instanceof Error && /\d{3}/.test(cause.message)
-            ? cause.message
-            : 'Could not reach the climate service.',
-        );
-        setStatus('error');
+        currentSucceeded = true;
+        const fetched = Date.now();
+        setCurrent(value);
+        setCurrentFetchedAt(fetched);
+        setCurrentStatus('ready');
+        if (value.elevationM !== null) {
+          elevationM = value.elevationM;
+          updateHistoricalClimateElevation(db, coords, value.elevationM);
+          setHistoricalElevationM(value.elevationM);
+        } else {
+          setHistoricalElevationM(elevationM);
+        }
+      })
+      .catch(() => {
+        if (run !== latest.current || controller.signal.aborted) return;
+        setCurrentStatus('error');
+        setError('Could not reach current climate conditions.');
       });
 
-    return () => controller.abort();
-  }, [location, nonce]);
+    const historicalRequest = fetchNormals(coords, { years: 5, signal: controller.signal })
+      .then(value => {
+        if (run !== latest.current || controller.signal.aborted) return;
+        const fetched = Date.now();
+        const accepted = saveHistoricalClimateCache(
+          db, coords, value, fetched, CLIMATE_HISTORY_SOURCE, elevationM,
+        );
+        if (!accepted) throw new Error('Historical climate data failed validation.');
+        historicalSucceeded = true;
+        setNormals(value);
+        setHistoricalFetchedAt(fetched);
+        setHistoricalSource(CLIMATE_HISTORY_SOURCE);
+        setHistoricalElevationM(elevationM);
+        setHistoricalStatus('ready');
+      })
+      .catch(() => {
+        if (run !== latest.current || controller.signal.aborted) return;
+        setHistoricalStatus(cache ? 'stale' : 'error');
+        setError(previous => previous ?? 'Could not reach historical climate evidence.');
+      });
 
-  return { status, current, normals, fetchedAt, error, refresh };
+    void Promise.all([currentRequest, historicalRequest]).then(() => {
+      if (run !== latest.current || controller.signal.aborted) return;
+      const anySuccess = currentSucceeded || historicalSucceeded || cache !== null;
+      setStatus(anySuccess ? 'ready' : 'error');
+      if (currentSucceeded && historicalSucceeded) setError(null);
+    });
+
+    return () => controller.abort();
+  }, [location, db, nonce]);
+
+  return {
+    status,
+    currentStatus,
+    historicalStatus,
+    current,
+    normals,
+    fetchedAt: currentFetchedAt,
+    currentFetchedAt,
+    historicalFetchedAt,
+    historicalSource,
+    historicalElevationM,
+    locationKey: activeLocationKey,
+    error,
+    refresh,
+  };
 }
 
 /** "just now" / "12 min ago" / "3 h ago" — for the freshness chip. */

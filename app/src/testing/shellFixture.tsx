@@ -14,6 +14,7 @@ export function makeShell(over: Partial<Shell> = {}): Shell {
       selectTab: jest.fn(),
       openVariety: null, setOpenVariety: jest.fn(),
       openCheckpoint: null, setOpenCheckpoint: jest.fn(),
+      setBackIntercept: jest.fn(),
     },
     data: {
       db, accountScope: { activeAccountId: null }, fruits: [], varietiesByFruit: {}, strainsByFruit: {}, sourcesByFruit: {},
@@ -33,12 +34,15 @@ export function makeShell(over: Partial<Shell> = {}): Shell {
       savedLocationLabel: 'No location saved',
     },
     history: { filters: [], visibleGroups: [], visibleCount: 0 },
+    monitoringList: { rows: [], loading: false, error: false, reload: jest.fn() },
     account: {
       account: {
         userId: null,
         email: null,
         accessToken: '',
         busy: false,
+        modeChangeBusy: false,
+        modeChangeError: false,
         error: null,
         errorKey: null,
         resetMessage: null,
@@ -72,7 +76,7 @@ export function makeShell(over: Partial<Shell> = {}): Shell {
     conversations: {
       sidebarOpen: false, openSidebar: jest.fn(), closeSidebar: jest.fn(),
       edgeSwipe: { panHandlers: {} } as never, list: [],
-      rename: jest.fn(), remove: jest.fn(), selectTab: jest.fn(),
+      rename: jest.fn(), remove: jest.fn(), restore: jest.fn(), selectTab: jest.fn(),
     },
     ...over,
   };
