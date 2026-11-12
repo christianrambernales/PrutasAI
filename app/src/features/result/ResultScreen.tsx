@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleProp,
   StyleSheet,
@@ -15,7 +14,6 @@ import {
   FrostedCard,
   StatusBadge,
   useLanguage,
-  useT,
 } from '../../ui';
 import type { ScanResult } from '../viewModels';
 
@@ -47,13 +45,11 @@ export interface ResultScreenProps {
  * while clearly grounding guidance in agricultural decision-support.
  */
 export function ResultScreen(props: ResultScreenProps) {
-  const t = useT();
   const language = useLanguage();
   const isFil = language === 'FIL';
   const insets = useSafeAreaInsets();
 
   const {
-    photoUri,
     result,
     cropName,
     cropEmoji,
@@ -68,7 +64,6 @@ export function ResultScreen(props: ResultScreenProps) {
     guidancePrecaution,
     guidanceReferral,
     onStartMonitoring,
-    onAskAssistant,
     style,
   } = props;
 
@@ -247,47 +242,6 @@ export function ResultScreen(props: ResultScreenProps) {
         icon={<Text style={styles.ctaArrow}>→</Text>}
         onPress={onStartMonitoring}
       />
-
-      {/* Hidden offscreen accessibility elements for multi-suite compatibility */}
-      {result ? (
-        <View style={styles.srOnly} pointerEvents="none">
-          {result.stages?.map((stage) => (
-            <View key={stage.stage}>
-              <Text>{stage.caption}</Text>
-              <Text>{(stage.confidence / 100).toFixed(2)}</Text>
-              <Text>{stage.name}</Text>
-              {stage.secondary ? <Text>{stage.secondary}</Text> : null}
-            </View>
-          ))}
-          <Text>Severity</Text>
-          {result.severityPercent !== null && result.severityPercent !== undefined ? (
-            <Text>{`Moderate · ${result.severityPercent}%`}</Text>
-          ) : null}
-          {result.severityPercent === null ? (
-            <Text>No fruit bounding box was produced, so severity is not computed.</Text>
-          ) : null}
-          {photoUri === null || photoUri === '' ? (
-            <Text>{t.photoNotOnThisDevice}</Text>
-          ) : null}
-          <Text>Recommended remedy</Text>
-          <Text>Unverified</Text>
-          {result.remedy?.treatment ? <Text>{result.remedy.treatment}</Text> : null}
-          {result.remedy?.timing ? <Text>{result.remedy.timing}</Text> : null}
-          {result.remedy?.prevention ? <Text>{result.remedy.prevention}</Text> : null}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Start 10-day monitoring"
-            onPress={onStartMonitoring}
-          />
-          {onAskAssistant ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Ask the assistant about this"
-              onPress={onAskAssistant}
-            />
-          ) : null}
-        </View>
-      ) : null}
     </ScrollView>
   );
 }
@@ -461,12 +415,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     fontFamily: FONTS.extraBold,
-  },
-  srOnly: {
-    position: 'absolute',
-    opacity: 0,
-    width: 0,
-    height: 0,
-    overflow: 'hidden',
   },
 });

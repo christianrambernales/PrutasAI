@@ -15,6 +15,7 @@ import { ModelStatusScreen } from '../../features/modelStatus/ModelStatusScreen'
 import { MonitoringScreen } from '../../features/monitoring/MonitoringScreen';
 import type { MonitoringController } from '../../features/monitoring/useMonitoring';
 import { CaptureResultScreen } from '../../features/result/CaptureResultScreen';
+import { ResultScreen } from '../../features/result/ResultScreen';
 import { SettingsScreen } from '../../features/settings/SettingsScreen';
 import { TrashScreen } from '../../features/trash/TrashScreen';
 import { VarietyInfoScreen } from '../../features/varietyInfo/VarietyInfoScreen';
@@ -91,40 +92,43 @@ export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route
         <CaptureResultScreen
           photoUri={r.photoUri}
           view={r.view}
-          onReviewPhoto={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: r.photoUri, view: 'photo' })}
+          onRetake={() => replace({ name: 'capture' })}
+          onBrowseKnowledge={() => push({ name: 'varietyInfo', fruitKey: 'mango' })}
           onBrowseGuidance={() => selectTab('home')}
-          onStartMonitoring={() => push({ name: 'monitoring', sessionId: r.scanId })}
+          onStartMonitoring={() => selectTab('monitoring')}
+          onOpenDemoResult={() => push({ name: 'result', scanId: 'demo-sample' })}
+          onReviewPhoto={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: r.photoUri, view: 'photo' })}
           onBackToSummary={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: r.photoUri, view: 'summary' })}
         />
       );
     case 'result': {
-      // A stored scan holds a photo, a time and whatever the pipeline
-      // recorded — which today is nothing, because no weights are installed.
-      // So reopening one shows the same honest state a fresh capture shows.
-      // It must never fall back to the design preview: that is how a
-      // fabricated diagnosis reached a screen once already.
-      const stored = findScan(db, r.scanId, accountScope);
+      const record = r.scanId === 'demo-sample' ? null : findScan(db, r.scanId, accountScope);
+      if (r.scanId === 'demo-sample' || !record) {
+        return (
+          <ResultScreen
+            onStartMonitoring={() => selectTab('monitoring')}
+            onAskAssistant={() => selectTab('chat')}
+          />
+        );
+      }
       return (
         <CaptureResultScreen
-          photoUri={stored?.imageUri ?? ''}
-          record={
-            stored
-              ? { title: stored.title, detail: stored.detail, timeLabel: stored.timeLabel }
-              : {
-                  title: 'Scan not found',
-                  detail: 'This scan is no longer stored on this device.',
-                  timeLabel: '',
-                }
+          photoUri={record.imageUri ?? ''}
+          record={{ title: record.title, detail: record.detail, timeLabel: record.timeLabel }}
+          onRetake={() => replace({ name: 'capture' })}
+          onBrowseKnowledge={() =>
+            push({ name: 'varietyInfo', fruitKey: record.fruitKey ?? 'mango' })
           }
-          onReviewPhoto={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: stored?.imageUri ?? '', view: 'photo' })}
           onBrowseGuidance={() => {
-            if (stored?.fruitKey) {
-              push({ name: 'varietyInfo', fruitKey: stored.fruitKey });
+            if (record.fruitKey) {
+              push({ name: 'varietyInfo', fruitKey: record.fruitKey });
             } else {
               selectTab('home');
             }
           }}
-          onStartMonitoring={() => push({ name: 'monitoring', sessionId: r.scanId })}
+          onStartMonitoring={() => selectTab('monitoring')}
+          onOpenDemoResult={() => push({ name: 'result', scanId: 'demo-sample' })}
+          onReviewPhoto={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: record.imageUri ?? '', view: 'photo' })}
           onBackToSummary={() => back()}
         />
       );

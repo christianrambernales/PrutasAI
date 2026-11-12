@@ -136,14 +136,6 @@ export function CaptureScreen(props: CaptureScreenProps) {
         </View>
       )}
 
-      {/* On-device privacy reminder */}
-      <Row gap={SPACING.xs} justify="center" align="center" style={styles.deviceNote}>
-        <Icon name="shield" size={13} color="rgba(255,255,255,0.75)" />
-        <AppText variant="xs" color="rgba(255,255,255,0.75)">
-          {t.captureOnDevice}
-        </AppText>
-      </Row>
-
       {/* Bottom Shutter & Picker Bar */}
       <Row justify="space-around" align="center" style={[styles.controls, { paddingBottom: insets.bottom + SPACING.sm }]}>
         {/* Gallery Picker */}
@@ -295,11 +287,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
     lineHeight: 17,
-  },
-  deviceNote: {
-    paddingTop: SPACING.xs,
-    paddingBottom: 2,
-    zIndex: 10,
   },
   controls: {
     paddingHorizontal: SPACING.lg,

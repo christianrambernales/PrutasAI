@@ -77,7 +77,6 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
     onBrowseGuidance,
     onStartMonitoring,
     onOpenDemoResult,
-    onReviewPhoto,
     onBackToSummary,
     style,
   } = props;
@@ -258,21 +257,6 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
         </View>
       </FrostedCard>
 
-      {/* Reopened Record Card (if supplied) */}
-      {record ? (
-        <FrostedCard style={styles.recordCard}>
-          <View style={styles.recordRow}>
-            <View style={styles.recordContent}>
-              <Text style={styles.recordTitle}>{record.title}</Text>
-              <Text style={styles.recordDetail}>{record.detail}</Text>
-            </View>
-            {record.timeLabel ? (
-              <Text style={styles.recordTime}>{record.timeLabel}</Text>
-            ) : null}
-          </View>
-        </FrostedCard>
-      ) : null}
-
       {/* Alternative Actionable Pathways */}
       <View style={styles.actionsContainer}>
         <BtnForestFull
@@ -298,34 +282,6 @@ export function CaptureResultScreen(props: CaptureResultScreenProps) {
             style={styles.demoBtn}
           />
         ) : null}
-      </View>
-
-      {/* Hidden offscreen accessibility elements for multi-suite compatibility */}
-      <View style={styles.srOnly} pointerEvents="none">
-        <Text accessibilityRole="header">{t.resultAnalysisUnavailable}</Text>
-        <Text>{t.resultNotAnalyzed}</Text>
-        <Text>{t.resultNoApprovedModel}</Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t.resultActionReviewPhoto}
-          onPress={onReviewPhoto}
-        >
-          <Text>{t.resultActionReviewPhoto}</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t.resultActionBrowseGuidance}
-          onPress={handleBrowse}
-        >
-          <Text>{t.resultActionBrowseGuidance}</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t.resultActionStartMonitoring}
-          onPress={onStartMonitoring}
-        >
-          <Text>{t.resultActionStartMonitoring}</Text>
-        </Pressable>
       </View>
     </ScrollView>
   );
@@ -492,34 +448,6 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     textAlign: 'center',
   },
-  recordCard: {
-    padding: 14,
-  },
-  recordRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  recordContent: {
-    flex: 1,
-    gap: 2,
-  },
-  recordTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: FONTS.bold,
-    color: '#154d2e',
-  },
-  recordDetail: {
-    fontSize: 12,
-    fontFamily: FONTS.regular,
-    color: '#55695d',
-  },
-  recordTime: {
-    fontSize: 11,
-    fontFamily: FONTS.regular,
-    color: '#7b8f82',
-  },
   actionsContainer: {
     gap: 8,
     marginTop: 4,
@@ -560,12 +488,5 @@ const styles = StyleSheet.create({
   backToSummaryBtn: {
     backgroundColor: '#ffffff',
     minHeight: 48,
-  },
-  srOnly: {
-    position: 'absolute',
-    opacity: 0,
-    width: 0,
-    height: 0,
-    overflow: 'hidden',
   },
 });

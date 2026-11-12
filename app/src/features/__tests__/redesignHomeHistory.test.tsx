@@ -131,18 +131,51 @@ describe.each<Language>(['EN', 'FIL'])('dashboard in %s', language => {
   });
 
   it('opens the selected real scan and localized crop identity', async () => {
-    const props = { ...homeProps(language), recentScans: [saved] };
+    const secondScan: ScanSummary = {
+      id: 'real-local-record-10',
+      emoji: '🍌',
+      title: 'Banana · Lakatan',
+      status: 'undetermined',
+      detail: 'No disease analysis',
+      timeLabel: 'Oct 8',
+      fruitKey: 'banana',
+    };
+    const props = { ...homeProps(language), recentScans: [saved, secondScan] };
     await render(
       <LanguageProvider language={language}>
         <HomeScreen {...props} />
       </LanguageProvider>
     );
+    expect(screen.queryByRole('button', { name: secondScan.title })).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: saved.title }));
     expect(props.onOpenScan).toHaveBeenCalledWith(saved.id);
     await fireEvent.press(
       screen.getByRole('button', { name: language === 'FIL' ? 'Mangga' : 'Mango' })
     );
     expect(props.onOpenFruit).toHaveBeenCalledWith('mango');
+  });
+
+  it('renders the prototype sample scan row when recentScans is empty', async () => {
+    const props = { ...homeProps(language), recentScans: [] };
+    await render(
+      <LanguageProvider language={language}>
+        <HomeScreen {...props} />
+      </LanguageProvider>
+    );
+    const sampleTitle = language === 'FIL' ? 'Mangga Carabao' : 'Carabao Mango';
+    expect(screen.getByText(sampleTitle)).toBeTruthy();
+    expect(screen.getByText(language === 'FIL' ? 'Halimbawa' : 'Sample')).toBeTruthy();
+    expect(
+      screen.getByText(
+        language === 'FIL'
+          ? 'Halimbawa: Anthracnose (Moderate 28%)'
+          : 'Sample: Anthracnose (Moderate 28%)'
+      )
+    ).toBeTruthy();
+    expect(screen.getByText(language === 'FIL' ? 'Ngayong araw' : 'Today')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: sampleTitle }));
+    expect(props.onOpenScan).toHaveBeenCalledWith('demo-sample');
   });
 });
 

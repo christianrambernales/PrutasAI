@@ -53,7 +53,7 @@ test('account, login, and forgotPassword render their dedicated real auth forms'
 });
 
 test('the home tab renders without mounting the navigator', () => {
-  expect(render('home')).toContain('Browse fruits');
+  expect(render('home')).toContain('Crop Profiles & Guidance');
 });
 
 test('the history route renders the empty state when nothing is stored', () => {
@@ -86,10 +86,10 @@ test('the trash route renders its empty state', () => {
 
 test('Home screen renders all prominent actions', () => {
   const tree = render('home');
-  expect(tree).toContain('Scan a fruit');
-  expect(tree).toContain('History');
-  expect(tree).toContain('Assistant');
-  expect(tree).toContain('Monitoring');
+  expect(tree).toContain('Take or Choose Photo');
+  expect(tree).toContain('View History');
+  expect(tree).toContain('Mangga Carabao #042');
+  expect(tree).toContain('Carabao Mango');
 });
 
 test('onOpenChat routes to the blank chat tab', () => {
@@ -98,21 +98,20 @@ test('onOpenChat routes to the blank chat tab', () => {
   shell.nav.selectTab = jest.fn();
   act(() => { tree = renderer.create(<TabBody shell={shell} tab="home" />); });
   
-  const chatBtn = tree.root.findAll(node => node.props.accessibilityLabel === 'Assistant')[0];
-  act(() => { chatBtn.props.onPress(); });
+  const home = tree.root.findAll(node => node.type === HomeScreen)[0];
+  act(() => { home.props.onOpenChat?.(); });
   expect(shell.nav.selectTab).toHaveBeenCalledWith('chat');
 });
 
 test('onOpenMonitoring routes to the persisted monitoring list', () => {
   let tree!: ReactTestRenderer;
   const shell = makeShell();
-  shell.nav.push = jest.fn();
+  shell.nav.selectTab = jest.fn();
   shell.data.allScans = [{ id: 'scan-1', emoji: '🍌', title: 'Banana', status: 'healthy', detail: 'test', timeLabel: 'Now' }];
   
   act(() => { tree = renderer.create(<TabBody shell={shell} tab="home" />); });
   
-  const monitorBtn = tree.root.findAll(node => node.props.accessibilityLabel === 'Monitoring')[0];
-  act(() => { monitorBtn.props.onPress(); });
+  act(() => { findPressable(tree, 'Mangga Carabao #042').props.onPress(); });
   expect(shell.nav.selectTab).toHaveBeenCalledWith('monitoring');
 });
 
@@ -124,15 +123,14 @@ test('onOpenMonitoring shows the list even when no scans exist', () => {
   
   act(() => { tree = renderer.create(<TabBody shell={shell} tab="home" />); });
   
-  const monitorBtn = tree.root.findAll(node => node.props.accessibilityLabel === 'Monitoring')[0];
-  act(() => { monitorBtn.props.onPress(); });
+  act(() => { findPressable(tree, 'Mangga Carabao #042').props.onPress(); });
   expect(shell.nav.selectTab).toHaveBeenCalledWith('monitoring');
 });
 
-test('fresh truthful result adapters review the local photo and browse Home guidance', () => {
+test('fresh truthful result adapters browse crop knowledge and start monitoring', () => {
   let tree!: ReactTestRenderer;
   const shell = makeShell();
-  shell.nav.replace = jest.fn();
+  shell.nav.push = jest.fn();
   shell.nav.selectTab = jest.fn();
   act(() => {
     tree = renderer.create(
@@ -141,13 +139,13 @@ test('fresh truthful result adapters review the local photo and browse Home guid
   });
 
   act(() => {
-    findPressable(tree, 'Review local photo').props.onPress();
-    findPressable(tree, 'Browse local guidance').props.onPress();
+    findPressable(tree, 'Browse Local Crop Knowledge').props.onPress();
+    findPressable(tree, 'Start Manual Monitoring Session').props.onPress();
   });
-  expect(shell.nav.replace).toHaveBeenCalledWith({
-    name: 'captureResult', scanId: 'scan-1', photoUri: 'file:///owned/photo.jpg', view: 'photo',
+  expect(shell.nav.push).toHaveBeenCalledWith({
+    name: 'varietyInfo', fruitKey: 'mango',
   });
-  expect(shell.nav.selectTab).toHaveBeenCalledWith('home');
+  expect(shell.nav.selectTab).toHaveBeenCalledWith('monitoring');
 });
 
 test('photo-review Back restores the result summary for the same stable scan', () => {
@@ -168,10 +166,11 @@ test('photo-review Back restores the result summary for the same stable scan', (
   });
 });
 
-test('stored scan guidance uses the known fruit and monitoring receives its stable scan ID', async () => {
+test('stored scan guidance uses the known fruit and monitoring routes to monitoring tab', () => {
   let tree!: ReactTestRenderer;
   const shell = makeShell();
   shell.nav.push = jest.fn();
+  shell.nav.selectTab = jest.fn();
   insertScan(shell.data.db, {
     uuid: 'scan-1', imageUri: 'file:///owned/mango.jpg', createdAt: '2026-09-22T09:15:00.000Z',
     fruitKey: 'mango', fruitConf: null, varietyKey: null, varietyConf: null,
@@ -182,16 +181,44 @@ test('stored scan guidance uses the known fruit and monitoring receives its stab
   });
 
   act(() => {
-    findPressable(tree, 'Browse local guidance').props.onPress();
+    findPressable(tree, 'Browse Local Crop Knowledge').props.onPress();
   });
   expect(shell.nav.push).toHaveBeenCalledWith({ name: 'varietyInfo', fruitKey: 'mango' });
 
-  await act(async () => {
-    await findPressable(tree, 'Start observation monitoring').props.onPress();
+  act(() => {
+    findPressable(tree, 'Start Manual Monitoring Session').props.onPress();
   });
-  expect(shell.nav.push).toHaveBeenLastCalledWith(expect.objectContaining({
-    name: 'monitoring',
-  }));
+  expect(shell.nav.selectTab).toHaveBeenCalledWith('monitoring');
+});
+
+test('captureResult route wires Retake and Demo Test button to ResultScreen', () => {
+  const shell = makeShell();
+  shell.nav.push = jest.fn();
+  shell.nav.replace = jest.fn();
+  let tree!: ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <RouteBody
+        shell={shell}
+        route={{ name: 'captureResult', scanId: 'scan-1', photoUri: 'file:///owned/photo.jpg', view: 'summary' }}
+      />,
+    );
+  });
+
+  act(() => {
+    findPressable(tree, 'Retake').props.onPress();
+    findPressable(tree, '[Demo Test] View Illustrative Sample Screen').props.onPress();
+  });
+
+  expect(shell.nav.replace).toHaveBeenCalledWith({ name: 'capture' });
+  expect(shell.nav.push).toHaveBeenCalledWith({ name: 'result', scanId: 'demo-sample' });
+});
+
+test('result route with demo-sample renders ResultScreen', () => {
+  const text = renderRoute({ name: 'result', scanId: 'demo-sample' });
+  expect(text).toContain('Illustrative Sample Scenario');
+  expect(text).toContain('Anthracnose');
+  expect(text).toContain('28.5% • KATAMTAMAN (MODERATE)');
 });
 
 test('TabBar and RouteBar return null so no stacked legacy AppBar renders', () => {

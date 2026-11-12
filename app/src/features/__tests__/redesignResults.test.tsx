@@ -154,6 +154,16 @@ describe('CaptureResultScreen (Screen 3 - 1:1 Prototype Alignment)', () => {
     expect(screen.getByText(/Magsimula ng Manwal na Pagsubaybay/i)).toBeTruthy();
     expect(screen.getByText(/\[Demo Test\] Tingnan ang Halimbawang Resulta/i)).toBeTruthy();
   });
+
+  it('omits legacy srOnly and recordCard elements for 1-to-1 prototype parity', async () => {
+    const props = defaultCaptureProps({
+      record: { title: 'SCAN-2026-0099', detail: 'Legacy detail row', timeLabel: 'Oct 9' },
+    });
+    await render(<CaptureResultScreen {...props} />);
+    expect(screen.queryByText('Analysis unavailable')).toBeNull();
+    expect(screen.queryByText('Legacy detail row')).toBeNull();
+    expect(screen.getByText(/Record ID: SCAN-2026-0043/i)).toBeTruthy();
+  });
 });
 
 describe('ResultScreen (Screen 4 - Illustrative Result 1:1 Prototype Alignment)', () => {
@@ -253,5 +263,6 @@ describe('ResultScreen (Screen 4 - Illustrative Result 1:1 Prototype Alignment)'
 
     expect(screen.getByText(/Illustrative Sample Scenario/i)).toBeTruthy();
     expect(screen.getByText(/Agronomic Guidance \(Decision-Support\)/i)).toBeTruthy();
+    expect(screen.queryByText('Recommended remedy')).toBeNull();
   });
 });

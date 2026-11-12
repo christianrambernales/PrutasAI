@@ -30,7 +30,8 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
   const { fruits, allScans, statuses, readyCount, aiAvailable } = shell.data;
 
   switch (tab) {
-    case 'home':
+    case 'home': {
+      const firstMonitoring = monitoringList.rows[0];
       return (
         <HomeScreen
           capabilityHeadline={readyCount > 0 ? t.modelStatusValidatedHeadline : t.modelStatusEmptyHeadline}
@@ -41,14 +42,28 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           climate={climate.snapshot}
           climateLoading={climate.climate.status === 'loading'}
           onSetLocation={() => push({ name: 'locationPicker' })}
-          recentScans={allScans.slice(0, 3)}
+          recentScans={allScans.slice(0, 1)}
+          activeMonitoring={
+            firstMonitoring
+              ? {
+                  id: firstMonitoring.id,
+                  crop: firstMonitoring.source.fruitKey ?? undefined,
+                  title: firstMonitoring.source.title,
+                  emoji: firstMonitoring.source.emoji,
+                }
+              : undefined
+          }
           language={app.language}
           onToggleLanguage={() =>
             dispatchApp({ type: 'setLanguage', language: app.language === 'EN' ? 'FIL' : 'EN' })
           }
           onScan={() => push({ name: 'capture' })}
           onOpenFruit={fruitKey => push({ name: 'varietyInfo', fruitKey })}
-          onOpenScan={scanId => push({ name: 'result', scanId })}
+          onOpenScan={scanId =>
+            scanId === 'demo-sample'
+              ? push({ name: 'result', scanId: 'demo-sample' })
+              : push({ name: 'result', scanId })
+          }
           onOpenSettings={() => push({ name: 'settings' })}
           onOpenClimate={() => push({ name: 'climate' })}
           onViewAllScans={() => push({ name: 'history' })}
@@ -56,6 +71,7 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           onOpenMonitoring={() => selectTab('monitoring')}
         />
       );
+    }
     case 'monitoring':
       return (
         <MonitoringListScreen
