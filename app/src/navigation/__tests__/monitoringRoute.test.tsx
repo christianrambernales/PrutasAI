@@ -46,19 +46,16 @@ test('checkpoint capture returns its owned photo to the same draft and saves the
   let tree!: ReactTestRenderer;
   await act(async () => { tree = renderer.create(<AppNavigator db={db} />); });
   await openMonitoring(tree, db);
-  act(() => { findPressable(tree, 'Complete checkpoint').props.onPress(); });
   act(() => { findPressable(tree, 'Better').props.onPress(); });
   const note = tree.root.findAll(node => node.props.accessibilityLabel === 'Optional note' && typeof node.props.onChangeText === 'function')[0];
   act(() => { note.props.onChangeText('Leaves look better'); });
-  act(() => { findPressable(tree, 'Add photo').props.onPress(); });
+  act(() => { tree.root.findAll(node => node.type === MonitoringScreen)[0].props.onCapturePhoto(5); });
   await act(async () => { await findPressable(tree, 'Test shutter').props.onPress(); });
 
   expect(tree.root.findAll(node => node.props.accessibilityLabel === 'Optional note' && node.props.value === 'Leaves look better')).not.toHaveLength(0);
-  expect(textOf(tree.root)).toContain('Replace photo');
   act(() => { tree.root.findAll(node => node.type === BottomNav)[0].props.onScan(); });
   expect(textOf(tree.root)).toContain('Discard this observation?');
   act(() => { findPressable(tree, 'Keep editing').props.onPress(); });
-  expect(textOf(tree.root)).toContain('Replace photo');
   expect(tree.root.findAll(node => node.props.accessibilityLabel === 'Optional note' && node.props.value === 'Leaves look better')).not.toHaveLength(0);
   await act(async () => { await findPressable(tree, 'Save observation').props.onPress(); });
   expect(db.all<{ observation: string; note: string; photo_uri: string }>(
@@ -77,9 +74,8 @@ test('app-bar and hardware Back keep a dirty checkpoint draft until discard is c
   let tree!: ReactTestRenderer;
   await act(async () => { tree = renderer.create(<AppNavigator db={db} />); });
   await openMonitoring(tree, db);
-  act(() => { findPressable(tree, 'Complete checkpoint').props.onPress(); });
   act(() => { findPressable(tree, 'Better').props.onPress(); });
-  act(() => { findPressable(tree, 'Go back').props.onPress(); });
+  act(() => { findPressable(tree, 'Back').props.onPress(); });
   expect(textOf(tree.root)).toContain('Discard this observation?');
   expect(textOf(tree.root)).toContain('Day 10');
   act(() => { findPressable(tree, 'Keep editing').props.onPress(); });
@@ -99,7 +95,6 @@ test.each(['home', 'account', 'scan'] as const)('dirty checkpoint guards %s navi
   let tree!: ReactTestRenderer;
   await act(async () => { tree = renderer.create(<AppNavigator db={db} />); });
   await openMonitoring(tree, db);
-  act(() => { findPressable(tree, 'Complete checkpoint').props.onPress(); });
   act(() => { findPressable(tree, 'Better').props.onPress(); });
   const navigate = () => {
     const nav = tree.root.findAll(node => node.type === BottomNav)[0];
@@ -128,7 +123,7 @@ test('Back from a new observation session refreshes the persisted monitoring lis
   let tree!: ReactTestRenderer;
   await act(async () => { tree = renderer.create(<AppNavigator db={db} />); });
   await openMonitoring(tree, db);
-  await act(async () => { findPressable(tree, 'Go back').props.onPress(); });
+  await act(async () => { findPressable(tree, 'Back').props.onPress(); });
   expect(tree.root.findAll(node => node.type === MonitoringListScreen)[0].props.rows).toHaveLength(1);
   act(() => tree.unmount());
 });

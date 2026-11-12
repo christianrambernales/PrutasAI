@@ -161,6 +161,7 @@ export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route
           expandedCheckpointDay={openCheckpoint}
           onCapturePhoto={day => push({ name: 'capture', target: { type: 'checkpoint', sessionId: r.sessionId, dayNumber: day } })}
           onOpenCheckpoint={day => setOpenCheckpoint(current => (current === day ? null : day))}
+          onBack={back}
         />
       );
     }

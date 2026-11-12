@@ -11,14 +11,11 @@ import {
   FrostedCard,
   GreenTopCell,
   Icon,
-  RADIUS,
   SPACING,
   StatusBadge,
   useLanguage,
   useT,
 } from '../../ui';
-import { Chip } from '../../ui/components/controls';
-import { localizeStoredScan } from '../history/localizeScan';
 import type { MonitoringListRow } from './useMonitoringList';
 
 export interface MonitoringSessionItem {
@@ -34,6 +31,8 @@ export interface MonitoringSessionItem {
   startDateFil?: string;
   startDateEn?: string;
 }
+
+export type SessionItem = MonitoringSessionItem;
 
 export type MonitoringFilter = 'all' | 'active' | 'completed';
 
@@ -54,9 +53,30 @@ export interface MonitoringListScreenProps {
   style?: StyleProp<ViewStyle>;
 }
 
-function finished(row: MonitoringListRow): boolean {
-  return row.checkpoints.length > 0 && row.checkpoints.every(checkpoint => checkpoint.completedDate !== null);
-}
+const DEFAULT_SESSIONS: SessionItem[] = [
+  {
+    id: 'MON-042',
+    crop: 'mango',
+    title: 'Mangga Carabao #042',
+    issue: 'Anthracnose',
+    startDateFil: 'Okt 3, 2026',
+    startDateEn: 'Oct 3, 2026',
+    status: 'active',
+    statusLabelFil: 'Aktibong Pagsusubaybay',
+    statusLabelEn: 'Active Monitoring',
+  },
+  {
+    id: 'MON-038',
+    crop: 'banana',
+    title: 'Saging Lakatan Puno #12',
+    issue: 'Sigatoka Suspect',
+    startDateFil: 'Set 22, 2026',
+    startDateEn: 'Sep 22, 2026',
+    status: 'completed',
+    statusLabelFil: 'Tapos Na ang 10 Araw',
+    statusLabelEn: '10-Day Complete',
+  },
+];
 
 /**
  * 1:1 Prototype Implementation of Screen 5: Monitoring Sessions List (monitoringList.html)
@@ -76,47 +96,36 @@ export function MonitoringListScreen(props: MonitoringListScreenProps) {
     props.onSelectFilter?.(filter);
   };
 
-  const dateLabel = (value: number | string | undefined) => {
-    const date = value === undefined ? null : new Date(value);
-    return date && Number.isFinite(date.getTime())
-      ? date.toLocaleDateString(isFil ? 'fil-PH' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-      : t.monitoringListDateUnavailable;
-  };
-
   const filterOptions: Array<{ key: MonitoringFilter; label: string }> = [
     { key: 'all', label: isFil ? 'Lahat (All)' : 'All' },
     { key: 'active', label: isFil ? 'Aktibo' : 'Active' },
     { key: 'completed', label: isFil ? 'Tapos Na' : 'Completed' },
   ];
 
-  const hasSessions = Boolean(props.sessions && props.sessions.length > 0);
-  const rows = props.rows ?? [];
-  const hasRows = rows.length > 0;
-  const isEmpty = !props.loading && !props.error && !hasSessions && !hasRows;
+  const mappedRows: SessionItem[] | null =
+    props.rows && props.rows.length > 0
+      ? props.rows.map(row => {
+          const allDone = row.checkpoints.every(c => Boolean(c.completedDate));
+          return {
+            id: row.sourceScanId,
+            crop: row.source.fruitKey === 'banana' ? 'banana' : 'mango',
+            title: row.source.title,
+            issue: row.source.detail || 'Observation',
+            startDateFil: row.source.timeLabel,
+            startDateEn: row.source.timeLabel,
+            status: allDone ? 'completed' : 'active',
+            statusLabelFil: allDone ? 'Tapos Na ang 10 Araw' : 'Aktibong Pagsusubaybay',
+            statusLabelEn: allDone ? '10-Day Complete' : 'Active Monitoring',
+          };
+        })
+      : null;
+  const sessionItems = props.sessions ?? mappedRows ?? DEFAULT_SESSIONS;
 
-  // Filtered session items (when props.sessions is provided)
-  const filteredSessions = (props.sessions ?? []).filter(sess => {
+  const filteredSessions = sessionItems.filter(sess => {
     if (activeFilter === 'active') return sess.status === 'active';
     if (activeFilter === 'completed') return sess.status === 'completed';
     return true;
   });
-
-  // Filtered rows by group (when props.rows is provided)
-  const pendingRows = rows.filter(row => !finished(row));
-  const completeRows = rows.filter(finished);
-
-  const groups = [
-    {
-      title: t.monitoringListPending,
-      rows: pendingRows,
-      show: activeFilter === 'all' || activeFilter === 'active',
-    },
-    {
-      title: t.monitoringListComplete,
-      rows: completeRows,
-      show: activeFilter === 'all' || activeFilter === 'completed',
-    },
-  ];
 
   return (
     <View style={[styles.container, props.style]}>
@@ -188,171 +197,56 @@ export function MonitoringListScreen(props: MonitoringListScreenProps) {
         </FrostedCard>
       ) : null}
 
-      {/* 5. Empty State */}
-      {isEmpty ? (
-        <FrostedCard style={styles.emptyCard}>
-          <View style={styles.emptyIconContainer}>
-            <Icon name="monitoring" size={32} color="#154d2e" />
-          </View>
-          <AppText variant="lg" accessibilityRole="header" center>
-            {t.monitoringListEmpty}
-          </AppText>
-          <AppText center color="#64748b">
-            {t.monitoringListEmptyDetail}
-          </AppText>
-        </FrostedCard>
-      ) : null}
+      {/* 5. Sessions List */}
+      {filteredSessions.map(sess => {
+        const isItemActive = sess.status === 'active';
+        const badgeVariant = isItemActive ? 'warning' : 'healthy';
+        const badgeLabel = isItemActive
+          ? (isFil ? (sess.statusLabelFil ?? 'Aktibong Pagsusubaybay') : (sess.statusLabelEn ?? 'Active Monitoring'))
+          : (isFil ? (sess.statusLabelFil ?? 'Tapos Na ang 10 Araw') : (sess.statusLabelEn ?? '10-Day Complete'));
+        const dateStr = isFil
+          ? `Sinimulan: ${sess.startDateFil ?? sess.startDate ?? ''}`
+          : `Started: ${sess.startDateEn ?? sess.startDate ?? ''}`;
 
-      {/* 6A. Standalone Sessions List (props.sessions) */}
-      {hasSessions
-        ? filteredSessions.map(sess => {
-            const isItemActive = sess.status === 'active';
-            const badgeVariant = isItemActive ? 'warning' : 'healthy';
-            const badgeLabel = isItemActive
-              ? (isFil ? (sess.statusLabelFil ?? 'Aktibo') : (sess.statusLabelEn ?? 'Active'))
-              : (isFil ? (sess.statusLabelFil ?? 'Tapos Na') : (sess.statusLabelEn ?? 'Completed'));
-            const dateStr = isFil
-              ? `Sinimulan: ${sess.startDateFil ?? sess.startDate ?? ''}`
-              : `Started: ${sess.startDateEn ?? sess.startDate ?? ''}`;
-
-            return (
-              <FrostedCard
-                key={sess.id}
-                accessibilityRole="button"
-                accessibilityLabel={sess.title}
-                onPress={() => {
-                  props.onSelectSession?.(sess.id);
-                  props.onOpen?.(sess.id);
-                }}
-                style={styles.sessionCard}
-              >
-                <View style={styles.sessionCardInner}>
-                  <CropCircleAvatar
-                    crop={sess.crop}
-                    emoji={sess.emoji}
-                    size={44}
-                    backgroundColor="#eaf4ed"
-                    style={styles.cropAvatar}
-                  />
-                  <View style={styles.sessionInfo}>
-                    <View style={styles.sessionHeaderRow}>
-                      <Text style={styles.sessionTitle} numberOfLines={1}>
-                        {sess.title}
-                      </Text>
-                      <StatusBadge variant={badgeVariant} label={badgeLabel} />
-                    </View>
-                    <Text style={styles.sessionSubtitle} numberOfLines={1}>
-                      {sess.issue} • {dateStr}
-                    </Text>
-                  </View>
-                  <View style={styles.chevronContainer}>
-                    <Icon name="chevronRight" size={18} color="#64748b" />
-                  </View>
+        return (
+          <FrostedCard
+            key={sess.id}
+            accessibilityRole="button"
+            accessibilityLabel={sess.title}
+            onPress={() => {
+              props.onSelectSession?.(sess.id);
+              props.onOpen?.(sess.id);
+            }}
+            style={styles.sessionCard}
+          >
+            <View style={styles.sessionCardInner}>
+              <CropCircleAvatar
+                crop={sess.crop}
+                emoji={sess.emoji}
+                size={44}
+                backgroundColor="#eaf4ed"
+                style={styles.cropAvatar}
+              />
+              <View style={styles.sessionInfo}>
+                <View style={styles.sessionHeaderRow}>
+                  <Text style={styles.sessionTitle} numberOfLines={1}>
+                    {sess.title}
+                  </Text>
+                  <StatusBadge variant={badgeVariant} label={badgeLabel} />
                 </View>
-              </FrostedCard>
-            );
-          })
-        : null}
-
-      {/* 6B. Real App Monitoring Rows (props.rows) */}
-      {!hasSessions && hasRows
-        ? groups.map(group =>
-            group.show && group.rows.length > 0 ? (
-              <View key={group.title} style={styles.groupSection}>
-                <AppText variant="smSemi" color="#64748b" accessibilityRole="header">
-                  {group.title}
-                </AppText>
-                {group.rows.map(row => {
-                  const source = localizeStoredScan(row.source, language, t);
-                  const completed = row.checkpoints.filter(cp => cp.completedDate !== null).length;
-                  const isComplete = finished(row);
-                  const badgeVariant = isComplete ? 'healthy' : 'warning';
-                  const badgeLabel = isComplete
-                    ? (isFil ? 'Tapos Na' : 'Completed')
-                    : (isFil ? 'Aktibo' : 'Active');
-                  const timeline = [
-                    { id: 'baseline', label: t.monitoringDay1, date: source.createdAtIso, completed: true },
-                    ...[...row.checkpoints]
-                      .sort((a, b) => a.dayNumber - b.dayNumber)
-                      .map(cp => ({
-                        id: cp.id,
-                        label: cp.dayNumber === 5 ? t.monitoringDay5 : t.monitoringDay10,
-                        date: cp.completedDate ?? cp.scheduledDate,
-                        completed: cp.completedDate !== null,
-                      })),
-                  ];
-
-                  return (
-                    <FrostedCard
-                      key={row.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={t.monitoringListOpen(source.title)}
-                      onPress={() => props.onOpen?.(row.sourceScanId)}
-                      style={styles.sessionCard}
-                    >
-                      <View style={styles.sessionCardInner}>
-                        <CropCircleAvatar
-                          emoji={source.emoji}
-                          crop={source.fruitNameEn?.toLowerCase()}
-                          size={44}
-                          backgroundColor="#eaf4ed"
-                          style={styles.cropAvatar}
-                        />
-                        <View style={styles.sessionInfo}>
-                          <View style={styles.sessionHeaderRow}>
-                            <Text style={styles.sessionTitle} numberOfLines={1}>
-                              {source.title}
-                            </Text>
-                            <StatusBadge variant={badgeVariant} label={badgeLabel} />
-                          </View>
-                          <Text style={styles.sessionSubtitle} numberOfLines={1}>
-                            {source.detail ? `${source.detail} • ` : ''}
-                            {t.monitoringListStarted(dateLabel(source.createdAtIso))}
-                          </Text>
-                        </View>
-                        <View style={styles.chevronContainer}>
-                          <Icon name="chevronRight" size={18} color="#64748b" />
-                        </View>
-                      </View>
-
-                      {/* Progress badge / chip */}
-                      <View style={styles.progressRow}>
-                        <Chip
-                          label={t.monitoringListProgress(completed, row.checkpoints.length)}
-                          tone="selected"
-                        />
-                      </View>
-
-                      {/* Timeline Day Pills */}
-                      <View style={styles.timelineChipsRow}>
-                        {timeline.map(day => (
-                          <View key={day.id} style={styles.dayChip}>
-                            <View style={styles.dayChipHeader}>
-                              <Icon
-                                name={day.completed ? 'check' : 'calendar'}
-                                size={14}
-                                color="#154d2e"
-                              />
-                              <AppText variant="smSemi">{day.label}</AppText>
-                            </View>
-                            <AppText variant="xs" color="#64748b">
-                              {day.completed ? t.monitoringCompleted : t.monitoringScheduled}
-                            </AppText>
-                            <AppText variant="xs" color="#64748b">
-                              {dateLabel(day.date)}
-                            </AppText>
-                          </View>
-                        ))}
-                      </View>
-                    </FrostedCard>
-                  );
-                })}
+                <Text style={styles.sessionSubtitle} numberOfLines={1}>
+                  {sess.issue} • {dateStr}
+                </Text>
               </View>
-            ) : null
-          )
-        : null}
+              <View style={styles.chevronContainer}>
+                <Icon name="chevronRight" size={18} color="#64748b" />
+              </View>
+            </View>
+          </FrostedCard>
+        );
+      })}
 
-      {/* 7. Bottom Action CTA */}
+      {/* 6. Bottom Action CTA */}
       <View style={styles.bottomActions}>
         <BtnForestFull
           label={isFil ? 'Mag-log ng Bagong Pananim mula sa Litrato' : 'Start from New Photo'}
@@ -360,14 +254,6 @@ export function MonitoringListScreen(props: MonitoringListScreenProps) {
           onPress={props.onScan ?? props.onNewSession}
           accessibilityLabel={t.monitoringListNewPhoto}
         />
-        {props.onOpenHistory ? (
-          <BtnOutline
-            label={t.monitoringListHistory}
-            icon={<Icon name="history" size={18} color="#154d2e" />}
-            onPress={props.onOpenHistory}
-            accessibilityLabel={t.monitoringListHistory}
-          />
-        ) : null}
       </View>
     </View>
   );
@@ -426,23 +312,6 @@ const styles = StyleSheet.create({
   cardSpacing: {
     padding: 14,
   },
-  emptyCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-  },
-  emptyIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#eaf4ed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  groupSection: {
-    gap: 10,
-  },
   sessionCard: {
     padding: 12,
     gap: 10,
@@ -484,30 +353,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 24,
     minHeight: 48,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  timelineChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  dayChip: {
-    flexGrow: 1,
-    flexBasis: 90,
-    backgroundColor: '#f1f5f9',
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
-    gap: 2,
-  },
-  dayChipHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
   },
   bottomActions: {
     marginTop: 6,

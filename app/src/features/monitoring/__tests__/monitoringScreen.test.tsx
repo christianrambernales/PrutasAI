@@ -89,30 +89,31 @@ describe('MonitoringScreen', () => {
     expect(screen.getByText(/Save Observation to SQLite/i)).toBeTruthy();
   });
 
-  it('renders all three days in order with appropriate labels', () => {
+  it('renders all three days in order with appropriate labels and auto-begins uncompleted checkpoint', () => {
+    const ctrl = mockController();
     let tree: any;
     act(() => {
       tree = renderer.create(
         <MonitoringScreen
-          controller={mockController()}
+          controller={ctrl}
           expandedCheckpointDay={null}
           onOpenCheckpoint={jest.fn()}
         />
       );
     });
+    expect(ctrl.beginCheckpoint).toHaveBeenCalledWith(10);
     const textNodes = tree.root.findAllByType('Text').map((node: any) => node.props.children);
     const textString = textNodes.flat(Infinity).join(' ');
-    expect(textString).toContain('Day 1');
+    expect(textString).toContain('Record Observation');
+    expect(textString).toContain('Day 1 (Baseline)');
     expect(textString).toContain('Day 5');
-    expect(textString).toContain('Day 10');
-    expect(textString).toContain('trend unavailable');
-    expect(textString).toContain('Completed late');
-    expect(textString).toContain('Photo not added');
+    expect(textString).toContain('Day 10 (Today)');
+    expect(textString).toContain('Save Observation to SQLite');
     expect(textString).not.toMatch(/diagnosis/i);
     expect(textString).not.toMatch(/percent/i);
   });
 
-  it('renders Day 1 baseline source scan date truthfully', () => {
+  it('renders target checkpoint scheduled date truthfully', () => {
     let tree: any;
     act(() => {
       tree = renderer.create(
@@ -123,33 +124,39 @@ describe('MonitoringScreen', () => {
         />
       );
     });
-    const day1ScheduledDate = new Date(mockView.checkpoints[0].scheduledDate).toLocaleDateString('en-US');
+    const day10ScheduledDate = new Date(mockView.checkpoints[2].scheduledDate).toLocaleDateString('en-US');
     const textNodes = tree.root.findAllByType('Text').map((node: any) => String(node.props.children));
     const textString = textNodes.join(' ');
-    expect(textString).toContain(day1ScheduledDate);
+    expect(textString).toContain(day10ScheduledDate);
   });
 
-  it('renders both scheduled date and actual late completion date truthfully without inference', () => {
+  it('auto-selects Day 5 when Day 5 is the first uncompleted checkpoint', () => {
+    const ctrl = mockController();
+    ctrl.view = {
+      ...mockView,
+      checkpoints: mockView.checkpoints.map(cp =>
+        cp.dayNumber === 5 ? { ...cp, status: 'due', completedDate: null, observation: null } : cp,
+      ),
+    };
     let tree: any;
     act(() => {
       tree = renderer.create(
         <MonitoringScreen
-          controller={mockController()}
+          controller={ctrl}
           expandedCheckpointDay={null}
           onOpenCheckpoint={jest.fn()}
         />
       );
     });
+    expect(ctrl.beginCheckpoint).toHaveBeenCalledWith(5);
     const scheduledDate = new Date(mockView.checkpoints[1].scheduledDate).toLocaleDateString('en-US');
-    const completedDate = new Date(mockView.checkpoints[1].completedDate!).toLocaleDateString('en-US');
     const textNodes = tree.root.findAllByType('Text').map((node: any) => String(node.props.children));
     const textString = textNodes.join(' ');
+    expect(textString).toContain('Test Crop • Day 5 Checkpoint');
     expect(textString).toContain(scheduledDate);
-    expect(textString).toContain(completedDate);
-    expect(textString).toContain('Completed late');
   });
 
-  it('keeps overall trend unavailable and never fabricates recovery or healing trends', () => {
+  it('never fabricates recovery or healing trends on the Record Observation screen', () => {
     let tree: any;
     act(() => {
       tree = renderer.create(
@@ -162,7 +169,7 @@ describe('MonitoringScreen', () => {
     });
     const textNodes = tree.root.findAllByType('Text').map((node: any) => String(node.props.children));
     const textString = textNodes.join(' ');
-    expect(textString).toContain('Overall trend unavailable');
+    expect(textString).toContain('Record Observation');
     expect(textString).not.toMatch(/improving|worsening|healed|recovering|lesion\s*%/i);
   });
 
@@ -203,47 +210,43 @@ describe('MonitoringScreen', () => {
 
   it.each(['EN', 'FIL'] as const)('%s (R11/A11, F-07-02-02): checkpoint controls announce localized state and chronology', language => {
     const t = strings(language);
-    const onOpenCheckpoint = jest.fn();
+    const ctrl = mockController();
     let tree: any;
     act(() => {
       tree = renderer.create(
         <LanguageProvider language={language}>
           <MonitoringScreen
-            controller={mockController()}
+            controller={ctrl}
             expandedCheckpointDay={null}
-            onOpenCheckpoint={onOpenCheckpoint}
+            onOpenCheckpoint={jest.fn()}
           />
         </LanguageProvider>,
       );
     });
 
     const buttons = tree.root.findAll((node: any) => node.props.accessibilityRole === 'button');
-    const day5 = buttons.find((node: any) => node.props.accessibilityLabel?.includes(t.monitoringDay5));
-    const day10 = buttons.find((node: any) => node.props.accessibilityLabel?.includes(t.monitoringDay10));
-    const scheduled = new Date(mockView.checkpoints[1].scheduledDate).toLocaleDateString(language === 'FIL' ? 'fil-PH' : 'en-US');
-    const completed = new Date(mockView.checkpoints[1].completedDate!).toLocaleDateString(language === 'FIL' ? 'fil-PH' : 'en-US');
+    const better = buttons.find((node: any) => node.props.accessibilityLabel === t.observationBetter);
+    const same = buttons.find((node: any) => node.props.accessibilityLabel === t.observationAboutSame);
+    const worse = buttons.find((node: any) => node.props.accessibilityLabel === t.observationWorse);
+    const unsure = buttons.find((node: any) => node.props.accessibilityLabel === t.observationUnsure);
+    const save = buttons.find((node: any) => node.props.accessibilityLabel === t.monitoringSaveObservation);
+    const scheduled = new Date(mockView.checkpoints[2].scheduledDate).toLocaleDateString(language === 'FIL' ? 'fil-PH' : 'en-US');
 
-    expect(day5).toBeTruthy();
-    expect(day5.props.accessibilityLabel).toContain(t.monitoringCompletedLate);
-    expect(day5.props.accessibilityLabel).toContain(t.monitoringScheduled);
-    expect(day5.props.accessibilityLabel).toContain(scheduled);
-    expect(day5.props.accessibilityLabel).toContain(t.monitoringObservationLabel);
-    expect(day5.props.accessibilityLabel).toContain(t.observationBetter);
-    expect(day5.props.accessibilityLabel).toContain(t.missingPhoto);
-    expect(day5.props.accessibilityLabel).toContain(completed);
-    expect(day5.props.accessibilityState.expanded).toBe(false);
-    expect(day10).toBeTruthy();
-    expect(day10.props.accessibilityLabel).toContain(t.monitoringCompleteCheckpoint);
-    expect(day10.props.accessibilityState.disabled).not.toBe(true);
+    expect(better).toBeTruthy();
+    expect(same).toBeTruthy();
+    expect(worse).toBeTruthy();
+    expect(unsure).toBeTruthy();
+    expect(save).toBeTruthy();
+    expect(save.props.accessibilityState.disabled).toBe(true);
+
     const currentText = tree.root.findAllByType('Text').map((node: any) => String(node.props.children)).join(' ');
-    expect(currentText).toContain(t.missingObservation);
-    expect(currentText).toContain(t.monitoringNoObservation);
+    expect(currentText).toContain(scheduled);
 
-    act(() => day5.props.onPress());
-    expect(onOpenCheckpoint).toHaveBeenCalledWith(5);
+    act(() => better.props.onPress());
+    expect(ctrl.setObservation).toHaveBeenCalledWith('better');
   });
 
-  it('R11: an expanded checkpoint exposes its disclosure state and local photo without disease claims', () => {
+  it('R11: Record Observation screen renders without disease or progression claims', () => {
     let tree: any;
     act(() => {
       tree = renderer.create(
@@ -254,13 +257,8 @@ describe('MonitoringScreen', () => {
         />,
       );
     });
-    const day5 = tree.root.find((node: any) => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel?.includes('Day 5'));
-    expect(day5.props.accessibilityState.expanded).toBe(true);
-    const photo = tree.root.findByType('Image');
-    expect(photo.props.source.uri).toBe('file:///test1.jpg');
-    expect(photo.props.accessible).toBe(true);
-    expect(photo.props.accessibilityLabel).toBe('Review local photo');
     const content = tree.root.findAllByType('Text').map((node: any) => String(node.props.children)).join(' ');
+    expect(content).toContain('Record Observation');
     expect(content).not.toMatch(/diagnosis|severity|confidence|healthy|progression/i);
   });
 
@@ -286,7 +284,7 @@ describe('MonitoringScreen', () => {
     }
   });
 
-  it('R11: Back to timeline invokes dirty-draft protection without asserting hardware Back', () => {
+  it('R11: GreenTopCell Back button invokes dirty-draft protection without asserting hardware Back', () => {
     const controller = {
       ...mockController(),
       draft: { dayNumber: 10, observation: 'better', note: '', stagedPhotoUri: null } as any,
@@ -297,7 +295,7 @@ describe('MonitoringScreen', () => {
         <MonitoringScreen controller={controller} expandedCheckpointDay={null} onOpenCheckpoint={jest.fn()} />,
       );
     });
-    const back = tree.root.find((node: any) => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'Back to timeline');
+    const back = tree.root.find((node: any) => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'Back');
     expect(back).toBeTruthy();
     act(() => back.props.onPress());
     expect(controller.requestBack).toHaveBeenCalledTimes(1);
@@ -365,33 +363,7 @@ describe('MonitoringScreen', () => {
     expect(ctrl.save).toHaveBeenCalledTimes(1);
   });
 
-  it('displays staged photo preview and remove action when photo is present', () => {
-    const ctrl = {
-      ...mockController(),
-      draft: { dayNumber: 10, observation: 'better', note: '', stagedPhotoUri: 'file:///staged_checkpoint.jpg' } as any,
-    };
-    let tree: any;
-    act(() => {
-      tree = renderer.create(
-        <MonitoringScreen
-          controller={ctrl}
-          expandedCheckpointDay={null}
-          onOpenCheckpoint={jest.fn()}
-        />
-      );
-    });
-    const images = tree.root.findAllByType('Image');
-    const stagedImg = images.find((img: any) => img.props.source.uri === 'file:///staged_checkpoint.jpg');
-    expect(stagedImg).toBeTruthy();
-    expect(stagedImg.props.accessibilityLabel).toBe('Review local photo');
-
-    const removeBtn = tree.root.find((node: any) => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'Remove photo');
-    expect(removeBtn).toBeTruthy();
-    act(() => removeBtn.props.onPress());
-    expect(ctrl.removeStagedPhoto).toHaveBeenCalledTimes(1);
-  });
-
-  it('displays missing photo placeholder when draft has no staged photo', () => {
+  it('does not render extra photo upload box or Back to timeline button inside observation card', () => {
     const ctrl = {
       ...mockController(),
       draft: { dayNumber: 10, observation: 'better', note: '', stagedPhotoUri: null } as any,
@@ -408,8 +380,8 @@ describe('MonitoringScreen', () => {
     });
     const textNodes = tree.root.findAllByType('Text').map((node: any) => String(node.props.children));
     const textString = textNodes.join(' ');
-    expect(textString).toContain('Photo not added');
-    const addPhotoBtn = tree.root.find((node: any) => node.props.accessibilityRole === 'button' && node.props.accessibilityLabel === 'Add photo');
-    expect(addPhotoBtn).toBeTruthy();
+    expect(textString).not.toContain('Photo not added');
+    expect(textString).not.toContain('Add photo');
+    expect(textString).not.toContain('Back to timeline');
   });
 });

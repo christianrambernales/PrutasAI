@@ -81,6 +81,7 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           onRetry={() => void monitoringList.reload()}
           onOpen={sourceScanId => push({ name: 'monitoring', sessionId: sourceScanId })}
           onScan={() => push({ name: 'capture' })}
+          onNewSession={() => push({ name: 'capture' })}
           onOpenHistory={() => push({ name: 'history' })}
         />
       );
