@@ -37,12 +37,10 @@ describe('Redesign Assistant and Chat flows', () => {
   describe.each<Language>(['EN', 'FIL'])('Assistant Screen in %s', language => {
     const t = strings(language);
 
-    it('blank-first entry renders welcome suggestions, decision support banner, and empty composer', async () => {
+    it('blank-first entry renders greeting bot bubble, decision support banner, and empty composer without legacy welcome card', async () => {
       const onOpenConversations = jest.fn();
-      const onSuggestion = jest.fn();
       const props = defaultProps({
         onOpenConversations,
-        onSuggestion,
         messages: [],
         draft: '',
       });
@@ -59,18 +57,18 @@ describe('Redesign Assistant and Chat flows', () => {
       // Decision support safety banner
       expect(screen.getByText(t.chatDecisionSupportBanner)).toBeTruthy();
 
-      // Welcome card and suggestions
-      expect(screen.getByText(t.welcomeAssistantTitle)).toBeTruthy();
-      expect(screen.getByText(t.welcomeAssistantDetail)).toBeTruthy();
-      expect(screen.getByText(t.starterQuestionsTitle)).toBeTruthy();
+      // Prototype v2 initial bot greeting bubble replaces legacy welcome card & starters
+      const expectedGreeting =
+        language === 'FIL'
+          ? 'Magandang araw! Ako ang iyong offline agro-assistant para sa Mangga, Saging, at Papaya. Paano kita matutulungan sa iyong pananim?'
+          : 'Good day! I am your offline agro-decision support assistant for Mango, Banana, and Papaya. How can I help your crops today?';
+      expect(screen.getByText(`🌾 ${t.assistantBotName}`)).toBeTruthy();
+      expect(screen.getByText(expectedGreeting)).toBeTruthy();
 
-      // No prefilled transcript messages
-      expect(screen.queryByText('Sample fake message')).toBeNull();
-
-      // Suggestions are clickable
-      const firstSuggestion = screen.getByRole('button', { name: MOCK_SUGGESTIONS[0] });
-      await fireEvent.press(firstSuggestion);
-      expect(onSuggestion).toHaveBeenCalledWith(MOCK_SUGGESTIONS[0]);
+      // Legacy welcome card, curatedBanner, and starter questions are removed
+      expect(screen.queryByText(t.welcomeAssistantTitle)).toBeNull();
+      expect(screen.queryByText(t.starterQuestionsTitle)).toBeNull();
+      expect(screen.queryByText(t.curatedBanner)).toBeNull();
 
       // Composer textbox is present
       const input = screen.getByRole('textbox');
@@ -222,88 +220,7 @@ describe('Redesign Assistant and Chat flows', () => {
       expect(onClose).toHaveBeenCalledTimes(2);
     });
 
-    it('provides rename action on conversation row', async () => {
-      const onRename = jest.fn();
-
-      await render(
-        <LanguageProvider language="EN">
-          <ConversationSidebar
-            visible={true}
-            conversations={MOCK_CONVERSATIONS}
-            activeId={null}
-            onSelect={jest.fn()}
-            onNew={jest.fn()}
-            onClose={jest.fn()}
-            onRename={onRename}
-            onDelete={jest.fn()}
-          />
-        </LanguageProvider>,
-      );
-
-      // Open options menu on first conversation
-      const moreOptions = screen.getAllByLabelText('More options')[0];
-      await fireEvent.press(moreOptions);
-
-      expect(screen.getByText('Rename')).toBeTruthy();
-      expect(screen.getByText('Move to Trash')).toBeTruthy();
-
-      // Trigger Rename
-      await fireEvent.press(screen.getByText('Rename'));
-      const renameInput = screen.getByDisplayValue('Banana care');
-      await fireEvent.changeText(renameInput, 'Banana care 2026');
-      await fireEvent(renameInput, 'submitEditing');
-
-      expect(onRename).toHaveBeenCalledWith('c1', 'Banana care 2026');
-    });
-
-    it('provides confirmation dialog before moving conversation to trash', async () => {
-      const onDelete = jest.fn();
-
-      await render(
-        <LanguageProvider language="EN">
-          <ConversationSidebar
-            visible={true}
-            conversations={MOCK_CONVERSATIONS}
-            activeId={null}
-            onSelect={jest.fn()}
-            onNew={jest.fn()}
-            onClose={jest.fn()}
-            onRename={jest.fn()}
-            onDelete={onDelete}
-          />
-        </LanguageProvider>,
-      );
-
-      // Open options menu on first conversation
-      const moreOptions = screen.getAllByLabelText('More options')[0];
-      await fireEvent.press(moreOptions);
-
-      // Press Move to Trash
-      await fireEvent.press(screen.getByText('Move to Trash'));
-
-      // Confirmation dialog should be presented
-      const confirmBody = screen.getByText(
-        'Are you sure you want to permanently delete this conversation? This action cannot be undone.',
-      );
-      expect(confirmBody).toBeTruthy();
-
-      // Cancel button dismisses without calling onDelete
-      const cancelBtn = screen.getByRole('button', { name: 'Cancel' });
-      await fireEvent.press(cancelBtn);
-      expect(onDelete).not.toHaveBeenCalled();
-
-      // Open menu again and confirm
-      await fireEvent.press(screen.getAllByLabelText('More options')[0]);
-      await fireEvent.press(screen.getByText('Move to Trash'));
-
-      // In confirmation dialog, press the Move to Trash action button
-      const confirmDeleteButtons = screen.getAllByRole('button', { name: 'Move to Trash' });
-      await fireEvent.press(confirmDeleteButtons[confirmDeleteButtons.length - 1]);
-
-      expect(onDelete).toHaveBeenCalledWith('c1');
-    });
-
-    it('renders sliding drawer with prototype 1:1 styles and trash button triggers confirmation', async () => {
+    it('renders sliding drawer with prototype 1:1 styles and direct trash button deletes immediately', async () => {
       const onDelete = jest.fn();
       const onClose = jest.fn();
       const onNew = jest.fn();
@@ -325,6 +242,9 @@ describe('Redesign Assistant and Chat flows', () => {
       // Header 🌾 Past Chats
       expect(screen.getByText(/🌾 Past Chats/i)).toBeTruthy();
 
+      // No legacy 3-dot More options menu
+      expect(screen.queryByLabelText('More options')).toBeNull();
+
       // Close button ✕
       const closeBtn = screen.getByText('✕');
       await fireEvent.press(closeBtn);
@@ -338,19 +258,17 @@ describe('Redesign Assistant and Chat flows', () => {
       // Recent conversations section
       expect(screen.getByText(/Recent Conversations/i)).toBeTruthy();
 
-      // Direct trash button 🗑️ triggers confirmation dialog
-      const trashButtons = screen.getAllByText('🗑️');
+      // Direct trash button 🗑️ calls onDelete(uuid) directly without confirmation modal
+      const trashButtons = screen.getAllByRole('button', { name: 'Move to Trash' });
       expect(trashButtons.length).toBeGreaterThanOrEqual(2);
+      expect(screen.getAllByText('🗑️').length).toBeGreaterThanOrEqual(2);
       await fireEvent.press(trashButtons[0]);
 
-      // Confirmation dialog appears
-      expect(screen.getByText(/Are you sure you want to permanently delete/i)).toBeTruthy();
-      const confirmButtons = screen.getAllByRole('button', { name: 'Move to Trash' });
-      await fireEvent.press(confirmButtons[confirmButtons.length - 1]);
       expect(onDelete).toHaveBeenCalledWith('c1');
+      expect(screen.queryByText(/Are you sure you want to permanently delete/i)).toBeNull();
     });
 
-    it('renders sliding drawer in Filipino with Mga Nakaraang Usapan header', async () => {
+    it('renders sliding drawer in Filipino with Mga Usapan header', async () => {
       await render(
         <LanguageProvider language="FIL">
           <ConversationSidebar
@@ -366,7 +284,7 @@ describe('Redesign Assistant and Chat flows', () => {
         </LanguageProvider>,
       );
 
-      expect(screen.getByText(/🌾 Mga Nakaraang Usapan/i)).toBeTruthy();
+      expect(screen.getByText(/🌾 Mga Usapan/i)).toBeTruthy();
       expect(screen.getByText(/\+ Bagong Usapan/i)).toBeTruthy();
       expect(screen.getByText(/Kamakailan/i)).toBeTruthy();
     });

@@ -85,20 +85,12 @@ export interface ChatScreenProps {
   placeholder?: string;
 }
 
-const DEFAULT_STARTERS = [
-  'How do I monitor my crop recovery?',
-  'What are the symptoms of anthracnose?',
-  'Is my area suitable for mango?',
-];
-
 export function ChatScreen(props: ChatScreenProps) {
   const t = useT();
   const language = useLanguage();
   const isFil = language === 'FIL';
   const {
     messages,
-    suggestions = DEFAULT_STARTERS,
-    curatedWording = true,
     pending,
   } = props;
   const draft = props.draft ?? props.draftText ?? '';
@@ -114,12 +106,26 @@ export function ChatScreen(props: ChatScreenProps) {
 
   const canSend = draft.trim().length > 0 && !pending;
 
+  const displayMessages: ChatScreenMessage[] =
+    messages.length > 0
+      ? messages
+      : [
+          {
+            id: 'initial-greeting',
+            role: 'assistant',
+            kind: 'grounded',
+            text: isFil
+              ? 'Magandang araw! Ako ang iyong offline agro-assistant para sa Mangga, Saging, at Papaya. Paano kita matutulungan sa iyong pananim?'
+              : 'Good day! I am your offline agro-decision support assistant for Mango, Banana, and Papaya. How can I help your crops today?',
+          },
+        ];
+
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: '#f1f5f2' }}
+      style={{ flex: 1, backgroundColor: COLORS.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={{ flex: 1 }}>
+      <View style={styles.screenContent}>
         {/* 1. GreenTopCell Header */}
         <GreenTopCell
           title={activeTitle}
@@ -150,87 +156,28 @@ export function ChatScreen(props: ChatScreenProps) {
               </Pressable>
             ) : null
           }
-          style={styles.topCell}
         />
 
         {/* 2. Safety Disclaimer Banner */}
-        <View style={styles.safetyBannerWrapper}>
-          <View style={styles.safetyBanner}>
-            <Text style={styles.safetyIcon}>🛡️</Text>
-            <AppText variant="xs" color="#0369a1" style={{ flex: 1, lineHeight: 17 }}>
-              {t.chatDecisionSupportBanner}
-            </AppText>
-          </View>
+        <View style={styles.safetyBanner}>
+          <Text style={styles.safetyIcon}>🛡️</Text>
+          <AppText variant="xs" color="#0369a1" style={{ flex: 1, lineHeight: 17 }}>
+            {t.chatDecisionSupportBanner}
+          </AppText>
         </View>
 
-        {curatedWording ? (
-          messages.length > 0 ? (
-            <View style={{ paddingHorizontal: SPACING.md, marginBottom: 4 }}>
-              <AppText variant="xs" color={COLORS.textSecondary}>
-                {t.curatedBanner}
-              </AppText>
-            </View>
-          ) : (
-            <View style={styles.srOnly} pointerEvents="none" accessible={false}>
-              <Text>{t.curatedBanner}</Text>
-            </View>
-          )
-        ) : null}
-
-        {/* 3. Transcript Messages List or Blank-first Welcome View */}
+        {/* 3. Transcript Messages List */}
         <ScrollView
           ref={scroller}
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, paddingTop: 4, gap: 8 }}
+          contentContainerStyle={{ paddingVertical: 2, gap: 8 }}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={toEnd}
         >
-          {messages.length === 0 ? (
-            <Col gap={SPACING.md} style={{ paddingTop: SPACING.xs }}>
-              <Card style={styles.welcomeCard}>
-                <Row gap={SPACING.md} align="center">
-                  <View style={styles.welcomeAvatar}>
-                    <AppText variant="xl">🌾</AppText>
-                  </View>
-                  <Col gap={2} style={{ flex: 1 }}>
-                    <AppText variant="mdSemi" color={COLORS.primary}>
-                      {t.welcomeAssistantTitle}
-                    </AppText>
-                    <AppText variant="xs" color={COLORS.textSecondary}>
-                      {t.welcomeAssistantDetail}
-                    </AppText>
-                  </Col>
-                </Row>
-              </Card>
-
-              <Col gap={SPACING.xs + 2} style={{ paddingTop: SPACING.xs }}>
-                <AppText variant="xsSemi" color={COLORS.primary}>
-                  {t.starterQuestionsTitle}
-                </AppText>
-                {(suggestions.length > 0 ? suggestions : DEFAULT_STARTERS).map(s => (
-                  <Pressable
-                    key={s}
-                    accessibilityRole="button"
-                    accessibilityLabel={s}
-                    onPress={() => props.onSuggestion?.(s)}
-                    style={styles.starterButton}
-                  >
-                    <Row gap={SPACING.sm} align="center">
-                      <Icon name="sparkle" size={14} color={COLORS.primary} />
-                      <AppText variant="sm" color={COLORS.text} style={{ flex: 1 }}>
-                        {s}
-                      </AppText>
-                    </Row>
-                  </Pressable>
-                ))}
-              </Col>
-            </Col>
-          ) : null}
-
-          {messages.map((msg, index) => {
-            if (msg.kind === 'notice' && messages[index - 1]?.kind === 'grounded') return null;
-            const rephraseNotice = msg.kind === 'grounded' && messages[index + 1]?.kind === 'notice'
-              ? messages[index + 1]
+          {displayMessages.map((msg, index) => {
+            if (msg.kind === 'notice' && displayMessages[index - 1]?.kind === 'grounded') return null;
+            const rephraseNotice = msg.kind === 'grounded' && displayMessages[index + 1]?.kind === 'notice'
+              ? displayMessages[index + 1]
               : null;
             const isUser = msg.role === 'user' || (msg as any).sender === 'user';
 
@@ -318,68 +265,53 @@ export function ChatScreen(props: ChatScreenProps) {
               <Chip label={t.retry} tone="outline" icon="refresh" />
             </Pressable>
           ) : null}
-
-          {messages.length > 0 && suggestions.length > 0 ? (
-            <Row gap={SPACING.xs + 2} wrap style={{ paddingTop: SPACING.xs }}>
-              {suggestions.map(s => (
-                <Pressable
-                  key={s}
-                  accessibilityRole="button"
-                  accessibilityLabel={s}
-                  onPress={() => props.onSuggestion?.(s)}
-                >
-                  <Chip label={s} tone="outline" />
-                </Pressable>
-              ))}
-            </Row>
-          ) : null}
         </ScrollView>
 
-        {props.edgeSwipeHandlers ? (
-          <View style={styles.edgeCatcher} {...props.edgeSwipeHandlers} />
-        ) : null}
+        {/* 4. Composer Input Bar */}
+        <View style={styles.inputBar}>
+          <TextInput
+            accessibilityRole={'textbox' as any}
+            accessibilityLabel={t.message}
+            style={styles.field}
+            value={draft}
+            onChangeText={props.onChangeDraft}
+            placeholder={props.placeholder ?? (props.activeTitle ? (isFil ? 'Magtanong ukol sa pananim...' : 'Ask crop question...') : t.askPlaceholder)}
+            placeholderTextColor={COLORS.textLight}
+            multiline
+            returnKeyType="send"
+            onSubmitEditing={() => { if (canSend) props.onSend(); }}
+            blurOnSubmit={false}
+            onKeyPress={(e: any) => {
+              const native = e.nativeEvent;
+              if (native?.key === 'Enter' && !native.shiftKey) {
+                e.preventDefault?.();
+                if (canSend) props.onSend();
+              }
+            }}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t.send}
+            onPress={props.onSend}
+            disabled={!canSend}
+            accessibilityState={{ disabled: !canSend }}
+            style={styles.sendTarget}
+          >
+            <LinearGradient
+              colors={['#c2410c', '#ea580c']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.sendGradient, !canSend && styles.sendOff]}
+            >
+              <Text style={styles.sendArrow}>➔</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
 
-      {/* 4. Composer Input Bar */}
-      <View style={styles.inputBar}>
-        <TextInput
-          accessibilityRole={'textbox' as any}
-          accessibilityLabel={t.message}
-          style={styles.field}
-          value={draft}
-          onChangeText={props.onChangeDraft}
-          placeholder={props.placeholder ?? (props.activeTitle ? (isFil ? 'Magtanong ukol sa pananim...' : 'Ask crop question...') : t.askPlaceholder)}
-          placeholderTextColor={COLORS.textLight}
-          multiline
-          returnKeyType="send"
-          onSubmitEditing={() => { if (canSend) props.onSend(); }}
-          blurOnSubmit={false}
-          onKeyPress={(e: any) => {
-            const native = e.nativeEvent;
-            if (native?.key === 'Enter' && !native.shiftKey) {
-              e.preventDefault?.();
-              if (canSend) props.onSend();
-            }
-          }}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t.send}
-          onPress={props.onSend}
-          disabled={!canSend}
-          accessibilityState={{ disabled: !canSend }}
-          style={styles.sendTarget}
-        >
-          <LinearGradient
-            colors={['#c2410c', '#ea580c']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.sendGradient, !canSend && styles.sendOff]}
-          >
-            <Text style={styles.sendArrow}>➔</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
+      {props.edgeSwipeHandlers ? (
+        <View style={styles.edgeCatcher} {...props.edgeSwipeHandlers} />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -457,10 +389,12 @@ function VerdictCard({ verdict }: { verdict: Suitability }) {
 const GENERAL_INK = '#8a4b00';
 
 const styles = StyleSheet.create({
-  topCell: {
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.xs,
-    marginBottom: SPACING.xs,
+  screenContent: {
+    flex: 1,
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   drawerButton: {
     width: 38,
@@ -493,54 +427,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  safetyBannerWrapper: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-  },
   safetyBanner: {
     backgroundColor: '#e0f2fe',
     borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderWidth: 1,
     borderColor: '#bae6fd',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   safetyIcon: {
     fontSize: 14,
-  },
-  welcomeCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  welcomeAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.primarySurface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  starterButton: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minHeight: 48,
-    justifyContent: 'center',
   },
   edgeCatcher: {
     position: 'absolute',
     left: 0,
     top: 0,
-    bottom: 0,
+    bottom: 84,
     width: EDGE_WIDTH,
     userSelect: 'none',
   },
@@ -612,27 +517,23 @@ const styles = StyleSheet.create({
     borderColor: '#e8c99a',
   },
   inputBar: {
-    backgroundColor: COLORS.surface,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   field: {
     flex: 1,
     maxHeight: 120,
     minHeight: 44,
-    backgroundColor: '#f1f5f2',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 8,
     color: COLORS.text,
     fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
   },
   sendTarget: {
     minWidth: 48,
@@ -659,12 +560,5 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     minHeight: 48,
     justifyContent: 'center',
-  },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    opacity: 0.01,
-    overflow: 'hidden',
   },
 });

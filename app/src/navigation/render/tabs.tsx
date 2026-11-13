@@ -85,7 +85,8 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           onOpenHistory={() => push({ name: 'history' })}
         />
       );
-    case 'chat':
+    case 'chat': {
+      const activeConv = conversations.list.find(c => c.uuid === chat.conversationId);
       return (
         <ChatScreen
           messages={chat.messages}
@@ -100,8 +101,10 @@ export function TabBody({ shell, tab }: { shell: Shell; tab: TabKey }) {
           edgeSwipeHandlers={conversations.edgeSwipe.panHandlers}
           onOpenConversations={conversations.openSidebar}
           onNewConversation={chat.clear}
+          activeTitle={activeConv?.title}
         />
       );
+    }
     case 'account':
       return <RouteBody shell={shell} route={{ name: 'account' }} />;
   }

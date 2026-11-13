@@ -1,7 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
   Animated,
-  Modal,
   PanResponder,
   Platform,
   Pressable,
@@ -10,9 +9,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { AppText, Button, Col, COLORS, RADIUS, Row, SPACING, useLanguage, useT } from '../../ui';
+import { AppText, Col, Row, SPACING, useLanguage, useT } from '../../ui';
 import type { ConversationSummary } from '../../core/db/repositories/conversations';
-import { ConversationRowMenu } from './ConversationRowMenu';
 
 export interface ConversationSidebarProps {
   visible: boolean;
@@ -33,7 +31,6 @@ export function ConversationSidebar(props: ConversationSidebarProps) {
   const isFil = language === 'FIL';
   const translate = useRef(new Animated.Value(props.visible ? 0 : -WIDTH)).current;
   const newConversation = useRef<React.ElementRef<typeof Pressable> | null>(null);
-  const [confirmingDelete, setConfirmingDelete] = useState<ConversationSummary | null>(null);
 
   React.useEffect(() => {
     Animated.timing(translate, {
@@ -51,16 +48,12 @@ export function ConversationSidebar(props: ConversationSidebarProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        if (confirmingDelete) {
-          setConfirmingDelete(null);
-        } else {
-          props.onClose();
-        }
+        props.onClose();
       }
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [props.visible, props.onClose, confirmingDelete]);
+  }, [props.visible, props.onClose]);
 
   React.useEffect(() => {
     if (!props.visible) return undefined;
@@ -70,7 +63,7 @@ export function ConversationSidebar(props: ConversationSidebarProps) {
 
   if (!props.visible) return null;
 
-  const headerTitle = `🌾 ${isFil ? 'Mga Nakaraang Usapan' : 'Past Chats'}`;
+  const headerTitle = `🌾 ${isFil ? 'Mga Usapan' : 'Past Chats'}`;
   const newChatLabel = `+ ${isFil ? 'Bagong Usapan (New Chat)' : 'Start New Chat'}`;
   const recentLabel = isFil ? 'Kamakailan' : 'Recent Conversations';
 
@@ -82,12 +75,6 @@ export function ConversationSidebar(props: ConversationSidebarProps) {
         accessibilityLabel={t.conversationsTitle}
         style={[styles.panel, { transform: [{ translateX: translate }] }]}
       >
-        {/* Hidden screen-reader text to ensure test compatibility with both Past Chats and Conversations */}
-        <View style={styles.srOnly} pointerEvents="none">
-          <AppText>{t.conversationsTitle}</AppText>
-          <AppText>{t.newConversation}</AppText>
-        </View>
-
         {/* 1. Header with Past Chats title and Close button */}
         <Row justify="space-between" align="center" style={styles.header}>
           <Text style={styles.headingTitle}>{headerTitle}</Text>
@@ -166,62 +153,19 @@ export function ConversationSidebar(props: ConversationSidebarProps) {
                   {/* Direct trash deletion button (prototype 1:1) */}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={t.delete}
+                    accessibilityLabel={t.chatMoveToTrash}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    onPress={() => setConfirmingDelete(c)}
+                    onPress={() => props.onDelete(id)}
                     style={styles.trashBtn}
                   >
                     <Text style={styles.trashEmoji}>🗑️</Text>
                   </Pressable>
-
-                  {/* Options menu for rename / delete */}
-                  <ConversationRowMenu
-                    onRename={newTitle => props.onRename(id, newTitle)}
-                    onDelete={() => setConfirmingDelete(c)}
-                    currentTitle={title}
-                  />
                 </View>
               );
             })
           )}
         </ScrollView>
       </Animated.View>
-
-      {confirmingDelete ? (
-        <Modal
-          visible={!!confirmingDelete}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setConfirmingDelete(null)}
-        >
-          <View style={styles.modalScrim}>
-            <View style={styles.modalCard} accessibilityViewIsModal>
-              <Col gap={SPACING.sm}>
-                <AppText variant="mdSemi">{t.chatMoveToTrash}</AppText>
-                <AppText variant="sm" color={COLORS.textSecondary}>
-                  {t.chatConfirmDeleteBody}
-                </AppText>
-                <Row gap={SPACING.sm} style={{ justifyContent: 'flex-end', marginTop: SPACING.sm }}>
-                  <Button
-                    variant="secondary"
-                    label={t.cancel}
-                    onPress={() => setConfirmingDelete(null)}
-                  />
-                  <Button
-                    variant="danger"
-                    label={t.chatMoveToTrash}
-                    onPress={() => {
-                      const uuid = confirmingDelete.uuid || (confirmingDelete as any).id;
-                      setConfirmingDelete(null);
-                      props.onDelete(uuid);
-                    }}
-                  />
-                </Row>
-              </Col>
-            </View>
-          </View>
-        </Modal>
-      ) : null}
     </View>
   );
 }
@@ -249,13 +193,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 30,
     elevation: 16,
-  },
-  srOnly: {
-    position: 'absolute',
-    width: 0,
-    height: 0,
-    opacity: 0,
-    overflow: 'hidden',
   },
   header: {
     paddingBottom: 10,
@@ -344,21 +281,7 @@ const styles = StyleSheet.create({
   },
   trashEmoji: {
     fontSize: 14,
-  },
-  modalScrim: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.lg,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 320,
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    elevation: 5,
+    color: '#f87171',
   },
 });
 
