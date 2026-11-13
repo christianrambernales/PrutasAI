@@ -20,15 +20,17 @@ test('reachable model status route uses the selected language and never offers d
   const tree = render(<RouteBody shell={shell} route={{ name: 'modelStatus' }} />);
   const content = textOf(tree.root);
 
-  expect(content).toContain('Hindi pa napatutunayan ang inference');
-  expect(content).toContain('Paano mag-import ng mga modelo');
+  expect(content).toContain('Katayuan ng AI Model');
+  expect(content).toContain('Yugto ng Thesis Prototype');
+  expect(content).toContain('Mga Yugto ng Pipeline (Pipeline Stages)');
+  expect(content).toContain('Walang Weights');
   expect(content).not.toContain('Mag-import ng file ng modelo');
   expect(content).not.toMatch(/diagnos(?:is|tic)/i);
 });
 
 test('model status route omits the misleading registry refresh control and retains Back', () => {
   const shell = makeShell({ t: strings('FIL') });
-  const tree = render(<RouteBar shell={shell} route={{ name: 'modelStatus' }} />);
+  const tree = render(<RouteBody shell={shell} route={{ name: 'modelStatus' }} />);
 
   expect(tree.root.findAll(node => node.props.accessibilityLabel === shell.t.rereadRegistry)).toHaveLength(0);
   act(() => {

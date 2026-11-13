@@ -29,7 +29,7 @@ const emptyFruits = {
 
 describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', () => {
   describe('ModelStatusScreen & ModelStatusView (Screen 17)', () => {
-    it('truthfully displays unverified inference and thesis phase disclosure without claiming ready to diagnose', () => {
+    it('truthfully displays no-weights status and thesis phase disclosure without claiming ready to diagnose', () => {
       const onBack = jest.fn();
       const t = strings('EN');
       const tree = render(
@@ -39,21 +39,19 @@ describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', (
       );
 
       const text = textOf(tree.root);
-      expect(text).toContain(t.modelInferenceUnverified);
+      expect(text).toContain('Thesis Phase Disclosure');
+      expect(text).toContain('No Weights');
       expect(text).not.toContain('Ready to diagnose');
-      expect(text).toContain(t.thesisPhaseDisclosure);
-      expect(text).toContain(t.thesisPhaseDisclosureDetail);
-      expect(text).toContain(t.pipelineStagesTitle);
-      expect(text).toContain(t.pipelineStage1Title);
-      expect(text).toContain(t.pipelineStage2Title);
-      expect(text).toContain(t.pipelineStage3Title);
+      expect(text).toContain('Pipeline Stages');
+      expect(text).toContain('Stage 1: Fruit Detector (YOLO)');
+      expect(text).toContain('Stage 2: Variety Classifier');
+      expect(text).toContain('Stage 3: Disease & Lesion Segmentation');
 
       press(tree, t.goBack);
       expect(onBack).toHaveBeenCalledTimes(1);
     });
 
     it('renders truthful model status view in Filipino', () => {
-      const t = strings('FIL');
       const tree = render(
         <LanguageProvider language="FIL">
           <ModelStatusScreen language="FIL" />
@@ -61,10 +59,10 @@ describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', (
       );
 
       const text = textOf(tree.root);
-      expect(text).toContain(t.modelInferenceUnverified);
-      expect(text).toContain(t.thesisPhaseDisclosure);
-      expect(text).toContain(t.thesisPhaseDisclosureDetail);
-      expect(text).toContain(t.pipelineStagesTitle);
+      expect(text).toContain('Katayuan ng AI Model');
+      expect(text).toContain('Yugto ng Thesis Prototype');
+      expect(text).toContain('Mga Yugto ng Pipeline (Pipeline Stages)');
+      expect(text).toContain('Walang Weights');
     });
 
     it('renders empty declared models truthfully in ModelStatusView fixture', () => {
@@ -82,8 +80,10 @@ describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', (
       );
 
       const text = textOf(tree.root);
-      expect(text).toContain(t.modelStatusEmptyHeadline);
-      expect(text).toContain(t.noModelsDeclared);
+      expect(text).toContain('AI Model Registry');
+      expect(text).toContain('Thesis Phase Disclosure');
+      expect(text).toContain('No Weights');
+      expect(text).not.toContain('Ready to diagnose');
     });
 
     it('renders ModelStatusScreen matching prototype stages 1:1', () => {
@@ -155,7 +155,6 @@ describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', (
     });
 
     it('renders trashed conversations and invokes onRestore when restore is pressed', async () => {
-      const t = strings('EN');
       const onRestore = jest.fn().mockResolvedValue(undefined);
       const onDeleteForever = jest.fn().mockResolvedValue(undefined);
       const fixedNow = () => new Date('2026-10-06T00:00:00.000Z');
@@ -174,35 +173,25 @@ describe('Redesign Supporting States (Stage 11 & Prototype v2 1:1 Alignment)', (
       const text = textOf(tree.root);
       expect(text).toContain(fakeConversation.title);
 
-      press(tree, fakeConversation.title);
-      await pressAsync(tree, t.restore);
+      await pressAsync(tree, `Restore ${fakeConversation.title}`);
       expect(onRestore).toHaveBeenCalledWith([fakeConversation.uuid]);
     });
 
-    it('handles selection and confirmed permanent delete', async () => {
+    it('uses automatic 15-day retention without manual permanent-delete controls', () => {
       const t = strings('EN');
-      const onRestore = jest.fn();
-      const onDeleteForever = jest.fn().mockResolvedValue(undefined);
-
       const tree = render(
         <LanguageProvider language="EN">
           <TrashScreen
             conversations={[fakeConversation]}
-            onRestore={onRestore}
-            onDeleteForever={onDeleteForever}
+            onRestore={jest.fn()}
+            onDeleteForever={jest.fn()}
           />
         </LanguageProvider>,
       );
 
-      // Select row
-      press(tree, fakeConversation.title);
-
-      // Press Delete permanently button
-      press(tree, t.deleteForever);
-
-      // Confirm modal pops up -> confirm delete
-      await pressAsync(tree, t.deleteForever);
-      expect(onDeleteForever).toHaveBeenCalledWith([fakeConversation.uuid]);
+      const text = textOf(tree.root);
+      expect(text).toContain('15-Day retention policy before permanent purge');
+      expect(text).not.toContain(t.deleteForever);
     });
 
     it('invokes onBack when Back is pressed', () => {

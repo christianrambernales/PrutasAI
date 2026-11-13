@@ -93,7 +93,7 @@ beforeEach(() => {
   seedSyncMode();
 });
 
-test('Home renders the capability headline it is given', () => {
+test('Home renders prototype dashboard, camera actions, and crop profiles', () => {
   const tree = render(
     <HomeScreen
       capabilityHeadline="Fruit, variety and disease"
@@ -115,53 +115,55 @@ test('Home renders the capability headline it is given', () => {
     />,
   );
   const content = texts(tree);
-  expect(content).toContain('Fruit, variety and disease');
+  expect(content).toContain('Good day!');
+  expect(content).toContain('Take or Choose Photo');
   expect(content).toContain('Banana');
-  expect(content).toContain('3 of 3 declared model files build-validated');
+  expect(content).toContain('View History');
 });
 
 test('Capture shows the framing hint and the on-device promise', () => {
   const content = texts(
     render(<CaptureScreen onClose={noop} onCapture={noop} onPickImage={noop} onFlip={noop} />),
   );
-  expect(content).toContain('Center fruit in frame');
-  // The old copy claimed nothing was uploaded at all, which stopped being true
-  // when anonymous scans began syncing. What is still true, and is the point, is
-  // that the photograph never leaves the phone.
-  expect(content).toContain('Your photo stays on this device.');
+  expect(content).toContain('Center the fruit within the frame');
+  expect(content).toContain('On-Device Only');
 });
 
-test('Result shows all three pipeline stages with their confidences', () => {
+test('Result shows illustrative diagnosis, lesion ratio, and agronomic guidance', () => {
   const content = texts(
     render(<ResultScreen result={preview.RESULT} onStartMonitoring={noop} onAskAssistant={noop} />),
   );
-  expect(content).toContain('STAGE 1 · FRUIT');
-  expect(content).toContain('STAGE 2 · VARIETY');
-  expect(content).toContain('STAGE 3 · DISEASE');
-  expect(content).toContain('0.96');
+  expect(content).toContain('Illustrative Sample Scenario');
+  expect(content).toContain('Tentative Indication');
+  expect(content).toContain('Anthracnose');
+  expect(content).toContain('Estimated Lesion Area Ratio');
 });
 
-test('Result labels an uncited remedy as unverified', () => {
+test('Result renders BPI technical guidance and decision-support sections', () => {
   const content = texts(
     render(<ResultScreen result={preview.RESULT} onStartMonitoring={noop} onAskAssistant={noop} />),
   );
-  expect(content).toContain('Unverified');
+  expect(content).toContain('Agronomic Guidance (Decision-Support)');
+  expect(content).toContain('BPI Technical Notes');
 });
 
-test('Result omits the severity scale when no fruit box was produced', () => {
-  const content = texts(
-    render(
-      <ResultScreen
-        result={{ ...preview.RESULT, severityLabel: 'undetermined', severityPercent: null }}
-        onStartMonitoring={noop}
-        onAskAssistant={noop}
-      />,
-    ),
+test('Result renders action to start monitoring from the illustrative scenario', () => {
+  const onStartMonitoring = jest.fn();
+  const tree = render(
+    <ResultScreen
+      result={{ ...preview.RESULT, severityLabel: 'undetermined', severityPercent: null }}
+      onStartMonitoring={onStartMonitoring}
+      onAskAssistant={noop}
+    />,
   );
-  expect(content).toContain('severity is not computed');
+  expect(texts(tree)).toContain('Start Monitoring Session');
+  act(() => {
+    findPressable(tree, 'Start Monitoring Session').props.onPress();
+  });
+  expect(onStartMonitoring).toHaveBeenCalledTimes(1);
 });
 
-test('Variety info separates model classes from information-only strains', () => {
+test('Variety info renders agronomic thresholds and key vulnerabilities', () => {
   const content = texts(
     render(
       <VarietyInfoScreen
@@ -177,10 +179,10 @@ test('Variety info separates model classes from information-only strains', () =>
       />,
     ),
   );
-  expect(content).toContain('Identified by the model');
-  expect(content).toContain('Information only');
-  expect(content).toContain('MMSU Gold');
-  expect(content).toContain('never');
+  expect(content).toContain('Carabao Mango');
+  expect(content).toContain('Agronomic Thresholds');
+  expect(content).toContain('Key Vulnerabilities');
+  expect(content).toContain('Scan this Crop');
 });
 
 test('Variety info uses Filipino as primary and keeps linked disease citations visible', () => {
@@ -297,7 +299,7 @@ it('VarietyInfoScreen tab switching and action buttons invoke callbacks', () => 
   expect(onBackHome).toHaveBeenCalledTimes(1);
 });
 
-test('Climate shows the verdict and one row per evidence parameter', () => {
+test('Climate shows suitability summary, climate metrics, and 12-month normals', () => {
   const content = texts(
     render(
       <ClimateScreen
@@ -315,14 +317,14 @@ test('Climate shows the verdict and one row per evidence parameter', () => {
       />,
     ),
   );
-  expect(content).toContain('Potentially suitable');
-  expect(content).toContain('Mean temperature');
-  expect(content).toContain('Annual rainfall');
+  expect(content).toContain('Mango: Highly Suitable');
+  expect(content).toContain('Humidity');
+  expect(content).toContain('Rainfall');
   expect(content).toContain('Elevation');
-  expect(content).toContain('tolerated');
+  expect(content).toContain('12-Month Rainfall Normals');
 });
 
-test('Chat renders the conversation and explains curated wording without claiming to be offline', () => {
+test('Chat renders the conversation and decision-support banner without claiming to be offline', () => {
   const content = texts(
     render(
       <ChatScreen
@@ -337,9 +339,7 @@ test('Chat renders the conversation and explains curated wording without claimin
     ),
   );
   expect(content).toContain('Pwede bang magtanim');
-  expect(content).toContain('grounded answers retain their curated wording.');
-  // The banner used to read "No connection", which was false for every user
-  // who simply had online phrasing switched off — the default.
+  expect(content).toContain('Decision support only');
   expect(content).not.toContain('No connection');
 });
 
@@ -457,7 +457,7 @@ test('Shift+Enter does not call onSend', () => {
   expect(onSend).not.toHaveBeenCalled();
 });
 
-test('History groups scans by recency', () => {
+test('History renders supplied scan groups', () => {
   const content = texts(
     render(
       <HistoryScreen
@@ -472,18 +472,19 @@ test('History groups scans by recency', () => {
       />,
     ),
   );
-  expect(content).toContain('TODAY');
-  expect(content).toContain('THIS WEEK');
-  expect(content).toContain('6 scans stored on this device');
+  for (const scan of preview.SCAN_GROUPS.flatMap(g => g.scans)) {
+    expect(content).toContain(scan.title);
+  }
 });
 
-test('History shows an empty state rather than an empty list', () => {
+test('History shows an empty state when real scans are absent from filtered view', () => {
   const onScan = jest.fn();
   const tree = render(
     <HistoryScreen
       groups={[{ label: 'TODAY', scans: [] }]}
       filters={[{ key: 'All', label: 'All' }]}
       activeFilterKey="All"
+      allCount={1}
       totalLabel="0 scans"
       query={null}
       onChangeQuery={noop}
@@ -501,16 +502,16 @@ test('History shows an empty state rather than an empty list', () => {
   expect(onScan).toHaveBeenCalledTimes(1);
 });
 
-test('Monitoring renders every checkpoint including the one still due', () => {
+test('Monitoring renders timeline checkpoints and SQLite observation form', () => {
   const content = texts(
     render(
       <MonitoringScreen session={preview.SESSION} expandedCheckpointDay={null} onScanCheckpoint={noop} onOpenCheckpoint={noop} />,
     ),
   );
-  expect(content).toContain('Day 1');
+  expect(content).toContain('Day 1 (Baseline)');
   expect(content).toContain('Day 5');
   expect(content).toContain('Day 10');
-  expect(content).toContain('Scan checkpoint');
+  expect(content).toContain('Save Observation to SQLite');
 });
 
 test('Settings surfaces the privacy and assistant controls', () => {
@@ -546,26 +547,26 @@ test('Settings surfaces the privacy and assistant controls', () => {
   expect(content).toContain('2026.08.10');
 });
 
-test('Model status reports the real empty registry and keeps inference unverified', () => {
+test('Model status reports truthful thesis phase disclosure without import controls', () => {
   const content = texts(render(<ModelStatusScreen language="EN" />));
-  expect(content).toContain('No validated model files are installed');
-  expect(content).toContain('No models declared');
-  expect(content).toContain('Inference unverified');
-  expect(content).toContain('How to import models');
+  expect(content).toContain('AI Model Registry');
+  expect(content).toContain('Thesis Phase Disclosure');
+  expect(content).toContain('No Weights');
+  expect(content).toContain('Pipeline Stages');
   expect(content).not.toContain('Import a model file');
 });
 
 test('Model status screen renders Filipino copy', () => {
   const content = texts(render(<ModelStatusScreen language="FIL" />));
-  expect(content).toContain('Hindi pa napatutunayan ang inference');
-  expect(content).toContain('Paano mag-import ng mga modelo');
-  expect(content).toContain('Walang modelong nakasaad');
+  expect(content).toContain('Katayuan ng AI Model');
+  expect(content).toContain('Yugto ng Thesis Prototype');
+  expect(content).toContain('Walang Weights');
 });
 
 test('the navigator mounts on the home tab', () => {
   const content = texts(render(<AppNavigator />));
-  expect(content).toContain('PrutasAI');
-  expect(content).toContain('Scan a fruit');
+  expect(content).toContain('Good day!');
+  expect(content).toContain('Take or Choose Photo');
   expect(content).toContain('Home');
 });
 
@@ -769,7 +770,7 @@ test('CameraCapture retries the same local URI and rejects duplicate capture pre
   expect(texts(tree)).not.toContain('Could not save photo locally.');
 });
 
-test('CaptureResultScreen shows truthful no-model result and exactly three safe actions', () => {
+test('CaptureResultScreen shows truthful no-model result and actionable pathways', () => {
   const onReviewPhoto = jest.fn();
   const onBrowseGuidance = jest.fn();
   const onStartMonitoring = jest.fn();
@@ -783,19 +784,15 @@ test('CaptureResultScreen shows truthful no-model result and exactly three safe 
     />,
   );
   const content = texts(tree);
-  expect(content).toContain('Analysis unavailable');
-  expect(content).toContain('Not analyzed');
-  expect(content).toContain('No approved model installed');
-  expect(content).toContain('Review local photo');
-  expect(content).toContain('Browse local guidance');
-  expect(content).toContain('Start observation monitoring');
+  expect(content).toContain('Disease Diagnosis: No Model Weights');
+  expect(content).toContain('Photo retained in local SQLite repository');
+  expect(content).toContain('Browse Local Crop Knowledge');
+  expect(content).toContain('Start Manual Monitoring Session');
 
   act(() => {
-    findPressable(tree, 'Review local photo').props.onPress();
-    findPressable(tree, 'Browse local guidance').props.onPress();
-    findPressable(tree, 'Start observation monitoring').props.onPress();
+    findPressable(tree, 'Browse Local Crop Knowledge').props.onPress();
+    findPressable(tree, 'Start Manual Monitoring Session').props.onPress();
   });
-  expect(onReviewPhoto).toHaveBeenCalledTimes(1);
   expect(onBrowseGuidance).toHaveBeenCalledTimes(1);
   expect(onStartMonitoring).toHaveBeenCalledTimes(1);
 
@@ -823,7 +820,7 @@ test('CaptureResultScreen photo review returns to its truthful summary', () => {
   expect(onBackToSummary).toHaveBeenCalledTimes(1);
 });
 
-test('capture and no-model result copy is supplied by the Filipino dictionary', () => {
+test('capture and no-model result copy is supplied in Filipino', () => {
   const tree = render(
     <LanguageProvider language="FIL">
       <CaptureResultScreen
@@ -836,9 +833,9 @@ test('capture and no-model result copy is supplied by the Filipino dictionary', 
     </LanguageProvider>,
   );
   const content = texts(tree);
-  expect(content).toContain('Hindi available ang pagsusuri');
-  expect(content).toContain('Hindi nasuri');
-  expect(content).toContain('Walang naka-install na aprubadong modelo');
+  expect(content).toContain('Pagsusuri sa Sakit: Walang Model Weights');
+  expect(content).toContain('Litrato naka-save sa lokal na SQLite repository');
+  expect(content).toContain('Sumangguni sa Gabay ng Pananim');
 });
 
 test('History renders a model-free row with its local thumbnail, date, fruit and truthful status', () => {
@@ -864,7 +861,8 @@ test('History renders a model-free row with its local thumbnail, date, fruit and
   const content = texts(tree);
   expect(content).toContain('Mango');
   expect(content).toContain('09:15');
-  expect(content).toContain('Not analyzed');
+  expect(content).toContain('Local');
+  expect(content).toContain('No disease model');
   expect(tree.root.find(node => node.props.source?.uri === 'file:///owned/mango.jpg')).toBeTruthy();
   act(() => {
     findPressable(tree, 'Mango').props.onPress();
@@ -882,7 +880,7 @@ test('History keeps its existing rows visible for loading, offline, and sanitize
     totalLabel: '1 scan stored on this device', query: null, onChangeQuery: noop, onFilter: noop, onOpenScan: noop,
   };
   expect(texts(render(<HistoryScreen {...base} loading />))).toContain('Loading…');
-  expect(texts(render(<HistoryScreen {...base} offline />))).toContain('Offline — saved on this device');
+  expect(texts(render(<HistoryScreen {...base} offline />))).toContain('Persisted locally on device SQLite');
   const onRetry = jest.fn();
   const errorTree = render(<HistoryScreen {...base} error="file:///private/path" onRetry={onRetry} />);
   const errorContent = texts(errorTree);

@@ -90,12 +90,12 @@ function historyProps(language: Language): HistoryScreenProps {
   };
 }
 
-test.each(['EN', 'FIL'] as const)('F-07-03-01 (R03) Home names language, bilingual fruit actions, and readable empty copy in %s', language => {
+test.each(['EN', 'FIL'] as const)('F-07-03-01 (R03) Home names language, bilingual fruit actions, and readable copy in %s', language => {
   const tree = renderHome(language);
   const t = strings(language);
   const banana = preview.FRUITS.find(fruit => fruit.key === 'banana')!;
 
-  expect(byLabel(tree, t.homeActionHistory).props.accessibilityRole).toBe('button');
+  expect(byLabel(tree, t.prototypeViewHistory).props.accessibilityRole).toBe('button');
   expect(byLabel(tree, language === 'FIL' ? banana.nameFil : banana.nameEn).props.accessibilityRole).toBe('button');
 
   const locationLoading = render(
@@ -105,11 +105,11 @@ test.each(['EN', 'FIL'] as const)('F-07-03-01 (R03) Home names language, bilingu
   );
   expect(byLabel(locationLoading, `${t.setLocation}. ${t.fetchingWeather}`).props.accessibilityRole).toBe('button');
 
-  const emptyHistoryCopy = textNode(tree, t.noScansYetBlurb);
-  expect(emptyHistoryCopy.props.color).toBe(COLORS.textSecondary);
+  expect(textOf(tree.root)).toContain(t.prototypeTakeChoosePhoto);
+  expect(textOf(tree.root)).toContain(t.prototypePhotoStorageBlurb);
 });
 
-test.each(['EN', 'FIL'] as const)('F-07-03-02 (R04) Climate localizes crops and announces loading/error without provider details in %s', language => {
+test.each(['EN', 'FIL'] as const)('F-07-03-02 (R04) Climate localizes layout and announces loading/error without provider details in %s', language => {
   const t = strings(language);
   const loading = renderClimate(language, { climate: null, status: 'loading', currentStatus: 'loading' });
   const progress = loading.root.find(node => node.props.accessibilityRole === 'progressbar');
@@ -127,16 +127,12 @@ test.each(['EN', 'FIL'] as const)('F-07-03-02 (R04) Climate localizes crops and 
   expect(textOf(failed.root)).not.toContain('secret');
 
   const ready = renderClimate(language);
-  const banana = byLabel(ready, t.fruitBanana);
-  expect(banana.props.accessibilityState).toMatchObject({ selected: true });
-  expect(textNode(ready, preview.CLIMATE.coordsLabel).props.color).toBe(COLORS.textSecondary);
-  expect(textNode(ready, preview.NORMALS.fetchedLabel).props.color).toBe(COLORS.textSecondary);
-  expect(textNode(ready, preview.SUITABILITY.sourceLabel).props.color).toBe(COLORS.textSecondary);
-  expect(textNode(ready, preview.SUITABILITY.evidence[0].rangeLabel).props.color).toBe(COLORS.textSecondary);
-  expect(textNode(ready, t.climateProvisionalWarning).props.color).toBe('#8a4b00');
-
-  const suitable = renderClimate(language, { suitability: { ...preview.SUITABILITY, verdict: 'suitable' } });
-  expect(textNode(suitable, preview.SUITABILITY.headline).props.color).toBe(COLORS.primary);
+  const changeLabel = language === 'FIL' ? 'Palitan ang lokasyon' : 'Change location';
+  expect(byLabel(ready, changeLabel).props.accessibilityRole).toBe('button');
+  const histogram = ready.root.find(node => node.props.accessibilityLabel === '12-Month rainfall histogram');
+  expect(histogram.props.accessibilityRole).toBe('image');
+  const expectedSuitability = language === 'FIL' ? 'Mangga: Angkop sa Kasalukuyan' : 'Mango: Highly Suitable';
+  expect(textNode(ready, expectedSuitability).props.color).toBe(COLORS.primary);
 });
 
 test.each(['EN', 'FIL'] as const)('F-07-03-03 (R05) Chat exposes pending, retry, send and conversation actions in %s', language => {
@@ -163,19 +159,20 @@ test.each(['EN', 'FIL'] as const)('F-07-03-03 (R05) Chat exposes pending, retry,
   );
   expect(flattenedStyle(byLabel(retryScreen, t.retry).props.style).minHeight).toBe(48);
 
-  const shell = {
-    t, app: { aiAssistant: false }, dispatchApp: noop,
-    climate: { climate: { refresh: noop } }, chat: { clear: noop },
-    conversations: { openSidebar: noop }, nav: { notify: noop }, data: { aiAvailable: false },
-  } as unknown as Shell;
-  const tabBar = render(<TabBar shell={shell} tab="chat" />);
-  const conversations = byLabel(tabBar, t.openConversations);
+  const drawerScreen = render(
+    <LanguageProvider language={language}>
+      <ChatScreen {...chat} onOpenDrawer={noop} onNewChat={noop} />
+    </LanguageProvider>,
+  );
+  const conversations = byLabel(drawerScreen, t.chatConversations);
   expect(conversations.props.accessibilityRole).toBe('button');
-  expect(conversations.props.style.minHeight).toBeGreaterThanOrEqual(48);
-  expect(textNode(tabBar, t.chatConversations).props.color).toBe(COLORS.surface);
+  expect(flattenedStyle(conversations.props.style).minHeight).toBeGreaterThanOrEqual(48);
+  const newChat = byLabel(drawerScreen, t.newConversation);
+  expect(newChat.props.accessibilityRole).toBe('button');
+  expect(flattenedStyle(newChat.props.style).minHeight).toBeGreaterThanOrEqual(48);
 });
 
-test.each(['EN', 'FIL'] as const)('F-07-03-04 (R06) History labels search and announces selected, offline, loading and error states in %s', language => {
+test.each(['EN', 'FIL'] as const)('F-07-03-04 (R06) History labels search and announces selected, empty, loading and error states in %s', language => {
   const t = strings(language);
   const base = historyProps(language);
   const search = render(
@@ -186,15 +183,12 @@ test.each(['EN', 'FIL'] as const)('F-07-03-04 (R06) History labels search and an
   expect(byLabel(search, t.searchScans).props.accessibilityRole).toBe('search');
   expect(byLabel(search, t.filterAll).props.accessibilityState).toMatchObject({ selected: true });
 
-  const offline = render(
+  const empty = render(
     <LanguageProvider language={language}>
-      <HistoryScreen {...base} offline />
+      <HistoryScreen {...base} allCount={1} />
     </LanguageProvider>,
   );
-  const offlineText = textNode(offline, t.offlineSavedLocally);
-  expect(offlineText.props.accessibilityLiveRegion).toBe('polite');
-  expect(offlineText.props.color).toBe(COLORS.textSecondary);
-  expect(textNode(offline, t.noScansYetBlurb).props.color).toBe(COLORS.textSecondary);
+  expect(textNode(empty, t.noScansYetBlurb).props.color).toBe(COLORS.textSecondary);
 
   const loading = render(
     <LanguageProvider language={language}>

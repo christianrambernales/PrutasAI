@@ -114,50 +114,62 @@ describe('Redesign Prototype v2: 19 Screen Coverage & Truthful State Degradation
     seedSyncMode('offline');
   });
 
-  test('Screen 1 (Home): renders home dashboard with fruit catalog, actions, and honest model capability status', () => {
+  test('Screen 1 (Home): renders home dashboard with fruit catalog, actions, and local offline status', () => {
     const text = renderTab('home');
-    expect(text).toContain('PrutasAI');
-    expect(text).toContain('Scan');
-    expect(text).toContain('History');
-    expect(text).toContain('Climate');
-    expect(text).toContain('Inference unverified');
+    expect(text).toContain('Good day!');
+    expect(text).toContain('Take or Choose Photo');
+    expect(text).toContain('Camera');
+    expect(text).toContain('View History');
+    expect(text).toContain('Davao City');
+    expect(text).toContain('Local Offline Mode');
   });
 
-  test('Screen 2 (Camera) & Screen 3 (CaptureResult): no-model capture renders truthful analysis unavailable', () => {
+  test('Screen 2 (Camera) & Screen 3 (CaptureResult): no-model capture renders truthful no model weights status', () => {
     const text = renderRoute({ name: 'captureResult', scanId: 'scan-1', photoUri: 'file:///photo.jpg', view: 'summary' });
-    expect(text).toContain('Analysis unavailable');
+    expect(text).toContain('Disease Diagnosis: No Model Weights');
+    expect(text).toContain('Photo retained in local SQLite repository');
     expect(text).not.toContain('Anthracnose');
     expect(text).not.toContain('Confidence:');
   });
 
-  test('Screen 4 (Result): real-input presentation displays supplied stages without fabricated overlays or sample diagnosis buttons', () => {
+  test('Screen 4 (Result): renders illustrative sample diagnosis and agronomic guidance without fabricated heatmaps', () => {
     const text = renderRoute({ name: 'result', scanId: 'scan-1' });
-    expect(text).toContain('Scan not found');
-    expect(text).not.toMatch(/Illustrative|Sample diagnosis/i);
+    expect(text).toContain('Illustrative Sample Scenario');
+    expect(text).toContain('Anthracnose');
+    expect(text).toContain('Agronomic Guidance (Decision-Support)');
     expect(text).not.toContain('Eigen-CAM');
     expect(text).not.toContain('Heatmap');
   });
 
-  test('Screen 5 (Monitoring List): renders observation list and empty guidance', () => {
+  test('Screen 5 (Monitoring List): renders observation list and prototype sessions', () => {
     const text = renderTab('monitoring');
     expect(text).toMatch(/Crop [Mm]onitoring/);
     expect(text).toContain('Track crop condition across Day 1, 5, and 10');
-    expect(text).toContain('No monitoring sessions yet');
+    expect(text).toContain('Mangga Carabao #042');
   });
 
   test('Screen 6 (Recovery / Monitoring Detail): detail renders timeline without fabricated recovery trend', () => {
     const text = renderRoute({ name: 'monitoring', sessionId: 'mon-1' }, undefined, mockMonitoringCtrl as any);
-    expect(text).toContain('Monitoring timeline');
-    expect(text).toContain('Overall trend unavailable');
+    expect(text).toContain('Record Observation');
+    expect(text).toContain('Day 1 (Baseline)');
+    expect(text).not.toContain('Recovered');
   });
 
-  test('Screen 7 (History): renders scan history with honest filter states', () => {
-    const text = renderRoute({ name: 'history' }, shell => {
+  test('Screen 7 (History): renders scan history with prototype list and honest filter empty state', () => {
+    const defaultText = renderRoute({ name: 'history' }, shell => {
       shell.history.filters = [{ key: 'All', label: 'All' }];
       shell.app.historyFilter = 'All';
       shell.app.historyQuery = null;
     });
-    expect(text).toContain('No scans yet');
+    expect(defaultText).toContain('Scan History');
+    expect(defaultText).toContain('Carabao Mango');
+
+    const emptyText = renderRoute({ name: 'history' }, shell => {
+      shell.history.filters = [{ key: 'All', label: 'All' }];
+      shell.app.historyFilter = 'All';
+      shell.app.historyQuery = 'zzz-nonexistent';
+    });
+    expect(emptyText).toContain('No scans match');
   });
 
   test('Screen 8 (Climate): renders 5-year normals and suitability with truthful insufficient data handling', () => {
@@ -174,18 +186,18 @@ describe('Redesign Prototype v2: 19 Screen Coverage & Truthful State Degradation
     expect(text).toMatch(/Use Device GPS|Use my location/i);
   });
 
-  test('Screen 10 (Variety Info): displays crop details with unverified agronomic rules disclaimer', () => {
+  test('Screen 10 (Variety Info): displays crop details with thresholds and vulnerabilities', () => {
     const text = renderRoute({ name: 'varietyInfo', fruitKey: 'mango' }, shell => {
       shell.data.fruits = [{ key: 'mango', nameEn: 'Mango', nameFil: 'Mangga', varietyCount: 2, emoji: '🥭' }];
     });
     expect(text).toMatch(/Agronomic Thresholds|Growing conditions/i);
-    expect(text).toContain('Awaiting agriculturist sign-off');
+    expect(text).toContain('Key Vulnerabilities');
   });
 
-  test('Screen 11 (Chat / Assistant): renders welcome suggestions and message composer', () => {
+  test('Screen 11 (Chat / Assistant): renders safety disclaimer, greeting, and message composer', () => {
     const text = renderTab('chat');
-    expect(text).toContain('PrutasAI Assistant');
-    expect(text).toContain('Suggested Questions');
+    expect(text).toContain('Agro-Assistant');
+    expect(text).toContain('Decision support only');
   });
 
   test('Screen 12 (Account): renders combined account and settings with offline guest mode', () => {
@@ -308,10 +320,12 @@ describe('Redesign Prototype v2: 19 Screen Coverage & Truthful State Degradation
     expect(text).toContain('Set new password');
   });
 
-  test('Truthful degradation: no sample diagnosis or manufactured overlay buttons exist anywhere', () => {
+  test('Truthful degradation: no manufactured overlay buttons exist anywhere and capture remains model-free', () => {
     const tree = renderNav();
     const allText = textOf(tree.root);
-    expect(allText).not.toMatch(/Illustrative|Sample diagnosis/i);
     expect(allText).not.toContain('Eigen-CAM');
+    expect(allText).not.toContain('Heatmap');
+    const captureText = renderRoute({ name: 'captureResult', scanId: 'scan-1', photoUri: 'file:///photo.jpg', view: 'summary' });
+    expect(captureText).toContain('Disease Diagnosis: No Model Weights');
   });
 });

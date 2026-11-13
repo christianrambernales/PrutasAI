@@ -60,8 +60,10 @@ test('the history route renders the empty state when nothing is stored', () => {
   expect(renderRoute({ name: 'history' })).toContain('No scans match');
 });
 
-test('the chat tab renders the curated-wording banner', () => {
-  expect(render('chat')).toContain('knowledge base');
+test('the chat tab renders the decision-support and curated knowledge banner', () => {
+  const output = render('chat');
+  expect(output).toContain('Curated Offline Knowledge');
+  expect(output).toContain('Decision support only');
 });
 
 test('a route title names the fruit for a variety-info route', () => {

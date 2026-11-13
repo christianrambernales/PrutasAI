@@ -6,7 +6,7 @@ import { AppNavigator } from '../AppNavigator';
 import { resetAppDatabase, seedConsent, seedLanguagePicked, seedSyncMode } from '../../testing/appDatabase';
 import { press } from '../../testing/interaction';
 import { BottomNav } from '../../ui';
-import { ConsentScreen } from '../../features/consent/ConsentScreen';
+import { WelcomeScreen } from '../../features/welcome/WelcomeScreen';
 import { getSyncMode } from '../../core/db/syncMode';
 
 let backListener: (() => boolean | null | undefined) | null = null;
@@ -31,7 +31,7 @@ test('Account tab requests consent for an offline install before opening real ac
   let tree!: ReactTestRenderer;
   await act(async () => { tree = renderer.create(<AppNavigator db={db} />); });
   await act(async () => { tree.root.findAll(node => node.type === BottomNav)[0].props.onSelect('account'); });
-  expect(tree.root.findAll(node => node.type === ConsentScreen)).toHaveLength(1);
+  expect(tree.root.findAll(node => node.type === WelcomeScreen)).toHaveLength(1);
   expect(tree.root.findAll(node => node.type === BottomNav)).toHaveLength(0);
   act(() => tree.unmount());
 });
@@ -56,7 +56,7 @@ test('hardware Back closes an open conversation sidebar before changing the chat
   await act(async () => { tree = renderer.create(<AppNavigator />); });
 
   press(tree, 'Assistant');
-  press(tree, 'Open conversations');
+  press(tree, 'Conversations');
   expect(tree.root.findAll(node => node.props.accessibilityRole === 'menu').length).toBeGreaterThan(0);
 
   let handled: boolean | null | undefined;
@@ -64,6 +64,6 @@ test('hardware Back closes an open conversation sidebar before changing the chat
 
   expect(handled).toBe(true);
   expect(tree.root.findAll(node => node.props.accessibilityRole === 'menu')).toHaveLength(0);
-  expect(tree.root.findAll(node => node.props.accessibilityLabel === 'Open conversations').length).toBeGreaterThan(0);
+  expect(tree.root.findAll(node => node.props.accessibilityLabel === 'Conversations').length).toBeGreaterThan(0);
   act(() => tree.unmount());
 });

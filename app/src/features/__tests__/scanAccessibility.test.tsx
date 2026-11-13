@@ -80,15 +80,28 @@ describe.each(['EN', 'FIL'] as const)('capture result accessibility in %s (R08/R
       </LanguageProvider>,
     );
 
-    expect(text(tree, t.resultAnalysisUnavailable).props.accessibilityRole).toBe('header');
-    expect(tree.root.findAllByType(Text).some(node => node.props.children === t.resultNotAnalyzed)).toBe(true);
+    const noWeightsHeadline = language === 'FIL'
+      ? 'Pagsusuri sa Sakit: Walang Model Weights'
+      : 'Disease Diagnosis: No Model Weights';
+    const localStorageNotice = language === 'FIL'
+      ? 'Litrato naka-save sa lokal na SQLite repository'
+      : 'Photo retained in local SQLite repository';
+    const browseLabel = language === 'FIL'
+      ? 'Sumangguni sa Gabay ng Pananim'
+      : 'Browse Local Crop Knowledge';
+    const monitorLabel = language === 'FIL'
+      ? 'Magsimula ng Manwal na Pagsubaybay'
+      : 'Start Manual Monitoring Session';
+
+    expect(text(tree, noWeightsHeadline).props.accessibilityRole).toBe('header');
+    expect(tree.root.findAllByType(Text).some(node => String(node.props.children).includes(localStorageNotice))).toBe(true);
     const photo = tree.root.findAllByType(Image)[0];
     expect(photo).toBeTruthy();
     expect(photo.props.source.uri).toBe('file:///owned/scan.jpg');
     expect(photo.props.accessible).toBe(true);
     expect(photo.props.accessibilityLabel).toBe(t.resultActionReviewPhoto);
 
-    for (const label of [t.resultActionReviewPhoto, t.resultActionBrowseGuidance, t.resultActionStartMonitoring]) {
+    for (const label of [browseLabel, monitorLabel]) {
       expect(button(tree, label).props.accessibilityRole).toBe('button');
       expect(button(tree, label).props.accessibilityLabel).toBe(label);
     }
@@ -123,9 +136,13 @@ describe.each(['EN', 'FIL'] as const)('capture result accessibility in %s (R08/R
   });
 });
 
-test('result presentation renders stages accessibility without sample disclaimer', () => {
+test('result presentation renders prototype illustrative diagnosis and agronomic guidance', () => {
   const tree = render(
     <ResultScreen photoUri="file:///scan.jpg" result={preview.RESULT} onStartMonitoring={noop} onAskAssistant={noop} />,
   );
-  expect(tree.root.findAllByType(Text).some(n => String(n.props.children).includes('STAGE 1'))).toBe(true);
+  const allText = tree.root.findAllByType(Text).map(n => String(n.props.children)).join(' ');
+  expect(allText).toContain('Illustrative Sample Scenario');
+  expect(allText).toContain('Tentative Indication');
+  expect(allText).toContain('Anthracnose');
+  expect(allText).toContain('Agronomic Guidance (Decision-Support)');
 });

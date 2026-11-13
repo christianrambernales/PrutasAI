@@ -140,11 +140,10 @@ describe.each<Language>(['EN', 'FIL'])('supporting route accessibility (%s)', la
     );
 
     const headings = knownTree.root.findAll(node => node.props.accessibilityRole === 'header').map(textOf);
-    expect(headings).toContain(language === 'FIL' ? fruit.nameFil : fruit.nameEn);
-    expect(headings).toContain(t.diseases);
-    expect(headings).toContain(t.sources);
-    expect(knownTree.root.findAll(node => node.props.accessibilityRole === 'list').length).toBeGreaterThanOrEqual(2);
-    const varietyName = language === 'FIL' ? variety.nameFil : variety.nameEn;
-    expect(findPressable(knownTree, varietyName).props.accessibilityState).toMatchObject({ selected: true });
+    expect(headings).toContain(language === 'FIL' ? 'Agronomic Thresholds (Pangangailangan)' : 'Agronomic Thresholds');
+    expect(headings).toContain(language === 'FIL' ? 'Mga Pangunahing Sakit (Local Knowledge)' : 'Key Vulnerabilities');
+    expect(knownTree.root.findAll(node => node.props.accessibilityRole === 'list').length).toBeGreaterThanOrEqual(1);
+    const cropTabLabel = language === 'FIL' ? '🍌 Saging' : '🍌 Banana';
+    expect(findPressable(knownTree, cropTabLabel).props.accessibilityState).toMatchObject({ selected: true });
   });
 });
