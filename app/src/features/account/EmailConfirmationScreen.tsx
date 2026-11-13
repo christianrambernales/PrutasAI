@@ -25,19 +25,19 @@ export function EmailConfirmationScreen(props: EmailConfirmationScreenProps) {
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Green Top Cell */}
-      <GreenTopCell
-        centered
-        headerIcon={<Text style={{ fontSize: 36 }}>📬</Text>}
-        title={isFil ? 'Tingnan ang Iyong Email' : 'Check your email'}
-        subtitle={isFil ? 'Ipinadala ang verification link' : 'A verification link has been sent'}
-        style={styles.greenTop}
-      />
-
       <View style={styles.body}>
+        {/* Green Top Cell */}
+        <GreenTopCell
+          centered
+          headerIcon={<Text style={{ fontSize: 36 }}>📬</Text>}
+          title={isFil ? 'Tingnan ang Iyong Email' : 'Check your email'}
+          subtitle={isFil ? 'Ipinadala ang verification link' : 'A verification link has been sent'}
+        />
+
         {/* Email Badge Card */}
         <FrostedCard style={[styles.card, { alignItems: 'center' }]}>
           <Text style={styles.sentLabel}>
@@ -109,16 +109,19 @@ export function EmailConfirmationScreen(props: EmailConfirmationScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 32,
-    backgroundColor: '#f7f9f5',
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
   },
-  greenTop: {
-    marginBottom: 12,
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
   },
   body: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   card: {
     padding: 16,

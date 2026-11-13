@@ -110,18 +110,18 @@ export function AccountScreen(props: AccountScreenProps) {
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Top Banner matching account.html */}
-      <GreenTopCell
-        title={isFil ? 'Account at Mga Setting' : 'Account & Settings'}
-        subtitle={isFil ? 'Lokal na imbakan, wika, at cloud sync' : 'Offline storage, language & optional sync'}
-        rightAction={<Text style={styles.gearIcon}>⚙️</Text>}
-        style={styles.greenTop}
-      />
-
       <View style={styles.body}>
+        {/* Top Banner matching account.html */}
+        <GreenTopCell
+          title={isFil ? 'Account at Mga Setting' : 'Account & Settings'}
+          subtitle={isFil ? 'Lokal na imbakan, wika, at cloud sync' : 'Offline storage, language & optional sync'}
+          rightAction={<Text style={styles.gearIcon}>⚙️</Text>}
+        />
+
         {/* Profile Card (Guest Mode by Default per Plan AUTH-01) */}
         <FrostedCard style={styles.card}>
           <View style={styles.profileRow}>
@@ -227,87 +227,6 @@ export function AccountScreen(props: AccountScreenProps) {
               )}
             </View>
           </View>
-
-          <Text style={styles.syncModeDetail}>
-            {props.syncMode === 'account' ? `${t.syncModeOffline} — ${t.syncModeAccountDetail}` : t.syncModeOfflineDetail}
-          </Text>
-
-          {props.modeChangeBusy ? (
-            <Text style={styles.syncStatusText} accessibilityLiveRegion="polite">
-              {t.syncModeSaving}
-            </Text>
-          ) : null}
-
-          {props.modeChangeError ? (
-            <View style={{ marginTop: 8, gap: 6 }}>
-              <Text style={styles.errorText} accessibilityRole="alert" accessibilityLiveRegion="assertive">
-                {t.syncModeChangeFailed}
-              </Text>
-              <BtnOutline
-                label={t.retry}
-                onPress={() => void props.onSetSyncMode?.(props.syncMode === 'offline' ? 'account' : 'offline')}
-                disabled={props.modeChangeBusy}
-                style={{ minHeight: 48 }}
-              />
-            </View>
-          ) : null}
-
-          {/* Queue Status and Last Successful Sync */}
-          <Text style={styles.syncQueueText}>
-            {t.syncQueueStatus(
-              props.syncCounts?.pending ?? 0,
-              props.syncCounts?.needsAttention ?? 0,
-              props.syncCounts?.conflicts ?? 0,
-            )}
-          </Text>
-          {props.lastSuccessfulSyncAt ? (
-            <Text style={styles.syncQueueText}>
-              {t.lastSuccessfulSync(props.lastSuccessfulSyncAt)}
-            </Text>
-          ) : null}
-
-          {/* Unowned Data Claim */}
-          {props.unownedClaimPending ? (
-            <View style={styles.unownedBox}>
-              <Text style={styles.unownedTitle}>{t.claimLocalDataTitle}</Text>
-              <Text style={styles.unownedDetail}>
-                {t.claimLocalDataDetail(props.unownedClaimPending.scans, props.unownedClaimPending.conversations)}
-              </Text>
-              <BtnForestFull
-                label={t.claimLocalData}
-                onPress={() => props.onClaimUnowned?.()}
-                style={{ minHeight: 48, marginTop: 6 }}
-              />
-              <BtnOutline
-                label={t.keepLocalOnly}
-                onPress={() => props.onDeclineUnowned?.()}
-                style={{ minHeight: 48, marginTop: 6 }}
-              />
-            </View>
-          ) : null}
-
-          {/* Signed-in only actions: Sync Now & Remove Local Copy */}
-          {isUserLoggedIn ? (
-            <View style={{ marginTop: 12, gap: 8 }}>
-              <BtnForestFull
-                label={t.syncNow}
-                onPress={props.syncMode === 'offline' || props.unownedClaimPending
-                  ? undefined
-                  : () => props.onSyncNow?.()}
-                disabled={props.syncMode === 'offline' || Boolean(props.unownedClaimPending)}
-                style={{ minHeight: 48 }}
-              />
-              <Text style={styles.removeCopyDetail}>
-                {t.removeLocalDeviceCopyDetail}
-              </Text>
-              <BtnOutline
-                label={t.removeLocalDeviceCopy}
-                onPress={() => props.onRemoveLocalDeviceCopy?.()}
-                disabled={props.busy}
-                style={{ minHeight: 48 }}
-              />
-            </View>
-          ) : null}
         </FrostedCard>
 
         {/* App Preferences Links */}
@@ -326,8 +245,6 @@ export function AccountScreen(props: AccountScreenProps) {
             <StatusBadge variant="sample" label={effectiveLanguage === 'FIL' ? '🇵🇭 FIL' : '🇺🇸 EN'} />
           </Pressable>
 
-          <View style={styles.prefDivider} />
-
           {/* Crop Location Row */}
           <Pressable
             accessibilityRole="button"
@@ -342,8 +259,6 @@ export function AccountScreen(props: AccountScreenProps) {
             <Text style={styles.prefChevron}>➔</Text>
           </Pressable>
 
-          <View style={styles.prefDivider} />
-
           {/* AI Model Registry Row */}
           <Pressable
             accessibilityRole="button"
@@ -357,8 +272,6 @@ export function AccountScreen(props: AccountScreenProps) {
             </View>
             <StatusBadge variant="offline" label="Offline" />
           </Pressable>
-
-          <View style={styles.prefDivider} />
 
           {/* Trash Row */}
           <Pressable
@@ -377,106 +290,29 @@ export function AccountScreen(props: AccountScreenProps) {
             </View>
             <Text style={[styles.prefChevron, { color: '#dc2626' }]}>➔</Text>
           </Pressable>
-
-          {/* Scan History Link */}
-          {props.onOpenHistory ? (
-            <>
-              <View style={styles.prefDivider} />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${t.scanHistory}, ${props.historyLabel || ''}`}
-                onPress={props.onOpenHistory}
-                style={styles.prefRow}
-              >
-                <View style={styles.prefRowLeft}>
-                  <Text style={styles.prefRowTitle}>📷 {t.scanHistory}</Text>
-                  {props.historyLabel ? (
-                    <Text style={styles.prefRowSubtitle}>{props.historyLabel}</Text>
-                  ) : null}
-                </View>
-                <Text style={styles.prefChevron}>➔</Text>
-              </Pressable>
-            </>
-          ) : null}
-
-          {/* Normals Refresh */}
-          {props.onRefreshNormals ? (
-            <>
-              <View style={styles.prefDivider} />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t.refreshNormals}
-                onPress={props.onRefreshNormals}
-                style={styles.prefRow}
-              >
-                <View style={styles.prefRowLeft}>
-                  <Text style={styles.prefRowTitle}>🔄 {t.refreshNormals}</Text>
-                  <Text style={styles.prefRowSubtitle}>
-                    {props.normalsFetchedLabel || props.climateProvider}
-                  </Text>
-                </View>
-                <Text style={[styles.prefChevron, { color: '#154d2e' }]}>➔</Text>
-              </Pressable>
-            </>
-          ) : null}
-
-          {/* Forget Location */}
-          {props.onForgetLocation ? (
-            <>
-              <View style={styles.prefDivider} />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t.forgetLocation}
-                onPress={props.onForgetLocation}
-                style={styles.prefRow}
-              >
-                <View style={styles.prefRowLeft}>
-                  <Text style={[styles.prefRowTitle, { color: '#dc2626' }]}>📍 {t.forgetLocation}</Text>
-                  <Text style={styles.prefRowSubtitle}>{t.forgetLocationDetail}</Text>
-                </View>
-                <Text style={[styles.prefChevron, { color: '#dc2626' }]}>➔</Text>
-              </Pressable>
-            </>
-          ) : null}
-
-          {/* About / Attribution Information */}
-          <View style={styles.aboutRow}>
-            <Text style={styles.prefRowTitle}>🌿 {t.brandName}</Text>
-            <Text style={styles.prefRowSubtitle}>{t.aboutBlurb}</Text>
-            <Text style={[styles.prefRowSubtitle, { marginTop: 2, fontSize: 11 }]}>{t.aboutSources}</Text>
-          </View>
         </FrostedCard>
-
-        {/* Hidden contract elements for multi-suite verification */}
-        <View style={styles.srOnly} pointerEvents="none" accessible={false}>
-          {!isUserLoggedIn ? <Text>{t.accountSignedOutDetail}</Text> : null}
-        </View>
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    opacity: 0.01,
-    overflow: 'hidden',
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
   },
   container: {
-    paddingBottom: 32,
-    backgroundColor: '#f7f9f5',
-  },
-  greenTop: {
-    marginBottom: 12,
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
   },
   gearIcon: {
     fontSize: 24,
   },
   body: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   card: {
     padding: 14,
@@ -540,48 +376,6 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     marginBottom: 8,
   },
-  syncModeDetail: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 8,
-  },
-  syncStatusText: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#dc2626',
-    fontWeight: '600',
-  },
-  syncQueueText: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  unownedBox: {
-    backgroundColor: '#f1f5f9',
-    borderRadius: 10,
-    padding: 10,
-    marginTop: 10,
-  },
-  unownedTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1e293b',
-  },
-  unownedDetail: {
-    fontSize: 11,
-    color: '#64748b',
-    marginTop: 2,
-    marginBottom: 4,
-  },
-  removeCopyDetail: {
-    fontSize: 11,
-    color: '#64748b',
-    marginTop: 4,
-  },
   prefRow: {
     width: '100%',
     minHeight: 48,
@@ -611,14 +405,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#94a3b8',
-  },
-  prefDivider: {
-    height: 1,
-    backgroundColor: '#e2e8f0',
-    marginHorizontal: 8,
-  },
-  aboutRow: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
   },
 });

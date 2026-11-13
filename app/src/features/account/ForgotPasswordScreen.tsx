@@ -29,26 +29,26 @@ export function ForgotPasswordScreen(props: ForgotPasswordScreenProps) {
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Green Top Cell */}
-      <GreenTopCell
-        title={t.titleResetPassword}
-        subtitle={isFil ? 'Humingi ng recovery link sa iyong email' : 'Request a secure password recovery link'}
-        rightAction={(
-          <BtnSubtle
-            label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
-            textColor="#ffffff"
-            onPress={props.onBack}
-            accessibilityLabel={t.cancel}
-            style={styles.cancelBtn}
-          />
-        )}
-        style={styles.greenTop}
-      />
-
       <View style={styles.body}>
+        {/* Green Top Cell */}
+        <GreenTopCell
+          title={t.titleResetPassword}
+          subtitle={isFil ? 'Humingi ng recovery link sa iyong email' : 'Request a secure password recovery link'}
+          rightAction={(
+            <BtnSubtle
+              label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
+              textColor="#ffffff"
+              onPress={props.onBack}
+              accessibilityLabel={t.cancel}
+              style={styles.cancelBtn}
+            />
+          )}
+        />
+
         {/* Form Card */}
         <FrostedCard style={styles.formCard}>
           <View style={styles.formGroup}>
@@ -122,19 +122,13 @@ export function ForgotPasswordScreen(props: ForgotPasswordScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    opacity: 0.01,
-    overflow: 'hidden',
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
   },
   container: {
-    paddingBottom: 32,
-    backgroundColor: '#f7f9f5',
-  },
-  greenTop: {
-    marginBottom: 12,
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
   },
   cancelBtn: {
     minHeight: 48,
@@ -142,8 +136,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   body: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   formCard: {
     padding: 16,

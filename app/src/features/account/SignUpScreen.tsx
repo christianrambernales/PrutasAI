@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
-  BtnForestFull,
   BtnOrangeFull,
-  BtnOutline,
   BtnSubtle,
   FrostedCard,
   GreenTopCell,
   useT,
 } from '../../ui';
+import { EmailConfirmationScreen } from './EmailConfirmationScreen';
 
 export interface SignUpScreenProps {
   busy: boolean;
@@ -34,79 +33,22 @@ export function SignUpScreen(props: SignUpScreenProps) {
 
   if (props.confirmationPendingEmail) {
     return (
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-      >
-        <GreenTopCell
-          centered
-          headerIcon={<Text style={{ fontSize: 36 }}>📬</Text>}
-          title={isFil ? 'Tingnan ang Iyong Email' : 'Check your email'}
-          subtitle={isFil ? 'Ipinadala ang verification link' : 'A verification link has been sent'}
-          style={styles.greenTop}
-        />
-
-        <View style={styles.body}>
-          <FrostedCard style={[styles.formCard, { alignItems: 'center' }]}>
-            <Text style={styles.formLabel}>
-              {isFil ? 'Nagpadala kami ng email sa:' : 'We sent a confirmation link to:'}
-            </Text>
-            <View style={styles.emailBadge}>
-              <Text style={styles.emailBadgeText}>
-                {props.confirmationPendingEmail}
-              </Text>
-            </View>
-            <Text style={styles.confirmHintText}>
-              {t.checkYourEmailDetail(props.confirmationPendingEmail)}
-            </Text>
-
-            {props.noticeMessage ? (
-              <Text style={styles.noticeText} accessibilityLiveRegion="polite">
-                {props.noticeMessage}
-              </Text>
-            ) : null}
-
-            {props.error ? (
-              <Text
-                style={styles.errorText}
-                accessibilityRole="alert"
-                accessibilityLiveRegion="assertive"
-              >
-                {props.error}
-              </Text>
-            ) : null}
-          </FrostedCard>
-
-          <View style={{ gap: 10, marginTop: 14 }}>
-            <BtnForestFull
-              label={props.busy ? t.resendingConfirmation : t.resendConfirmation}
-              accessibilityLabel={props.busy ? t.resendingConfirmation : t.resendConfirmation}
-              disabled={props.busy}
-              onPress={() => {
-                if (!props.busy && props.onResendConfirmation) {
-                  props.onResendConfirmation(props.confirmationPendingEmail!);
-                }
-              }}
-            />
-
-            <BtnOutline
-              label={t.continueOffline}
-              accessibilityLabel={t.continueOffline}
-              disabled={props.busy}
-              onPress={() => {
-                if (props.onContinueOffline) props.onContinueOffline();
-              }}
-            />
-          </View>
-        </View>
-      </ScrollView>
+      <EmailConfirmationScreen
+        email={props.confirmationPendingEmail}
+        busy={props.busy}
+        error={props.error}
+        message={props.noticeMessage ?? null}
+        onResend={() => props.onResendConfirmation?.(props.confirmationPendingEmail!)}
+        onBackToSignIn={props.onGoToSignIn}
+        onContinueOffline={() => props.onContinueOffline?.()}
+      />
     );
   }
 
   const handleSubmit = () => {
     if (props.busy) return;
 
-    if (password.length > 0 && password.length < 6) {
+    if (password.length > 0 && password.length < 8) {
       setLocalError(t.authErrorWeakPassword);
       return;
     }
@@ -124,25 +66,25 @@ export function SignUpScreen(props: SignUpScreenProps) {
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <GreenTopCell
-        title={isFil ? 'Gumawa ng Account' : 'Create Account'}
-        subtitle={isFil ? 'Opsyonal: Gamitin ang app nang walang rehistro kung nais' : 'Optional: Core diagnosis & guidance remain 100% offline'}
-        rightAction={props.onCancel ? (
-          <BtnSubtle
-            label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
-            textColor="#ffffff"
-            onPress={props.onCancel}
-            accessibilityLabel={t.cancel}
-            style={styles.cancelBtn}
-          />
-        ) : null}
-        style={styles.greenTop}
-      />
-
       <View style={styles.body}>
+        <GreenTopCell
+          title={isFil ? 'Gumawa ng Account' : 'Create Account'}
+          subtitle={isFil ? 'Opsyonal: Gamitin ang app nang walang rehistro kung nais' : 'Optional: Core diagnosis & guidance remain 100% offline'}
+          rightAction={props.onCancel ? (
+            <BtnSubtle
+              label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
+              textColor="#ffffff"
+              onPress={props.onCancel}
+              accessibilityLabel={t.cancel}
+              style={styles.cancelBtn}
+            />
+          ) : null}
+        />
+
         <FrostedCard style={styles.formCard}>
           {/* Email Field */}
           <View style={styles.formGroup}>
@@ -268,7 +210,7 @@ export function SignUpScreen(props: SignUpScreenProps) {
           />
           {props.onContinueOffline ? (
             <BtnSubtle
-              label={`🔒 ${isFil ? 'Magpatuloy nang Offline' : 'Continue Offline'}`}
+              label={isFil ? 'Magpatuloy nang Offline' : 'Continue Offline'}
               textColor="#64748b"
               onPress={props.onContinueOffline}
               accessibilityLabel={t.continueOffline}
@@ -283,12 +225,13 @@ export function SignUpScreen(props: SignUpScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 32,
-    backgroundColor: '#f7f9f5',
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
   },
-  greenTop: {
-    marginBottom: 12,
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
   },
   cancelBtn: {
     minHeight: 48,
@@ -296,8 +239,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   body: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   formCard: {
     padding: 16,
@@ -386,33 +331,5 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: 12,
-  },
-  emailBadge: {
-    alignSelf: 'stretch',
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginVertical: 8,
-    alignItems: 'center',
-  },
-  emailBadgeText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#154d2e',
-  },
-  confirmHintText: {
-    fontSize: 12,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 17,
-  },
-  noticeText: {
-    fontSize: 12,
-    color: '#154d2e',
-    fontWeight: '600',
-    marginTop: 6,
   },
 });

@@ -227,7 +227,7 @@ export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route
         />
       );
     case 'modelStatus':
-      return <ModelStatusScreen language={app.language} />;
+      return <ModelStatusScreen language={app.language} onBack={back} />;
     case 'locationPicker':
       return (
         <LocationPickerScreen
@@ -346,6 +346,7 @@ export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route
           onGoToSignIn={back}
           onResendConfirmation={email => void account.resendConfirmation(email)}
           onContinueOffline={account.continueOffline}
+          onCancel={back}
         />
       );
     case 'capture':
@@ -367,6 +368,7 @@ export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route
       return (
         <TrashScreen
           conversations={trashedConversations}
+          onBack={back}
           onRestore={uuids => {
             const restoredAt = new Date().toISOString();
             db.transaction(() => {

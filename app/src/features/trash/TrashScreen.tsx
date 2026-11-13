@@ -1,17 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   AppText,
   BtnForestFull,
   BtnSubtle,
-  Button,
   Col,
   COLORS,
   FONTS,
   FrostedCard,
   GreenTopCell,
-  RADIUS,
-  Row,
   SPACING,
   useLanguage,
   useT,
@@ -49,7 +46,6 @@ export function TrashScreen({
   conversations = [],
   trashedItems,
   onRestore,
-  onDeleteForever,
   now = () => new Date(),
   onBack,
   language,
@@ -59,14 +55,8 @@ export function TrashScreen({
   const currentLang = language ?? contextLang;
   const isFil = currentLang === 'FIL';
 
-  const [selecting, setSelecting] = useState(false);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const [confirming, setConfirming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [restoreError, setRestoreError] = useState(false);
+  const [failedRestoreId, setFailedRestoreId] = useState<string | null>(null);
 
   // Normalize items from either trashedItems or conversations
   const items = useMemo(() => {
@@ -87,68 +77,18 @@ export function TrashScreen({
     });
   }, [trashedItems, conversations, isFil, now, t]);
 
-  const toggle = (id: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  const targets = useMemo(
-    () => items.filter(row => selected.has(row.id)).map(row => row.id),
-    [items, selected],
-  );
-
   const handleSingleRestore = async (id: string) => {
     if (restoring) return;
     setRestoring(true);
-    setRestoreError(false);
+    setFailedRestoreId(null);
     try {
       const maybePromise = onRestore([id]);
       if (maybePromise instanceof Promise) await maybePromise;
     } catch {
-      setRestoreError(true);
+      setFailedRestoreId(id);
     } finally {
       setRestoring(false);
     }
-  };
-
-  const handleBatchRestore = async () => {
-    if (restoring || targets.length === 0) return;
-    setRestoring(true);
-    setRestoreError(false);
-    try {
-      const maybePromise = onRestore(targets);
-      if (maybePromise instanceof Promise) await maybePromise;
-      setSelected(new Set());
-      setSelecting(false);
-    } catch {
-      setRestoreError(true);
-    } finally {
-      setRestoring(false);
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!onDeleteForever || targets.length === 0) return;
-    setDeleting(true);
-    setError(false);
-    try {
-      await onDeleteForever(targets);
-      setConfirming(false);
-      setSelected(new Set());
-      setSelecting(false);
-    } catch {
-      setError(true);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setConfirming(false);
-    setError(false);
   };
 
   const backAction = (
@@ -162,7 +102,7 @@ export function TrashScreen({
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       {/* 1:1 Prototype Green Top Cell */}
       <GreenTopCell
         title={isFil ? 'Basurahan (Trash)' : 'Trash Manager'}
@@ -193,32 +133,7 @@ export function TrashScreen({
         </FrostedCard>
       ) : (
         <Col gap={SPACING.sm}>
-          {/* Batch operations toolbar if multiple or selecting */}
-          <Row gap={SPACING.sm}>
-            <Button
-              variant="secondary"
-              label={selecting ? t.cancel : t.select}
-              onPress={() => { setSelecting(s => !s); setSelected(new Set()); }}
-            />
-            {targets.length > 0 ? (
-              <>
-                <Button
-                  label={restoreError ? t.retry : t.restore}
-                  disabled={restoring}
-                  onPress={() => void handleBatchRestore()}
-                />
-                {onDeleteForever ? (
-                  <Button
-                    variant="danger"
-                    label={t.deleteForever}
-                    onPress={() => setConfirming(true)}
-                  />
-                ) : null}
-              </>
-            ) : null}
-          </Row>
-
-          {restoreError ? (
+          {failedRestoreId ? (
             <AppText variant="sm" color={COLORS.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">
               {t.localErrorGeneric}
             </AppText>
@@ -226,25 +141,12 @@ export function TrashScreen({
 
           <Col accessibilityRole="list" accessibilityLiveRegion="polite" gap={6}>
             {items.map(item => {
-              const isSelected = selected.has(item.id);
+              const hasFailed = failedRestoreId === item.id;
               return (
-                <FrostedCard
-                  key={item.id}
-                  style={[
-                    styles.itemCard,
-                    isSelected && styles.selectedItemCard,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  onPress={() => {
-                    if (selecting) { toggle(item.id); return; }
-                    setSelected(new Set([item.id]));
-                  }}
-                  accessibilityLabel={`${item.title}, ${item.deletedDate}`}
-                >
+                <FrostedCard key={item.id} style={styles.itemCard}>
                   <View style={styles.itemRow}>
                     <View style={styles.itemInfo}>
-                      <Text style={[styles.itemTitle, isSelected && styles.selectedItemTitle]}>
+                      <Text style={styles.itemTitle}>
                         {item.title}
                       </Text>
                       <Text style={styles.itemDate}>
@@ -254,12 +156,13 @@ export function TrashScreen({
 
                     <Pressable
                       accessibilityRole="button"
-                      accessibilityLabel={`${isFil ? 'Ibalik' : 'Restore'} ${item.title}`}
+                      accessibilityLabel={hasFailed ? t.retry : `${isFil ? 'Ibalik' : 'Restore'} ${item.title}`}
                       onPress={() => void handleSingleRestore(item.id)}
+                      disabled={restoring}
                       style={styles.restoreBtn}
                     >
                       <Text style={styles.restoreBtnText}>
-                        {isFil ? 'Ibalik' : 'Restore'}
+                        {hasFailed ? t.retry : (isFil ? 'Ibalik' : 'Restore')}
                       </Text>
                     </Pressable>
                   </View>
@@ -277,47 +180,22 @@ export function TrashScreen({
         accessibilityLabel={`← ${isFil ? 'Bumalik sa Account' : 'Back to Account'}`}
         style={styles.bottomCta}
       />
-
-      {/* Confirmation modal for permanent deletion */}
-      <Modal
-        visible={confirming}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancel}
-      >
-        <View style={styles.scrim}>
-          <View style={styles.modal} accessibilityViewIsModal>
-            <Col gap={SPACING.md}>
-              <AppText variant="lg" accessibilityRole="alert" accessibilityLiveRegion="polite">
-                {t.trashDeleteConfirmTitle(targets.length)}
-              </AppText>
-              <AppText variant="sm">{t.trashDeleteConfirmBody}</AppText>
-              {error ? (
-                <AppText variant="sm" color={COLORS.error} accessibilityRole="alert" accessibilityLiveRegion="assertive">
-                  {t.localErrorGeneric}
-                </AppText>
-              ) : null}
-              <Row gap={SPACING.sm} style={{ justifyContent: 'flex-end', marginTop: SPACING.sm }}>
-                <Button variant="secondary" label={t.cancel} onPress={handleCancel} disabled={deleting} />
-                <Button
-                  variant="danger"
-                  label={error ? t.retry : (deleting ? t.deleting : t.deleteForever)}
-                  onPress={handleDeleteConfirm}
-                  disabled={deleting}
-                />
-              </Row>
-            </Col>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
+  },
   container: {
-    padding: SPACING.md,
-    gap: SPACING.md,
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   backBtn: {
     minHeight: 48,
@@ -350,11 +228,6 @@ const styles = StyleSheet.create({
   itemCard: {
     padding: 12,
   },
-  selectedItemCard: {
-    borderColor: '#154d2e',
-    borderWidth: 2,
-    backgroundColor: '#f0fdf4',
-  },
   itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -369,9 +242,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: FONTS.bold,
     color: '#1e293b',
-  },
-  selectedItemTitle: {
-    color: '#154d2e',
   },
   itemDate: {
     fontSize: 11,
@@ -397,17 +267,5 @@ const styles = StyleSheet.create({
   },
   bottomCta: {
     marginTop: 8,
-  },
-  scrim: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'center',
-    padding: SPACING.lg,
-  },
-  modal: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.card,
-    padding: SPACING.lg,
-    elevation: 4,
   },
 });

@@ -285,10 +285,9 @@ describe('AccountScreen', () => {
     expect(onSetSyncMode).toHaveBeenCalledWith('account');
   });
 
-  test('signed-in mode renders user email, status, sign out, sync now, and local removal', () => {
+  test('signed-in mode renders user email, status, sign out, and sync mode actions', () => {
     const onSignOut = jest.fn();
-    const onSyncNow = jest.fn();
-    const onRemoveLocalDeviceCopy = jest.fn();
+    const onSetSyncMode = jest.fn();
     const tree = testRender(
       <AccountScreen
         email="farmer@prutas.ph"
@@ -297,30 +296,24 @@ describe('AccountScreen', () => {
         resetMessage={null}
         onSignOut={onSignOut}
         syncMode="account"
-        syncCounts={{ pending: 2, needsAttention: 1, conflicts: 0 }}
-        lastSuccessfulSyncAt="2026-10-10 10:00"
-        onSyncNow={onSyncNow}
-        onRemoveLocalDeviceCopy={onRemoveLocalDeviceCopy}
+        onSetSyncMode={onSetSyncMode}
       />,
     );
 
-    expect(textOf(tree.root)).toContain('farmer@prutas.ph');
-    expect(textOf(tree.root)).toContain('Logged In (Cloud Ready)');
-    expect(textOf(tree.root)).toContain('2 waiting · 1 need attention · 0 conflicts');
-    expect(textOf(tree.root)).toContain('Last successful sync: 2026-10-10 10:00');
+    const text = textOf(tree.root);
+    expect(text).toContain('farmer@prutas.ph');
+    expect(text).toContain('Logged In (Cloud Ready)');
+    expect(text).not.toContain('Sync now');
+    expect(text).not.toContain('Remove this device copy');
 
     press(tree, 'Sign Out (Photos remain on device)');
     expect(onSignOut).toHaveBeenCalledTimes(1);
 
-    press(tree, 'Sync now');
-    expect(onSyncNow).toHaveBeenCalledTimes(1);
-
-    press(tree, 'Remove this device copy');
-    expect(onRemoveLocalDeviceCopy).toHaveBeenCalledTimes(1);
+    press(tree, 'Local Offline Only');
+    expect(onSetSyncMode).toHaveBeenCalledWith('offline');
   });
 
-  test('mode change busy and error states are truthfully reported with retry', () => {
-    const onSetSyncMode = jest.fn();
+  test('modeChangeBusy disables sync mode controls', () => {
     const tree = testRender(
       <AccountScreen
         email={null}
@@ -330,33 +323,20 @@ describe('AccountScreen', () => {
         onSignOut={jest.fn()}
         syncMode="offline"
         modeChangeBusy={true}
-        onSetSyncMode={onSetSyncMode}
+        onSetSyncMode={jest.fn()}
       />,
     );
 
-    expect(textOf(tree.root)).toContain('Saving sync preference…');
-
-    const errorTree = testRender(
-      <AccountScreen
-        email={null}
-        busy={false}
-        error={null}
-        resetMessage={null}
-        onSignOut={jest.fn()}
-        syncMode="offline"
-        modeChangeError={true}
-        onSetSyncMode={onSetSyncMode}
-      />,
-    );
-
-    expect(textOf(errorTree.root)).toContain('Could not change sync preference');
-    press(errorTree, 'Try again');
-    expect(onSetSyncMode).toHaveBeenCalledWith('account');
+    const offlineBtn = findPressable(tree, 'Local Offline Only');
+    const syncBtn = findPressable(tree, 'Sync Metadata');
+    expect(offlineBtn.props.disabled).toBe(true);
+    expect(offlineBtn.props.accessibilityState?.disabled).toBe(true);
+    expect(syncBtn.props.disabled).toBe(true);
+    expect(syncBtn.props.accessibilityState?.disabled).toBe(true);
   });
 
-  test('unowned offline data claim prompt offers add or keep local', () => {
-    const onClaimUnowned = jest.fn();
-    const onDeclineUnowned = jest.fn();
+  test('cloud synchronization card renders only the two prototype mode buttons', () => {
+    const onSetSyncMode = jest.fn();
     const tree = testRender(
       <AccountScreen
         email="farmer@prutas.ph"
@@ -364,30 +344,26 @@ describe('AccountScreen', () => {
         error={null}
         resetMessage={null}
         onSignOut={jest.fn()}
-        unownedClaimPending={{ scans: 3, conversations: 2 }}
-        onClaimUnowned={onClaimUnowned}
-        onDeclineUnowned={onDeclineUnowned}
+        syncMode="offline"
+        onSetSyncMode={onSetSyncMode}
       />,
     );
 
-    expect(textOf(tree.root)).toContain('Keep this device data private');
-    expect(textOf(tree.root)).toContain('3 scan(s) and 2 conversation(s) were created offline');
+    const text = textOf(tree.root);
+    expect(text).toContain('Local Offline Only');
+    expect(text).toContain('Sync Metadata');
+    expect(text).not.toContain('Keep this device data private');
+    expect(text).not.toContain('Last successful sync');
 
-    press(tree, 'Add to this account');
-    expect(onClaimUnowned).toHaveBeenCalledTimes(1);
-
-    press(tree, 'Keep local only');
-    expect(onDeclineUnowned).toHaveBeenCalledTimes(1);
+    press(tree, 'Sync Metadata');
+    expect(onSetSyncMode).toHaveBeenCalledWith('account');
   });
 
-  test('integrated settings rows call their navigation and action handlers', () => {
+  test('integrated settings rows call their 4 prototype navigation and action handlers', () => {
     const onChangeLanguage = jest.fn();
     const onChangeLocation = jest.fn();
     const onOpenModels = jest.fn();
     const onOpenTrash = jest.fn();
-    const onOpenHistory = jest.fn();
-    const onRefreshNormals = jest.fn();
-    const onForgetLocation = jest.fn();
     const tree = testRender(
       <AccountScreen
         email={null}
@@ -402,11 +378,13 @@ describe('AccountScreen', () => {
         onOpenModels={onOpenModels}
         trashedCount={3}
         onOpenTrash={onOpenTrash}
-        onOpenHistory={onOpenHistory}
-        onRefreshNormals={onRefreshNormals}
-        onForgetLocation={onForgetLocation}
       />,
     );
+
+    const text = textOf(tree.root);
+    expect(text).not.toContain('Scan history');
+    expect(text).not.toContain('Refresh normals');
+    expect(text).not.toContain('Forget my location');
 
     press(tree, 'Language, English');
     expect(onChangeLanguage).toHaveBeenCalledWith('FIL');
@@ -419,15 +397,6 @@ describe('AccountScreen', () => {
 
     press(tree, 'Trash (15-Day Retention), 3 trashed conversations');
     expect(onOpenTrash).toHaveBeenCalledTimes(1);
-
-    press(tree, 'Scan history');
-    expect(onOpenHistory).toHaveBeenCalledTimes(1);
-
-    press(tree, 'Refresh normals');
-    expect(onRefreshNormals).toHaveBeenCalledTimes(1);
-
-    press(tree, 'Forget my location');
-    expect(onForgetLocation).toHaveBeenCalledTimes(1);
   });
 
   test('confirmationPendingEmail delegates to EmailConfirmationScreen and hides signed-in identity', () => {

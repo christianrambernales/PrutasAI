@@ -33,26 +33,26 @@ export function LoginScreen(props: LoginScreenProps) {
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Green Top Cell */}
-      <GreenTopCell
-        title={isFil ? 'Mag-log in' : 'Log In'}
-        subtitle={isFil ? 'I-sync ang iyong metadata habang ang litrato ay nananatili sa device' : 'Sync observations metadata while photos remain on device'}
-        rightAction={props.onCancel ? (
-          <BtnSubtle
-            label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
-            textColor="#ffffff"
-            onPress={props.onCancel}
-            accessibilityLabel={t.cancel}
-            style={styles.cancelBtn}
-          />
-        ) : null}
-        style={styles.greenTop}
-      />
-
       <View style={styles.body}>
+        {/* Green Top Cell */}
+        <GreenTopCell
+          title={isFil ? 'Mag-log in' : 'Log In'}
+          subtitle={isFil ? 'I-sync ang iyong metadata habang ang litrato ay nananatili sa device' : 'Sync observations metadata while photos remain on device'}
+          rightAction={props.onCancel ? (
+            <BtnSubtle
+              label={`✕ ${isFil ? 'Kanselahin' : 'Cancel'}`}
+              textColor="#ffffff"
+              onPress={props.onCancel}
+              accessibilityLabel={t.cancel}
+              style={styles.cancelBtn}
+            />
+          ) : null}
+        />
+
         {/* Frosted Form Card */}
         <FrostedCard style={styles.formCard}>
           {/* Email Field */}
@@ -149,16 +149,6 @@ export function LoginScreen(props: LoginScreenProps) {
             disabled={props.busy}
             style={styles.linkBtn}
           />
-          {/* Also support canonical key search for account sync test */}
-          <View style={styles.srOnly} pointerEvents="none">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t.createAccountPrompt}
-              onPress={props.onCreateAccount}
-            >
-              <Text>{t.createAccountPrompt}</Text>
-            </Pressable>
-          </View>
           <BtnSubtle
             label={`🔒 ${isFil ? 'Magpatuloy nang Offline (Walang Account)' : 'Continue Offline (No Account)'}`}
             textColor="#64748b"
@@ -174,12 +164,13 @@ export function LoginScreen(props: LoginScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 32,
-    backgroundColor: '#f7f9f5',
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
   },
-  greenTop: {
-    marginBottom: 12,
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
   },
   cancelBtn: {
     minHeight: 48,
@@ -187,8 +178,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   body: {
-    paddingHorizontal: 16,
-    gap: 12,
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   formCard: {
     padding: 16,
@@ -276,14 +269,5 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: 'center',
     paddingHorizontal: 12,
-  },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    opacity: 0,
   },
 });

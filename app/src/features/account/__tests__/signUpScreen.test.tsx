@@ -2,8 +2,10 @@ import React from 'react';
 import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 
 import { SignUpScreen } from '../SignUpScreen';
-import { press, pressableRoles, textInputs } from '../../../testing/interaction';
+import { press, pressableRoles, textInputs, textOf } from '../../../testing/interaction';
 import { LanguageProvider } from '../../../ui';
+import { RouteBody } from '../../../navigation/render/routes';
+import { makeShell } from '../../../testing/shellFixture';
 
 function render(element: React.ReactElement): ReactTestRenderer {
   let tree!: ReactTestRenderer;
@@ -27,10 +29,24 @@ test('submitting calls onSignUp with the typed email and password', () => {
   );
 
   typeByLabel(tree, 'Email', 'grower@example.test');
+  typeByLabel(tree, 'Password', 'secret123');
+  press(tree, 'Create account');
+
+  expect(onSignUp).toHaveBeenCalledWith('grower@example.test', 'secret123');
+});
+
+test('passwords shorter than 8 characters show weak password error and do not call onSignUp', () => {
+  const onSignUp = jest.fn();
+  const tree = render(
+    <SignUpScreen busy={false} error={null} onSignUp={onSignUp} onGoToSignIn={jest.fn()} />,
+  );
+
+  typeByLabel(tree, 'Email', 'grower@example.test');
   typeByLabel(tree, 'Password', 'secret');
   press(tree, 'Create account');
 
-  expect(onSignUp).toHaveBeenCalledWith('grower@example.test', 'secret');
+  expect(onSignUp).not.toHaveBeenCalled();
+  expect(JSON.stringify(tree.toJSON())).toContain('Password is too weak');
 });
 
 test('the sign-in link calls onGoToSignIn rather than submitting', () => {
@@ -66,16 +82,17 @@ test('an error is shown', () => {
   expect(text).toContain('Email already registered');
 });
 
-test('renders confirmation-pending view with check your email, resend and continue offline actions', () => {
+test('renders confirmation-pending view via EmailConfirmationScreen with resend, back to login, and continue offline actions', () => {
   const onResendConfirmation = jest.fn();
   const onContinueOffline = jest.fn();
+  const onGoToSignIn = jest.fn();
   const tree = render(
     <SignUpScreen
       busy={false}
       error={null}
       confirmationPendingEmail="grower@example.test"
       onSignUp={jest.fn()}
-      onGoToSignIn={jest.fn()}
+      onGoToSignIn={onGoToSignIn}
       onResendConfirmation={onResendConfirmation}
       onContinueOffline={onContinueOffline}
     />,
@@ -85,10 +102,13 @@ test('renders confirmation-pending view with check your email, resend and contin
   expect(text).toContain('Check your email');
   expect(text).toContain('grower@example.test');
 
-  press(tree, 'Resend confirmation email');
+  press(tree, 'Resend Email');
   expect(onResendConfirmation).toHaveBeenCalledWith('grower@example.test');
 
-  press(tree, 'Continue offline');
+  press(tree, 'Back to Log In');
+  expect(onGoToSignIn).toHaveBeenCalledTimes(1);
+
+  press(tree, 'Continue Using Offline');
   expect(onContinueOffline).toHaveBeenCalledTimes(1);
 });
 
@@ -150,4 +170,20 @@ test('sign-up auth errors are announced as alerts without changing their safe bi
 
   const alert = tree.root.findAll(n => n.props.accessibilityRole === 'alert');
   expect(alert.some(n => n.props.accessibilityLiveRegion === 'assertive')).toBe(true);
+});
+
+test('signup route via RouteBody passes onCancel={back} and renders Continue Offline without lock icon', () => {
+  const shell = makeShell();
+  const tree = render(
+    <LanguageProvider language="EN">
+      <RouteBody shell={shell} route={{ name: 'signup' }} />
+    </LanguageProvider>,
+  );
+
+  const text = textOf(tree.root);
+  expect(text).toContain('Continue Offline');
+  expect(text).not.toContain('🔒 Continue Offline');
+
+  press(tree, shell.t.cancel);
+  expect(shell.nav.back).toHaveBeenCalledTimes(1);
 });

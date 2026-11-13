@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import {
-  AppText, Button, Card, Col, COLORS, RADIUS, Row, Section, SPACING, useT,
+  AppText, BtnForestFull, BtnOutline, BtnSubtle, COLORS, FrostedCard, GreenTopCell, RADIUS, SPACING, useT,
 } from '../../ui';
 
 export interface ResetPasswordScreenProps {
@@ -48,38 +48,30 @@ export function ResetPasswordScreen(props: ResetPasswordScreenProps) {
 
   if (succeeded) {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.greenTopCell}>
-          <AppText variant="title" center style={styles.iconEmoji}>
-            ✅
-          </AppText>
-          <AppText variant="xl" color={COLORS.surface} center accessibilityRole="header">
-            {t.passwordResetSuccessTitle}
-          </AppText>
-        </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+        <GreenTopCell
+          centered
+          headerIcon={<Text style={{ fontSize: 36 }}>✅</Text>}
+          title={t.passwordResetSuccessTitle}
+        />
 
-        <Section gap={SPACING.md}>
-          <Card style={styles.formCard}>
-            <Col gap={SPACING.sm} align="center">
-              <AppText
-                variant="sm"
-                color={COLORS.textSecondary}
-                center
-                accessibilityLiveRegion="polite"
-              >
-                {t.passwordResetSuccessDetail}
-              </AppText>
-            </Col>
-          </Card>
+        <FrostedCard style={[styles.formCard, { alignItems: 'center' }]}>
+          <AppText
+            variant="sm"
+            color={COLORS.textSecondary}
+            center
+            accessibilityLiveRegion="polite"
+          >
+            {t.passwordResetSuccessDetail}
+          </AppText>
+        </FrostedCard>
 
-          <Button
-            variant="primary"
-            label={t.done}
-            onPress={() => {
-              if (props.onDone) props.onDone();
-            }}
-          />
-        </Section>
+        <BtnForestFull
+          label={t.done}
+          onPress={() => {
+            if (props.onDone) props.onDone();
+          }}
+        />
       </ScrollView>
     );
   }
@@ -89,131 +81,120 @@ export function ResetPasswordScreen(props: ResetPasswordScreenProps) {
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
       {/* Green Top Cell */}
-      <View style={styles.greenTopCell}>
-        <Row justify="space-between" align="center">
-          <AppText variant="xl" color={COLORS.surface} accessibilityRole="header">
-            {t.titleResetPassword}
-          </AppText>
-          {props.onCancel ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t.cancel}
-              onPress={props.onCancel}
-              hitSlop={8}
-              style={styles.cancelBtn}
+      <GreenTopCell
+        title={t.titleResetPassword}
+        subtitle={t.forgotPasswordSubtitle}
+        rightAction={props.onCancel ? (
+          <BtnSubtle
+            label={`✕ ${t.cancel}`}
+            textColor="#ffffff"
+            onPress={props.onCancel}
+            accessibilityLabel={t.cancel}
+            style={styles.cancelBtn}
+          />
+        ) : undefined}
+      />
+
+      <FrostedCard style={styles.formCard}>
+        <View style={styles.formContent}>
+          {/* New Password */}
+          <View style={styles.fieldGroup}>
+            <AppText variant="smSemi" color={COLORS.textSecondary}>{t.newPasswordLabel}</AppText>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={text => {
+                setPassword(text);
+                if (localError) setLocalError(null);
+              }}
+              secureTextEntry
+              accessibilityLabel={t.newPasswordLabel}
+              returnKeyType="next"
+              editable={!isBusy}
+            />
+          </View>
+
+          {/* Confirm Password */}
+          <View style={styles.fieldGroup}>
+            <AppText variant="smSemi" color={COLORS.textSecondary}>{t.confirmPasswordLabel}</AppText>
+            <TextInput
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={text => {
+                setConfirmPassword(text);
+                if (localError) setLocalError(null);
+              }}
+              secureTextEntry
+              accessibilityLabel={t.confirmPasswordLabel}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+              editable={!isBusy}
+            />
+          </View>
+
+          {/* Error Message */}
+          {displayError ? (
+            <AppText
+              variant="sm"
+              color={COLORS.error}
+              accessibilityRole="alert"
+              accessibilityLiveRegion="assertive"
             >
-              <AppText variant="smSemi" color={COLORS.surface}>
-                ✕ {t.cancel}
-              </AppText>
-            </Pressable>
+              {displayError}
+            </AppText>
           ) : null}
-        </Row>
-        <AppText variant="xs" color="rgba(255,255,255,0.85)" style={{ marginTop: SPACING.xs }}>
-          {t.forgotPasswordSubtitle}
-        </AppText>
-      </View>
 
-      <Section gap={SPACING.md}>
-        <Card style={styles.formCard}>
-          <Col gap={SPACING.md}>
-            {/* New Password */}
-            <Col gap={SPACING.xs}>
-              <AppText variant="smSemi" color={COLORS.textSecondary}>{t.newPasswordLabel}</AppText>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={text => {
-                  setPassword(text);
-                  if (localError) setLocalError(null);
-                }}
-                secureTextEntry
-                accessibilityLabel={t.newPasswordLabel}
-                returnKeyType="next"
-                editable={!isBusy}
-              />
-            </Col>
+          {/* Submit Button */}
+          <BtnForestFull
+            label={isBusy ? t.updatingPassword : t.setNewPassword}
+            onPress={handleSubmit}
+            disabled={isBusy}
+          />
 
-            {/* Confirm Password */}
-            <Col gap={SPACING.xs}>
-              <AppText variant="smSemi" color={COLORS.textSecondary}>{t.confirmPasswordLabel}</AppText>
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={text => {
-                  setConfirmPassword(text);
-                  if (localError) setLocalError(null);
-                }}
-                secureTextEntry
-                accessibilityLabel={t.confirmPasswordLabel}
-                returnKeyType="done"
-                onSubmitEditing={handleSubmit}
-                editable={!isBusy}
-              />
-            </Col>
-
-            {/* Error Message */}
-            {displayError ? (
-              <AppText
-                variant="sm"
-                color={COLORS.error}
-                accessibilityRole="alert"
-                accessibilityLiveRegion="assertive"
-              >
-                {displayError}
-              </AppText>
-            ) : null}
-
-            {/* Submit Button */}
-            <Button
-              variant="primary"
-              label={isBusy ? t.updatingPassword : t.setNewPassword}
-              onPress={handleSubmit}
+          {props.onCancel ? (
+            <BtnOutline
+              label={t.cancel}
+              onPress={props.onCancel}
               disabled={isBusy}
             />
-
-            {props.onCancel ? (
-              <Button
-                variant="secondary"
-                label={t.cancel}
-                onPress={props.onCancel}
-                disabled={isBusy}
-              />
-            ) : null}
-          </Col>
-        </Card>
-      </Section>
+          ) : null}
+        </View>
+      </FrostedCard>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
+  },
   container: {
-    paddingBottom: SPACING.xl,
-  },
-  greenTopCell: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.md + 4,
-    borderBottomLeftRadius: RADIUS.lg,
-    borderBottomRightRadius: RADIUS.lg,
-    marginBottom: SPACING.md,
-  },
-  iconEmoji: {
-    fontSize: 36,
-    marginBottom: SPACING.xs,
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
   },
   cancelBtn: {
-    minHeight: 36,
+    minHeight: 48,
     justifyContent: 'center',
-    paddingHorizontal: SPACING.xs,
+    paddingHorizontal: 8,
   },
   formCard: {
-    padding: SPACING.md,
+    padding: 16,
+  },
+  formContent: {
+    gap: SPACING.md,
+  },
+  fieldGroup: {
+    gap: SPACING.xs,
   },
   input: {
     minHeight: 48,

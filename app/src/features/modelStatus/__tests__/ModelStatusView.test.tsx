@@ -3,8 +3,11 @@ import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 import type { ModelRegistry } from '../../../core/ml/registry';
 import type { ModelRoleId, SupportedFruit } from '../../../core/ml/manifest';
 import type { ModelRow } from '../../viewModels';
-import { strings, type Language } from '../../../ui/i18n/strings';
+import { LanguageProvider, strings, type Language } from '../../../ui';
 import { ModelStatusView } from '../ModelStatusView';
+import { RouteBody } from '../../../navigation/render/routes';
+import { makeShell } from '../../../testing/shellFixture';
+import { press } from '../../../testing/interaction';
 
 type StatusFixture = 'empty' | 'banana-partial' | 'invalid' | 'full';
 
@@ -90,6 +93,7 @@ function renderStatus(kind: StatusFixture, language: Language): ReactTestRendere
         models={data.models}
         fruits={data.fruits}
         manifestVersion={1}
+        language={language}
         t={t}
       />,
     );
@@ -114,48 +118,52 @@ describe.each<Language>(['EN', 'FIL'])('ModelStatusView (%s)', language => {
   const t = strings(language);
 
   test.each<StatusFixture>(['empty', 'banana-partial', 'invalid', 'full'])(
-    'renders %s status without a diagnostic claim', kind => {
+    'renders %s status matching prototype v2 without legacy sections or diagnostic claims', kind => {
       const content = renderedText(renderStatus(kind, language));
 
-      expect(content).toContain(t.modelInferenceUnverified);
-      expect(content).toContain(t.howToImportModels);
+      expect(content).toContain(language === 'FIL' ? 'Katayuan ng AI Model' : 'AI Model Registry');
+      expect(content).toContain(language === 'FIL' ? 'Yugto ng Thesis Prototype' : 'Thesis Phase Disclosure');
+      expect(content).toContain('Stage 1: Fruit Detector (YOLO)');
+      expect(content).toContain('Stage 2: Variety Classifier');
+      expect(content).toContain('Stage 3: Disease & Lesion Segmentation');
+
+      expect(content).not.toContain(t.howToImportModels);
+      expect(content).not.toContain(t.modelInferenceUnverified);
+      expect(content).not.toContain(t.noModelsDeclared);
       expect(content).not.toMatch(/diagnos(?:is|tic)/i);
 
-      if (kind === 'empty') {
-        expect(content).toContain(t.noModelsDeclared);
-        expect(content).toContain(t.modelNotDeclared);
+      const readyLabel = language === 'FIL' ? 'Handa' : 'Ready';
+      const noWeightsLabel = language === 'FIL' ? 'Walang Weights' : 'No Weights';
+
+      if (kind === 'empty' || kind === 'invalid') {
+        expect(content.match(new RegExp(noWeightsLabel, 'g'))).toHaveLength(3);
       } else if (kind === 'banana-partial') {
-        expect(content).toContain(t.fruitBanana);
-        expect(content).toContain(t.fruitMango);
-        expect(content).toContain(t.fruitPapaya);
-        expect(content).toContain(t.modelBuildValidated);
-        expect(content).toContain(t.modelNotDeclared);
-      } else if (kind === 'invalid') {
-        expect(content).toContain(t.modelValidationFailed);
+        expect(content.match(new RegExp(readyLabel, 'g'))).toHaveLength(2);
+        expect(content.match(new RegExp(noWeightsLabel, 'g'))).toHaveLength(1);
       } else {
-        expect(content.match(new RegExp(t.modelBuildValidated, 'g'))).toHaveLength(9);
+        expect(content.match(new RegExp(readyLabel, 'g'))).toHaveLength(3);
       }
     },
   );
+});
 
-  test('A13 fruit and role status has headings and a complete accessible status label', () => {
-    const tree = renderStatus('banana-partial', language);
-    const headings = tree.root.findAll(node => node.props.accessibilityRole === 'header').map(node => {
-      const collect = (value: unknown): string => {
-        if (value == null || typeof value === 'boolean') return '';
-        if (typeof value === 'string' || typeof value === 'number') return String(value);
-        if (Array.isArray(value)) return value.map(collect).join('');
-        if (typeof value === 'object' && 'children' in value) return collect((value as { children?: unknown }).children);
-        return '';
-      };
-      return collect(node.children);
+describe('ModelStatusScreen via RouteBody', () => {
+  test('invokes shell.nav.back when Back or Back to Account & Settings is pressed and omits How to import models', () => {
+    const shell = makeShell();
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(
+        <LanguageProvider language="EN">
+          <RouteBody shell={shell} route={{ name: 'modelStatus' }} />
+        </LanguageProvider>,
+      );
     });
-    expect(headings.some(heading => heading.startsWith(t.modelFruitStatus))).toBe(true);
-    expect(headings).toContain(t.fruitBanana);
 
-    const statusRows = tree.root.findAll(node => node.props.accessible === true && Boolean(node.props.accessibilityLabel));
-    expect(statusRows.map(node => node.props.accessibilityLabel)).toContain(
-      `${t.fruitBanana}, ${t.modelRoleFruit}, ${t.modelBuildValidated}, ${t.modelStage(1)}`,
-    );
+    const content = renderedText(tree);
+    expect(content).not.toContain('How to import models');
+
+    press(tree, shell.t.goBack);
+    press(tree, 'Back to Account & Settings');
+    expect(shell.nav.back).toHaveBeenCalledTimes(2);
   });
 });
