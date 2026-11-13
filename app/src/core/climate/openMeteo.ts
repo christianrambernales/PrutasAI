@@ -25,7 +25,7 @@ export interface CurrentWeather {
   precipitationMm: number;
   weatherCode: number;
   condition: string;
-  elevationM: number;
+  elevationM: number | null;
   /** Open-Meteo's own observation time, not the device clock. */
   observedAt: string;
 }
@@ -135,7 +135,9 @@ export async function fetchCurrentWeather(
     precipitationMm: Number(current.precipitation ?? 0),
     weatherCode,
     condition: describeWeatherCode(weatherCode),
-    elevationM: Math.round(Number(body.elevation ?? 0)),
+    elevationM: typeof body.elevation === 'number' && Number.isFinite(body.elevation)
+      ? Math.round(body.elevation)
+      : null,
     observedAt: String(current.time ?? ''),
   };
 }
@@ -150,10 +152,12 @@ export async function fetchCurrentWeather(
 export function computeNormals(daily: DailyArchive): ClimateNormalsData {
   // month index -> year -> running total
   const rainByMonthYear: Map<number, Map<number, number>> = new Map();
+  const temperatureSamplesByMonthYear: Map<number, Map<number, number>> = new Map();
   let tempTotal = 0;
   let tempCount = 0;
   let minYear = Infinity;
   let maxYear = -Infinity;
+  const observedYears = new Set<number>();
 
   daily.time.forEach((iso, i) => {
     const date = new Date(iso);
@@ -162,6 +166,7 @@ export function computeNormals(daily: DailyArchive): ClimateNormalsData {
     const year = date.getUTCFullYear();
     minYear = Math.min(minYear, year);
     maxYear = Math.max(maxYear, year);
+    observedYears.add(year);
 
     const rain = daily.precipitation_sum?.[i];
     if (typeof rain === 'number' && Number.isFinite(rain)) {
@@ -174,8 +179,27 @@ export function computeNormals(daily: DailyArchive): ClimateNormalsData {
     if (typeof temp === 'number' && Number.isFinite(temp)) {
       tempTotal += temp;
       tempCount += 1;
+      if (!temperatureSamplesByMonthYear.has(month)) temperatureSamplesByMonthYear.set(month, new Map());
+      const years = temperatureSamplesByMonthYear.get(month)!;
+      years.set(year, (years.get(year) ?? 0) + 1);
     }
   });
+
+  if (!Number.isFinite(minYear) || !Number.isFinite(maxYear) || tempCount === 0) {
+    throw new Error('Open-Meteo archive is missing historical climate measurements');
+  }
+
+  // A missing month cannot be treated as a zero-total month or omitted from
+  // the mean. Require both series for each month of every returned year; the
+  // caller will expose insufficient data on failure.
+  for (const year of observedYears) {
+    for (let month = 0; month < 12; month += 1) {
+      if (!rainByMonthYear.get(month)?.has(year)
+        || !temperatureSamplesByMonthYear.get(month)?.has(year)) {
+        throw new Error('Open-Meteo archive is missing monthly climate measurements');
+      }
+    }
+  }
 
   const monthlyRainMm = Array.from({ length: 12 }, (_, month) => {
     const years = rainByMonthYear.get(month);
@@ -187,7 +211,7 @@ export function computeNormals(daily: DailyArchive): ClimateNormalsData {
   return {
     monthlyRainMm,
     annualRainMm: round(monthlyRainMm.reduce((a, b) => a + b, 0)),
-    meanTemperatureC: tempCount === 0 ? 0 : round(tempTotal / tempCount),
+    meanTemperatureC: round(tempTotal / tempCount),
     fromYear: Number.isFinite(minYear) ? minYear : 0,
     toYear: Number.isFinite(maxYear) ? maxYear : 0,
   };

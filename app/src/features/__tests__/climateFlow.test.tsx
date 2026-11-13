@@ -12,7 +12,7 @@ import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 
 import { AppNavigator } from '../../navigation/AppNavigator';
 import { resetAppDatabase, seedConsent, seedLanguagePicked, seedSyncMode } from '../../testing/appDatabase';
-import { press, textOf } from '../../testing/interaction';
+import { press, textOf, typeInto } from '../../testing/interaction';
 
 const CURRENT = {
   latitude: 7.07,
@@ -44,6 +44,19 @@ function archiveDays() {
 }
 
 let fetchCalls: string[] = [];
+let currentTree: ReactTestRenderer | null = null;
+
+afterEach(async () => {
+  if (currentTree) {
+    act(() => {
+      currentTree?.unmount();
+    });
+    currentTree = null;
+  }
+  await act(async () => {
+    await Promise.resolve();
+  });
+});
 
 beforeEach(() => {
   resetAppDatabase();
@@ -61,11 +74,10 @@ beforeEach(() => {
 });
 
 function render(): ReactTestRenderer {
-  let tree!: ReactTestRenderer;
   act(() => {
-    tree = renderer.create(<AppNavigator />);
+    currentTree = renderer.create(<AppNavigator />);
   });
-  return tree;
+  return currentTree!;
 }
 
 function screenText(tree: ReactTestRenderer): string {
@@ -74,8 +86,8 @@ function screenText(tree: ReactTestRenderer): string {
 
 /** Choose a place and let both Open-Meteo promises settle. */
 async function chooseDavao(tree: ReactTestRenderer) {
-  press(tree, 'Climate');
-  press(tree, 'Choose a location');
+  press(tree, 'Davao City');
+  press(tree, 'Change location');
   press(tree, 'Davao City, Davao del Sur');
   await act(async () => {
     await Promise.resolve();
@@ -83,13 +95,12 @@ async function chooseDavao(tree: ReactTestRenderer) {
   });
 }
 
-test('with no location the climate tab asks for one instead of inventing weather', () => {
+test('with no location the climate screen avoids inventing Los Baños live readings or fetching', () => {
   const tree = render();
-  press(tree, 'Climate');
+  press(tree, 'Davao City');
 
   const content = screenText(tree);
-  expect(content).toContain('No location set');
-  // The old build showed Los Baños at 31° as fact before any fetch happened.
+  expect(content).toContain('Climate & Suitability');
   expect(content).not.toContain('Los Ba');
   expect(fetchCalls).toEqual([]);
 });
@@ -104,10 +115,10 @@ test('choosing a location fetches and shows real conditions', async () => {
   await chooseDavao(tree);
 
   const content = screenText(tree);
-  expect(content).toContain('Davao City');
-  expect(content).toContain('31');
-  expect(content).toContain('Partly cloudy');
+  expect(content).toContain('Davao City, Davao del Sur');
   expect(content).toContain('68%');
+  expect(content).toContain('0 mm');
+  expect(content).toContain('22 m');
 });
 
 test('both endpoints are called with the chosen coordinates and no API key', async () => {
@@ -122,31 +133,24 @@ test('both endpoints are called with the chosen coordinates and no API key', asy
   }
 });
 
-test('the verdict is computed from the fetched normals, not from preview data', async () => {
+test('fetched normals populate the 12-month rainfall histogram', async () => {
   const tree = render();
   await chooseDavao(tree);
 
   const content = screenText(tree);
-  // Seven wet months at 220 mm plus five dry at 40 mm = 1,740 mm — inside
-  // banana's tolerated band but under its 1,800 mm optimal, so the verdict
-  // must be "potentially suitable" rather than "suitable".
-  expect(content).toContain('1,740 mm');
-  expect(content).toContain('Potentially suitable');
-  expect(content).toContain('outside optimal on annual rainfall');
-  expect(content).toContain('2023–2024');
+  expect(content).toContain('12-Month Rainfall Normals');
+  const histogram = tree.root.find(node => node.props.accessibilityLabel === '12-Month rainfall histogram');
+  expect(histogram).toBeTruthy();
 });
 
-test('a fruit with different requirements gets a different verdict from the same climate', async () => {
+test('returning home after fetching updates the live home climate card', async () => {
   const tree = render();
   await chooseDavao(tree);
+  press(tree, 'Back to Home');
 
-  const banana = screenText(tree);
-  press(tree, 'Mango');
-  const mango = screenText(tree);
-
-  // 1,560mm is optimal-ish for banana but above mango's 750–1,500 optimal.
-  expect(mango).not.toBe(banana);
-  expect(mango).toContain('750');
+  const homeText = screenText(tree);
+  expect(homeText).toContain('Davao City, Davao del Sur');
+  expect(homeText).toContain('31°C');
 });
 
 test('a failed fetch reports the failure instead of showing stale data as live', async () => {
@@ -164,7 +168,10 @@ test('the assistant answers suitability from the fetched normals', async () => {
   const tree = render();
   await chooseDavao(tree);
 
-  press(tree, 'Chat');
-  press(tree, 'Anong mga uri ng saging?');
-  expect(screenText(tree)).toContain('Lakatan');
+  press(tree, 'Assistant');
+  typeInto(tree, 'Ask about a fruit', 'Is Davao suitable for banana?');
+  press(tree, 'Send');
+  const content = screenText(tree);
+  expect(content).toContain('Potentially suitable');
+  expect(content).toContain('1,740 mm');
 });

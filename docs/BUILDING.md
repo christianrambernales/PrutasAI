@@ -1,7 +1,9 @@
 # Building the PrutasAI APK
 
-The app builds, installs, and runs with no model weights present. This is the expected state
-until training finishes.
+The checked-in model manifest and approval registry are empty, so the supported build today is
+model-free. The app builds, installs, and runs without model weights and reports analysis as
+unavailable. A future model-present build requires the project owner's approved files and
+contracts; file validation still does not prove inference.
 
 ## Prerequisites
 
@@ -19,8 +21,9 @@ npm run compile:knowledge
 npm run sync:models
 ```
 
-`npm start` and `npm run build:apk` run both generators for you; they are listed here only
-because a first checkout has neither the generated seed SQL nor the bundled-model map.
+`npm start` runs both generators through `prestart`. `npm run build:apk` runs them through
+`prebuild:apk`; the explicit commands above are useful on a first checkout or before a direct
+web export.
 
 ## Build locally, no account or network needed
 
@@ -46,16 +49,84 @@ sideloaded onto a device.
 adb install -r app/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-## Adding trained model weights
+## Model-free verification
 
-1. Copy the `.tflite` file into `models/`.
-2. Compute its checksum:
-   - Linux/macOS: `sha256sum models/<file>.tflite`
-   - Windows: `certutil -hashfile models\<file>.tflite SHA256`
-3. Add an entry to `models/manifest.json` with the filename, checksum, stage, version, and
-   `min_confidence`.
-4. Rebuild. `npm start` and `npm run build:apk` both sync `models/` into the app bundle
-   automatically.
+The empty source state is `models/manifest.json` with `models: []` and
+`models/approval.json` with `approvals: []`. Keep `models/` free of `.tflite` files when using
+this state; synchronization rejects unlisted model files. The empty path does not require
+Python or LiteRT.
+
+```bash
+npm run compile:knowledge
+npm run sync:models
+npm run sync:models
+node --test scripts/model-contract.test.mjs scripts/sync-models.test.mjs
+npm run typecheck
+npm --prefix app run build:web
+npm run build:apk
+```
+
+The two sync runs should produce the same empty generated model set. The web command exports
+from the generated files; `npm run build:apk` runs the knowledge compiler and model sync before
+the Android prebuild. For a local web launch, run `npm run compile:knowledge` and
+`npm run sync:models` first, then `npm run start:web`.
+
+## Future owner-approved model build
+
+Follow the complete, role-specific import procedure in
+[`models/README.md`](../models/README.md). It defines the five supported role IDs, the exact
+manifest/approval fields, owner-bound hash/version/tensor/label/signature contracts, the pinned
+Python 3.12 inspector needed only for a nonempty import, generated metadata review, failure
+handling, and return to the empty baseline. No model weights or approved tensor values are
+currently checked in.
+
+After owner approval, make the exact `.tflite` files available in the build workspace, update
+the manifest and approval record from that owner-supplied contract, and run `npm run sync:models`
+with the pinned inspector environment configured as described in `models/README.md`. Inspect
+the generated `app/src/core/ml/verifiedModels.json`, manifest, static require map, and
+`app/assets/models/` together. The generated record must say
+`validation_status: "build_validated"` and `inference_status: "unverified"` and match the
+approved role, hash, version, fruit scope, tensors, signatures, and labels.
+
+Then run the knowledge compiler, sync, focused contract/sync tests, and typecheck. The tests
+exercise contract and transaction behavior with fixtures; they do not verify a real owner's
+model. Keep the pinned `PYTHON` environment active for `npm run build:apk`, which synchronizes
+again before packaging. Check both package targets from the same validated workspace:
+
+```bash
+npm run compile:knowledge
+npm run sync:models
+npm --prefix app run build:web
+npm run build:apk
+```
+
+Stop and restart a running Expo process after synchronization so Metro reloads the generated
+static model map. `npm start` runs compile and sync at startup; `npm run build:apk` runs both
+before a clean Android prebuild and release assembly. A direct web export requires compile and
+sync first, as shown in the model-free steps.
+
+The `.tflite` files are gitignored. A remote EAS or Vercel checkout does not receive local
+ignored files through Git; it must be provisioned with the exact owner-approved files and run
+model synchronization in that build workspace before packaging. The current deployment/build
+configuration does not upload model weights. A remote model-present build must fail closed when
+those files are absent.
+
+Build checks establish bundled, build-validated artifacts only. The app must continue to show
+`Installed and validated` together with `Inference unverified`; these checks do not establish
+that Android invoked the models or produced a correct result. Before any detection claim, a
+future real Android inference path must be exercised on a device and its APK/device/OS, model
+role/version/hash, input provenance, execution, and observed result recorded separately. The
+current application has no such inference path, so Android inference evidence is not available
+from these build steps.
+
+## Roll back to the model-free build
+
+Restore the source manifest and approval registry to their empty arrays, then move or remove all
+`.tflite` files from `models/` because unlisted files are rejected. Run `npm run sync:models` to
+replace the generated bundle with an empty model set, run the model-free verification commands,
+and restart/rebuild the app. Do not hand-edit generated files. If synchronization reports a
+rollback failure and retained recovery directory, preserve that directory and restore or rerun
+the last known-good input set before another build; do not package the partially published set.
 
 ## Deploying the API and web build (Vercel)
 
@@ -203,8 +274,9 @@ containing `sdk.dir=/path/to/Android/sdk`.
 **Build produces `.aab` instead of `.apk`** — the EAS profile is missing
 `"android": { "buildType": "apk" }`.
 
-**App shows "Detection model not installed"** — correct behaviour when `models/` is empty. A
-photo you take is shown back to you with that message rather than a guessed variety or disease.
+**The app reports that analysis is unavailable** — correct behaviour with the empty model
+manifest. A captured photo is not analyzed, and the app must not guess a variety or disease. See
+[`models/README.md`](../models/README.md) for the future repository import workflow.
 
 **Camera preview is black** — permission was refused. The screen offers "Open settings" once
 Android stops allowing a re-prompt.

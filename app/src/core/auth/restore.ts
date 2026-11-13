@@ -11,7 +11,7 @@
  */
 
 import type { SqlDriver } from '../db/driver';
-import { insertScan } from '../db/repositories/scans';
+import { insertScan, markConflict } from '../db/repositories/scans';
 import { supabaseClient } from './supabase';
 
 export interface RemoteScan {
@@ -25,12 +25,16 @@ export interface RemoteScan {
   manifest_version: number | null;
   lat: number | null;
   lon: number | null;
+  updated_at?: string | null;
+  deleted_at?: string | null;
 }
 
 export interface RestoreOptions {
   db: SqlDriver;
   fetchRemoteScans?: () => Promise<RemoteScan[]>;
   now?: () => Date;
+  /** Verified session owner. Restored rows are never assigned from remote data. */
+  userId?: string;
 }
 
 export interface RestoreReport {
@@ -56,7 +60,7 @@ async function defaultFetchRemoteScans(): Promise<RemoteScan[]> {
   // cap, not fixing it.
   const { data, error } = await supabase
     .from('scan')
-    .select('id, created_at, fruit_key, fruit_conf, variety_key, variety_conf, bbox_json, manifest_version, lat, lon')
+    .select('id, created_at, updated_at, deleted_at, fruit_key, fruit_conf, variety_key, variety_conf, bbox_json, manifest_version, lat, lon')
     .order('created_at', { ascending: false });
 
   // Throw rather than return []: the caller must be able to tell "nothing to
@@ -71,6 +75,7 @@ export async function restoreScans(options: RestoreOptions): Promise<RestoreRepo
     db,
     fetchRemoteScans = defaultFetchRemoteScans,
     now = () => new Date(),
+    userId,
   } = options;
 
   const report: RestoreReport = { restored: 0, restoreFailed: false };
@@ -87,6 +92,41 @@ export async function restoreScans(options: RestoreOptions): Promise<RestoreRepo
 
   const syncedAt = now().toISOString();
   for (const row of remote) {
+    const remoteUpdatedAt = row.updated_at ?? row.created_at;
+    const remoteTime = Date.parse(remoteUpdatedAt);
+    const remoteDeletedTime = row.deleted_at === null || row.deleted_at === undefined ? null : Date.parse(row.deleted_at);
+    const local = db.get<{ account_id: string | null; updated_at: string; deleted_at: string | null }>(
+      'SELECT account_id, updated_at, deleted_at FROM scan WHERE uuid = ?', [row.id],
+    );
+    if (!Number.isFinite(remoteTime) || (remoteDeletedTime !== null && !Number.isFinite(remoteDeletedTime))) {
+      if (local && (!userId || local.account_id === userId)) markConflict(db, row.id, 'invalid_remote_timestamp', userId ? { activeAccountId: userId } : undefined, syncedAt);
+      continue;
+    }
+    if (local) {
+      if (userId && local.account_id !== userId) continue;
+      const localTime = Date.parse(local.updated_at);
+      if (!Number.isFinite(localTime)) {
+        markConflict(db, row.id, 'invalid_local_timestamp', userId ? { activeAccountId: userId } : undefined, syncedAt);
+        continue;
+      }
+      // Equal is a replay no-op. A local newer change remains pending. A remote
+      // deletion with the newest valid timestamp beats an older local edit.
+      if (remoteTime <= localTime || (remoteDeletedTime !== null && remoteDeletedTime < localTime)) {
+        report.restored += 1;
+        continue;
+      }
+      db.all(
+        `UPDATE scan SET fruit_key = ?, fruit_conf = ?, variety_key = ?, variety_conf = ?,
+            bbox_json = ?, manifest_version = ?, lat = ?, lon = ?, deleted_at = ?,
+            updated_at = ?, synced_at = ?, sync_status = 'synced', sync_error_code = NULL,
+            retry_count = 0, next_retry_at = NULL WHERE uuid = ? AND account_id ${userId ? '= ?' : 'IS NULL'}`,
+        [row.fruit_key, row.fruit_conf, row.variety_key, row.variety_conf,
+          row.bbox_json === null ? null : JSON.stringify(row.bbox_json), row.manifest_version,
+          row.lat, row.lon, row.deleted_at ?? null, remoteUpdatedAt, syncedAt, row.id, ...(userId ? [userId] : [])],
+      );
+      report.restored += 1;
+      continue;
+    }
     // INSERT OR IGNORE keys on uuid, so a scan already held locally keeps its
     // own photograph and is not overwritten by a photo-less copy.
     insertScan(db, {
@@ -95,6 +135,7 @@ export async function restoreScans(options: RestoreOptions): Promise<RestoreRepo
       // restore. The result screen says so rather than showing a stand-in.
       imageUri: '',
       createdAt: row.created_at,
+      updatedAt: remoteUpdatedAt,
       fruitKey: row.fruit_key,
       fruitConf: row.fruit_conf,
       varietyKey: row.variety_key,
@@ -107,6 +148,7 @@ export async function restoreScans(options: RestoreOptions): Promise<RestoreRepo
       lon: row.lon,
       // Already on the server: the drain must not push it straight back.
       syncedAt,
+      accountId: userId ?? null,
     });
     report.restored += 1;
   }

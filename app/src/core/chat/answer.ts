@@ -3,13 +3,13 @@
  * template rendering.
  *
  * Everything here is deterministic and offline. A language model never decides
- * a fact — at most it rewords the `text` this produces, and `facts` plus
- * `verdict` are what the online guard checks that rewording against.
+ * a fact. The online provider may return a candidate, but semantic paraphrases
+ * are disabled: only whitespace-equivalent formatting can pass the guard, and
+ * the curated `text` remains the value shown to the user.
  *
  * The invariant every branch must hold: **no number appears in `text` that is
- * not also in `facts`.** The guard in providers/gemini.ts enforces the same rule
- * on a reworded answer, so a template that broke it would make the guard
- * unenforceable.
+ * not also in `facts`.** The proxy guard preserves that curated text instead of
+ * trying to infer whether changed wording retains the same meaning.
  */
 
 import type { Language, SavedLocation } from '../../state/appState';

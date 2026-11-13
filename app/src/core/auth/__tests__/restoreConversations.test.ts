@@ -96,3 +96,18 @@ test('a verdict restores as an object once parsed back out of local storage', as
   expect(parsed).toEqual(verdict);
   expect(Array.isArray(parsed.evidence)).toBe(true);
 });
+
+test('owner restore does not attach a message to a different owner parent', async () => {
+  const db = freshDb();
+  insertConversation(db, {
+    uuid: 'c1', title: 'A', deviceId: 'd', createdAt: '2026-08-29T00:00:00.000Z',
+    updatedAt: '2026-08-29T00:00:00.000Z', accountId: 'owner-a',
+  });
+  await restoreConversations({
+    db, userId: 'owner-b', fetchRemote: async () => ({ conversations: [], messages: [{
+      id: 'm1', conversation_id: 'c1', role: 'user', kind: null, text: 'private', verdict_json: null,
+      created_at: '2026-08-29T00:00:01.000Z',
+    }] }),
+  });
+  expect(listMessages(db, 'c1', { activeAccountId: 'owner-a' })).toHaveLength(0);
+});

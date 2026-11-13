@@ -14,7 +14,8 @@ export type IconName =
   | 'check' | 'plus' | 'search' | 'send' | 'sparkle' | 'warning' | 'info'
   | 'refresh' | 'trash' | 'download' | 'pin' | 'droplet' | 'mountain' | 'sun'
   | 'leaf' | 'thermometer' | 'trendingDown' | 'wifi' | 'wifiOff' | 'globe'
-  | 'shield' | 'package' | 'file' | 'calendar' | 'image' | 'menu' | 'moreHorizontal';
+  | 'shield' | 'package' | 'file' | 'calendar' | 'image' | 'menu' | 'moreHorizontal'
+  | 'monitoring' | 'account' | 'user' | 'logout' | 'mail' | 'lock' | 'flip' | 'flash';
 
 interface IconProps {
   name: IconName;
@@ -74,6 +75,49 @@ function draw(name: IconName, s: number, c: string): React.ReactElement[] {
   const t = Math.max(1.5, s * 0.085); // stroke weight
   const mid = s / 2;
   switch (name) {
+    case 'user':
+    case 'account':
+      return [
+        ring('head', c, s * 0.32, t, { left: s * 0.34, top: s * 0.08 }),
+        S({ position: 'absolute', width: s * 0.7, height: s * 0.4, left: s * 0.15, top: s * 0.52, borderWidth: t, borderColor: c, borderTopLeftRadius: s * 0.3, borderTopRightRadius: s * 0.3, borderBottomLeftRadius: t, borderBottomRightRadius: t }, 'body'),
+      ];
+    case 'monitoring':
+      return [
+        S({ position: 'absolute', left: s * 0.08, top: s * 0.08, width: s * 0.84, height: s * 0.84, borderWidth: t, borderColor: c, borderRadius: s * 0.16 }, 'frame'),
+        bar('a', c, s * 0.28, t, { left: s * 0.18, top: s * 0.6, transform: [{ rotate: '-45deg' }] }),
+        bar('b', c, s * 0.2, t, { left: s * 0.37, top: s * 0.55, transform: [{ rotate: '45deg' }] }),
+        bar('c', c, s * 0.3, t, { left: s * 0.49, top: s * 0.47, transform: [{ rotate: '-55deg' }] }),
+      ];
+    case 'mail':
+      return [
+        S({ position: 'absolute', width: s * 0.86, height: s * 0.64, left: s * 0.07, top: s * 0.18, borderWidth: t, borderColor: c, borderRadius: t * 2 }, 'envelope'),
+        chevron('fold', c, s * 0.4, t, 45, { left: s * 0.3, top: s * 0.08 }),
+      ];
+    case 'lock':
+      return [
+        ring('loop', c, s * 0.44, t, { left: s * 0.28, top: s * 0.06 }),
+        S({ position: 'absolute', width: s * 0.7, height: s * 0.5, left: s * 0.15, top: s * 0.4, borderWidth: t, borderColor: c, borderRadius: t * 2 }, 'body'),
+        bar('key', c, t, s * 0.15, { left: mid - t / 2, top: s * 0.57 }),
+      ];
+    case 'logout':
+      return [
+        S({ position: 'absolute', width: s * 0.45, height: s * 0.8, left: s * 0.08, top: s * 0.1, borderWidth: t, borderColor: c, borderRadius: t, borderRightWidth: 0 }, 'door'),
+        bar('arrow', c, s * 0.6, t, { left: s * 0.3, top: mid - t / 2 }),
+        chevron('tip', c, s * 0.26, t, -45, { left: s * 0.6, top: s * 0.37 }),
+      ];
+    case 'flip':
+      return [
+        bar('a', c, s * 0.7, t, { left: s * 0.12, top: s * 0.25 }),
+        chevron('aTip', c, s * 0.23, t, -45, { left: s * 0.6, top: s * 0.14 }),
+        bar('b', c, s * 0.7, t, { left: s * 0.18, top: s * 0.72 }),
+        chevron('bTip', c, s * 0.23, t, 135, { left: s * 0.17, top: s * 0.61 }),
+      ];
+    case 'flash':
+      return [
+        bar('a', c, s * 0.55, t * 1.3, { left: s * 0.2, top: s * 0.28, transform: [{ rotate: '-55deg' }] }),
+        bar('b', c, s * 0.45, t * 1.3, { left: s * 0.27, top: mid }),
+        bar('c', c, s * 0.55, t * 1.3, { left: s * 0.25, top: s * 0.72, transform: [{ rotate: '-55deg' }] }),
+      ];
     case 'home':
       return [
         S({ position: 'absolute', width: s * 0.62, height: s * 0.62, left: s * 0.19, top: s * 0.02,

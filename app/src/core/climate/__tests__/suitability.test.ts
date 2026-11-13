@@ -2,11 +2,11 @@ import { CROP_REQUIREMENTS, judgeSuitability } from '../suitability';
 
 const NORMALS = { monthlyRainMm: Array(12).fill(200), annualRainMm: 2400, meanTemperatureC: 27, fromYear: 2021, toYear: 2025 };
 
-function judge(over: Partial<{ annualRainMm: number; meanTemperatureC: number; elevationM: number }> = {}, fruit = 'banana') {
+function judge(over: Partial<{ annualRainMm: number; meanTemperatureC: number; elevationM: number | null }> = {}, fruit = 'banana') {
   return judgeSuitability({
     fruitKey: fruit,
     normals: { ...NORMALS, ...over },
-    elevationM: over.elevationM ?? 30,
+    elevationM: Object.prototype.hasOwnProperty.call(over, 'elevationM') ? over.elevationM! : 30,
   });
 }
 
@@ -76,4 +76,51 @@ test('evidence values carry units so the answer can quote them', () => {
 
 test('requirements are flagged unverified until an agriculturist signs them off', () => {
   expect(judge().sourceLabel.toLowerCase()).toContain('unverified');
+});
+
+test('an empty archive period is not interpreted as zero-rainfall historical evidence', () => {
+  const v = judgeSuitability({
+    fruitKey: 'banana',
+    normals: { ...NORMALS, fromYear: 0, toYear: 0 },
+    elevationM: 30,
+  });
+  expect(v.verdict).toBe('insufficient_data');
+  expect(v.missingFields).toContain('historical climate evidence');
+});
+
+test('a known out-of-range value remains unsuitable even when another measurement is missing', () => {
+  const v = judge({ meanTemperatureC: 5, elevationM: Number.NaN });
+  expect(v.verdict).toBe('unsuitable');
+  expect(v.missingFields).toContain('elevation');
+  expect(v.warning).toMatch(/elevation/i);
+});
+
+test('five-year archive evidence is identified by its actual years, not as a WMO normal', () => {
+  const v = judge();
+  expect(v.basisLabel.toLowerCase()).toContain('5-year mean');
+  expect(v.basisLabel).toContain('2021–2025');
+  expect(v.basisLabel.toLowerCase()).not.toContain('normals');
+});
+
+test.each(['suitable', 'potentially_suitable', 'unsuitable', 'insufficient_data'] as const)(
+  'every %s outcome carries explicitly provisional crop-range metadata',
+  verdict => {
+    const value = verdict === 'insufficient_data'
+      ? judgeSuitability({ fruitKey: 'banana', normals: null, elevationM: null })
+      : verdict === 'unsuitable'
+        ? judge({ meanTemperatureC: 5 })
+        : verdict === 'potentially_suitable'
+          ? judge({ elevationM: null })
+          : judge();
+    expect(value.verdict).toBe(verdict);
+    expect(value.provisional).toBe(true);
+    expect(value.warning).toMatch(/unverified/i);
+  },
+);
+
+test('nonfinite required measurements remain unknown and cannot yield suitable', () => {
+  const v = judge({ elevationM: Number.NaN });
+  expect(v.verdict).toBe('potentially_suitable');
+  expect(v.evidence.find(e => e.label.includes('Elevation'))?.status).toBe('unknown');
+  expect(v.missingFields).toContain('elevation');
 });

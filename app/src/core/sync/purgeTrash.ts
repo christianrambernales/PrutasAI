@@ -5,7 +5,8 @@
  */
 
 import type { SqlDriver } from '../db/driver';
-import { conversationsPastRetention, hardDeleteConversation } from '../db/repositories/conversations';
+import { conversationsPastRetention, hardDeleteConversation, listTrashedConversations } from '../db/repositories/conversations';
+import type { LocalAccountScope } from '../db/repositories/scans';
 import { supabaseClient } from '../auth/supabase';
 
 export const RETENTION_DAYS = 15;
@@ -57,7 +58,13 @@ export async function deleteConversationEverywhere(
   db: SqlDriver,
   uuid: string,
   deleteRemote: (uuid: string) => Promise<void> = deleteConversationRemote,
+  scope?: LocalAccountScope,
 ): Promise<boolean> {
+  // A screen action must validate local ownership before contacting the
+  // service. The background retention sweep intentionally has no UI scope.
+  if (scope && !listTrashedConversations(db, scope).some(row => row.uuid === uuid)) {
+    return false;
+  }
   try {
     await deleteRemote(uuid);
   } catch {
@@ -65,7 +72,7 @@ export async function deleteConversationEverywhere(
     // the next sweep picks it up again.
     return false;
   }
-  hardDeleteConversation(db, uuid);
+  hardDeleteConversation(db, uuid, scope);
   return true;
 }
 

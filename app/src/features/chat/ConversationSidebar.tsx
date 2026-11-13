@@ -1,8 +1,16 @@
 import React, { useRef } from 'react';
-import { Animated, PanResponder, Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Col, COLORS, Icon, PressableRow, SPACING, useT } from '../../ui';
+import {
+  Animated,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { AppText, Col, Row, SPACING, useLanguage, useT } from '../../ui';
 import type { ConversationSummary } from '../../core/db/repositories/conversations';
-import { ConversationRowMenu } from './ConversationRowMenu';
 
 export interface ConversationSidebarProps {
   visible: boolean;
@@ -15,74 +23,266 @@ export interface ConversationSidebarProps {
   onDelete: (uuid: string) => void;
 }
 
-const WIDTH = 280;
+const WIDTH = 310;
 
 export function ConversationSidebar(props: ConversationSidebarProps) {
   const t = useT();
+  const language = useLanguage();
+  const isFil = language === 'FIL';
   const translate = useRef(new Animated.Value(props.visible ? 0 : -WIDTH)).current;
+  const newConversation = useRef<React.ElementRef<typeof Pressable> | null>(null);
 
   React.useEffect(() => {
-    Animated.timing(translate, { toValue: props.visible ? 0 : -WIDTH, duration: 220, useNativeDriver: true }).start();
+    Animated.timing(translate, {
+      toValue: props.visible ? 0 : -WIDTH,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
   }, [props.visible, translate]);
+
+  // A sidebar is an overlay, so keyboard users need the same close priority
+  // as Android Back. The native Back handler lives in AppNavigator; this is
+  // the browser Escape counterpart, scoped to an open sidebar only.
+  React.useEffect(() => {
+    if (!props.visible || Platform.OS !== 'web') return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        props.onClose();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [props.visible, props.onClose]);
+
+  React.useEffect(() => {
+    if (!props.visible) return undefined;
+    const timer = setTimeout(() => (newConversation.current as any)?.focus?.(), 0);
+    return () => clearTimeout(timer);
+  }, [props.visible]);
 
   if (!props.visible) return null;
 
+  const headerTitle = `🌾 ${isFil ? 'Mga Usapan' : 'Past Chats'}`;
+  const newChatLabel = `+ ${isFil ? 'Bagong Usapan (New Chat)' : 'Start New Chat'}`;
+  const recentLabel = isFil ? 'Kamakailan' : 'Recent Conversations';
+
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Pressable style={styles.backdrop} onPress={props.onClose} accessibilityLabel="Close menu" />
-      <Animated.View style={[styles.panel, { transform: [{ translateX: translate }] }]}>
-        <PressableRow onPress={() => { props.onNew(); props.onClose(); }}>
-          <Icon name="plus" size={18} />
-          <AppText variant="mdSemi">{t.newConversation}</AppText>
-        </PressableRow>
+      <Pressable style={styles.backdrop} onPress={props.onClose} accessibilityLabel={t.closeConversations} />
+      <Animated.View
+        accessibilityRole="menu"
+        accessibilityLabel={t.conversationsTitle}
+        style={[styles.panel, { transform: [{ translateX: translate }] }]}
+      >
+        {/* 1. Header with Past Chats title and Close button */}
+        <Row justify="space-between" align="center" style={styles.header}>
+          <Text style={styles.headingTitle}>{headerTitle}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t.closeConversations}
+            onPress={props.onClose}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.closeButton}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </Pressable>
+        </Row>
 
-        <Col gap={0} style={{ flex: 1 }}>
+        {/* 2. New Chat Action */}
+        <Pressable
+          ref={newConversation}
+          accessibilityRole="button"
+          accessibilityLabel={t.newConversation}
+          onPress={() => { props.onNew(); props.onClose(); }}
+          style={styles.newAction}
+        >
+          <Text style={styles.newActionText}>{newChatLabel}</Text>
+        </Pressable>
+
+        {/* 3. Recent Conversations Section Title */}
+        <View style={styles.sectionHeading}>
+          <Text style={styles.sectionHeadingText}>{recentLabel}</Text>
+        </View>
+
+        {/* 4. Conversations List */}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 4 }} showsVerticalScrollIndicator={false}>
           {props.conversations.length === 0 ? (
-            <AppText variant="sm" color={COLORS.textSecondary} style={{ padding: SPACING.md }}>
-              {t.noConversationsYet}
-            </AppText>
+            <Col gap={SPACING.xs} style={{ padding: SPACING.md }}>
+              <AppText variant="smSemi" color="#86efac">
+                {t.conversationsTitle}
+              </AppText>
+              <AppText variant="sm" color="#cbd5e1">
+                {t.noSavedConversationsYet}
+              </AppText>
+              <AppText variant="xs" color="#94a3b8">
+                {t.startNewConversationWhenReady}
+              </AppText>
+            </Col>
           ) : (
-            props.conversations.map((c, i) => (
-              // Descending z-index, so an earlier row's "..." dropdown paints
-              // over the rows beneath it. Without this the dropdown is trapped:
-              // react-native-web gives every View `z-index: 0`, and a positioned
-              // element with a numeric z-index creates a stacking context, so
-              // the menu's own `zIndex: 10` can never lift it out of its row —
-              // the next row, a later sibling, covered "Rename" entirely and
-              // swallowed the tap.
-              <View key={c.uuid} style={[styles.row, { zIndex: props.conversations.length - i }]}>
-                <PressableRow
-                  onPress={() => { props.onSelect(c.uuid); props.onClose(); }}
-                  style={{ flex: 1 }}
+            props.conversations.map((c, i) => {
+              const id = c.uuid || (c as any).id;
+              const isActive = id === props.activeId;
+              const title = c.title || (c as any).titleEn || (c as any).titleFil || '';
+              return (
+                <View
+                  key={id}
+                  style={[
+                    styles.chatHistoryItem,
+                    isActive && styles.chatHistoryItemActive,
+                    { zIndex: props.conversations.length - i },
+                  ]}
                 >
-                  <AppText
-                    variant={c.uuid === props.activeId ? 'smSemi' : 'sm'}
-                    numberOfLines={1}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={title}
+                    onPress={() => { props.onSelect(id); props.onClose(); }}
+                    style={styles.chatHistoryTitlePressable}
                   >
-                    {c.title}
-                  </AppText>
-                </PressableRow>
-                <ConversationRowMenu
-                  onRename={title => props.onRename(c.uuid, title)}
-                  onDelete={() => props.onDelete(c.uuid)}
-                  currentTitle={c.title}
-                />
-              </View>
-            ))
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.chatHistoryTitle,
+                        isActive && styles.chatHistoryTitleActive,
+                      ]}
+                    >
+                      {title}
+                    </Text>
+                  </Pressable>
+
+                  {/* Direct trash deletion button (prototype 1:1) */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t.chatMoveToTrash}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    onPress={() => props.onDelete(id)}
+                    style={styles.trashBtn}
+                  >
+                    <Text style={styles.trashEmoji}>🗑️</Text>
+                  </Pressable>
+                </View>
+              );
+            })
           )}
-        </Col>
+        </ScrollView>
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.35)' },
-  panel: {
-    position: 'absolute', left: 0, top: 0, bottom: 0, width: WIDTH,
-    backgroundColor: COLORS.surface, paddingTop: SPACING.xl, paddingHorizontal: SPACING.sm,
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
   },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.xs },
+  panel: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: WIDTH,
+    maxWidth: '82%',
+    backgroundColor: '#0e1711',
+    borderRightWidth: 1,
+    borderRightColor: '#1f3024',
+    paddingTop: SPACING.xl,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 10, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 30,
+    elevation: 16,
+  },
+  header: {
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1f3024',
+    marginBottom: 16,
+  },
+  headingTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  closeButton: {
+    minWidth: 48,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xs,
+  },
+  closeButtonText: {
+    color: '#cbd5e1',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  newAction: {
+    minHeight: 48,
+    backgroundColor: '#17271c',
+    borderWidth: 1,
+    borderColor: '#1f3024',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  newActionText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  sectionHeading: {
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  sectionHeadingText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#86efac',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  chatHistoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    minHeight: 48,
+    backgroundColor: 'transparent',
+  },
+  chatHistoryItemActive: {
+    backgroundColor: '#17271c',
+    borderLeftWidth: 3,
+    borderLeftColor: '#ea580c',
+  },
+  chatHistoryTitlePressable: {
+    flex: 1,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  chatHistoryTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#cbd5e1',
+  },
+  chatHistoryTitleActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  trashBtn: {
+    minWidth: 48,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  trashEmoji: {
+    fontSize: 14,
+    color: '#f87171',
+  },
 });
 
 /** A PanResponder that opens the sidebar on a left-to-right swipe starting near the screen's left edge. */

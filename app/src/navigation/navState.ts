@@ -4,21 +4,30 @@
  * and so no navigation dependency is needed for an offline-first app.
  */
 
-export type TabKey = 'home' | 'climate' | 'chat' | 'history';
+export type TabKey = 'home' | 'monitoring' | 'chat' | 'account';
+
+export type CaptureTarget = 
+  | { type: 'baseline' } 
+  | { type: 'checkpoint'; sessionId: string; dayNumber: 5 | 10 };
 
 export type Route =
-  | { name: 'capture' }
+  | { name: 'capture'; target?: CaptureTarget }
   /** A photo the user just took, before any pipeline has run on it. */
-  | { name: 'captureResult'; photoUri: string }
+  | { name: 'captureResult'; scanId: string; photoUri: string; view?: 'summary' | 'photo' }
   | { name: 'result'; scanId: string }
   | { name: 'varietyInfo'; fruitKey: string }
-  | { name: 'monitoring'; sessionId: string }
+  | { name: 'monitoring'; sessionId: string; dayNumber?: 5 | 10; stagedPhotoUri?: string }
   | { name: 'settings' }
   | { name: 'modelStatus' }
   | { name: 'locationPicker' }
   | { name: 'account' }
+  | { name: 'history' }
+  | { name: 'climate' }
+  | { name: 'login' }
+  | { name: 'forgotPassword' }
   | { name: 'signup' }
-  | { name: 'trash' };
+  | { name: 'trash' }
+  | { name: 'resetPassword' };
 
 export interface NavState {
   tab: TabKey;
@@ -45,8 +54,13 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         ? { ...state, stack: [action.route] }
         : { ...state, stack: [...state.stack.slice(0, -1), action.route] };
     case 'back':
-      if (state.stack.length === 0) return state;
-      return { ...state, stack: state.stack.slice(0, -1) };
+      if (state.stack.length > 0) {
+        return { ...state, stack: state.stack.slice(0, -1) };
+      }
+      if (state.tab !== 'home') {
+        return initialNav;
+      }
+      return state;
   }
 }
 
@@ -55,5 +69,5 @@ export function currentRoute(state: NavState): Route | null {
 }
 
 export function canGoBack(state: NavState): boolean {
-  return state.stack.length > 0;
+  return state.stack.length > 0 || state.tab !== 'home';
 }

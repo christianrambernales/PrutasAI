@@ -16,6 +16,27 @@ export interface Variety {
   sourceId: string | null;
 }
 
+export interface Disease {
+  key: string;
+  fruitKey: string;
+  nameEn: string;
+  nameFil: string;
+  descriptionEn: string | null;
+  descriptionFil: string | null;
+  sourceId: string | null;
+}
+
+export interface Remedy {
+  key: string;
+  diseaseKey: string;
+  nameEn: string;
+  nameFil: string;
+  instructionEn: string | null;
+  instructionFil: string | null;
+  isPrevention: boolean;
+  sourceId: string | null;
+}
+
 interface FruitRow {
   key: string;
   name_en: string;
@@ -169,6 +190,19 @@ function parseSourceCitation(citation: string): { citation: string; detail: stri
   return { citation: citation.trim(), detail: '' };
 }
 
+function linkedSource(row: {
+  source_citation: string | null;
+  source_retrieved_at: string | null;
+}): Source | null {
+  if (!row.source_citation) return null;
+  const { citation, detail } = parseSourceCitation(row.source_citation);
+  return {
+    citation,
+    detail,
+    retrievedLabel: row.source_retrieved_at ? `retrieved ${row.source_retrieved_at}` : '',
+  };
+}
+
 export function listSourcesByFruit(driver: SqlDriver): Record<string, Source[]> {
   const fruits = listFruits(driver);
   const sourcesByFruit: Record<string, Source[]> = {};
@@ -204,4 +238,119 @@ export function listSourcesByFruit(driver: SqlDriver): Record<string, Source[]> 
   }
 
   return sourcesByFruit;
+}
+
+export function listAllDiseasesByFruit(driver: SqlDriver): Record<string, import('../../../features/viewModels').DiseaseSummary[]> {
+  const fruits = listFruits(driver);
+  const diseasesByFruit: Record<string, import('../../../features/viewModels').DiseaseSummary[]> = {};
+  
+  for (const fruit of fruits) {
+    diseasesByFruit[fruit.key] = [];
+  }
+
+  const diseaseRows = driver.all<{
+    key: string;
+    fruit_key: string;
+    name_en: string;
+    name_fil: string;
+    description_en: string | null;
+    description_fil: string | null;
+    source_citation: string | null;
+    source_retrieved_at: string | null;
+  }>(`SELECT d.key, d.fruit_key, d.name_en, d.name_fil, d.description_en, d.description_fil,
+             s.citation AS source_citation, s.retrieved_at AS source_retrieved_at
+        FROM disease d
+        LEFT JOIN source s ON s.id = d.source_id
+       ORDER BY d.key`);
+
+  const remedyRows = driver.all<{
+    key: string;
+    disease_key: string;
+    name_en: string;
+    name_fil: string;
+    instruction_en: string | null;
+    instruction_fil: string | null;
+    is_prevention: number;
+    source_citation: string | null;
+    source_retrieved_at: string | null;
+  }>(`SELECT r.key, r.disease_key, r.name_en, r.name_fil, r.instruction_en, r.instruction_fil,
+             r.is_prevention, s.citation AS source_citation, s.retrieved_at AS source_retrieved_at
+        FROM remedy r
+        LEFT JOIN source s ON s.id = r.source_id
+       ORDER BY r.is_prevention DESC, r.key`);
+
+  const remediesByDisease: Record<string, import('../../../features/viewModels').RemedySummary[]> = {};
+  for (const r of remedyRows) {
+    if (!remediesByDisease[r.disease_key]) remediesByDisease[r.disease_key] = [];
+    remediesByDisease[r.disease_key].push({
+      key: r.key,
+      nameEn: r.name_en,
+      nameFil: r.name_fil,
+      instructionEn: r.instruction_en,
+      instructionFil: r.instruction_fil,
+      isPrevention: r.is_prevention === 1,
+      source: linkedSource(r),
+    });
+  }
+
+  for (const d of diseaseRows) {
+    if (!diseasesByFruit[d.fruit_key]) diseasesByFruit[d.fruit_key] = [];
+    diseasesByFruit[d.fruit_key].push({
+      key: d.key,
+      nameEn: d.name_en,
+      nameFil: d.name_fil,
+      descriptionEn: d.description_en,
+      descriptionFil: d.description_fil,
+      remedies: remediesByDisease[d.key] ?? [],
+      source: linkedSource(d),
+    });
+  }
+
+  return diseasesByFruit;
+}
+
+export function listDiseasesByFruit(driver: SqlDriver, fruitKey: string): Disease[] {
+  return driver
+    .all<{
+      key: string;
+      fruit_key: string;
+      name_en: string;
+      name_fil: string;
+      description_en: string | null;
+      description_fil: string | null;
+      source_id: string | null;
+    }>('SELECT * FROM disease WHERE fruit_key = ? ORDER BY key', [fruitKey])
+    .map((r) => ({
+      key: r.key,
+      fruitKey: r.fruit_key,
+      nameEn: r.name_en,
+      nameFil: r.name_fil,
+      descriptionEn: r.description_en,
+      descriptionFil: r.description_fil,
+      sourceId: r.source_id,
+    }));
+}
+
+export function listRemediesByDisease(driver: SqlDriver, diseaseKey: string): Remedy[] {
+  return driver
+    .all<{
+      key: string;
+      disease_key: string;
+      name_en: string;
+      name_fil: string;
+      instruction_en: string | null;
+      instruction_fil: string | null;
+      is_prevention: number;
+      source_id: string | null;
+    }>('SELECT * FROM remedy WHERE disease_key = ? ORDER BY is_prevention DESC, key', [diseaseKey])
+    .map((r) => ({
+      key: r.key,
+      diseaseKey: r.disease_key,
+      nameEn: r.name_en,
+      nameFil: r.name_fil,
+      instructionEn: r.instruction_en,
+      instructionFil: r.instruction_fil,
+      isPrevention: r.is_prevention === 1,
+      sourceId: r.source_id,
+    }));
 }

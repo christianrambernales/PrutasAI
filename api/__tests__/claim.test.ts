@@ -1,23 +1,23 @@
 import { expect, test, vi } from 'vitest';
-import { handleClaim } from '../_lib/handlers/claim';
+import { handleClaim } from '../_lib/handlers/claim.js';
 
 const CTX = { deviceId: 'dev-1', accessToken: 'tok', ip: '1.2.3.4' };
 
-function deps(userId: string | null, claimed = 3, allow = true) {
+function deps(userId: string | null, allow = true) {
   return {
     limiter: { limit: vi.fn(async () => ({ success: allow })) },
     verifyToken: vi.fn(async (_t: string) => userId),
-    claim: vi.fn(async (_u: string, _d: string) => claimed),
+    claim: vi.fn(async (_u: string, _d: string) => 0),
   };
 }
 
-test('a valid token claims the device\'s anonymous rows', async () => {
+test('a valid token request fails closed with 410 and never calls claim', async () => {
   const d = deps('user-1');
   const result = await handleClaim(d, CTX);
 
-  expect(result.status).toBe(200);
-  expect(result.body).toEqual({ claimed: 3 });
-  expect(d.claim).toHaveBeenCalledWith('user-1', 'dev-1');
+  expect(result.status).toBe(410);
+  expect(result.body).toEqual({ error: 'claim endpoint deprecated' });
+  expect(d.claim).not.toHaveBeenCalled();
 });
 
 test('a missing token is refused before anything is written', async () => {
@@ -44,25 +44,30 @@ test('a missing device id is refused: there is nothing to claim', async () => {
   expect(d.claim).not.toHaveBeenCalled();
 });
 
-test('claiming twice is idempotent: the second call claims nothing', async () => {
-  const d = deps('user-1', 0);
-  const result = await handleClaim(d, CTX);
+test('calling claim multiple times fails closed with 410 without writing', async () => {
+  const d = deps('user-1');
+  const r1 = await handleClaim(d, CTX);
+  const r2 = await handleClaim(d, CTX);
 
-  expect(result.status).toBe(200);
-  expect(result.body).toEqual({ claimed: 0 });
+  expect(r1.status).toBe(410);
+  expect(r2.status).toBe(410);
+  expect(d.claim).not.toHaveBeenCalled();
 });
 
-test('a failure does not echo the cause', async () => {
+test('an auth-service outage is a 502 that does not echo the cause', async () => {
   const d = deps('user-1');
-  d.claim.mockRejectedValueOnce(new Error('postgres://user:hunter2@db.internal'));
+  const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  d.verifyToken.mockRejectedValueOnce(new Error('postgres://user:hunter2@db.internal'));
   const result = await handleClaim(d, CTX);
 
   expect(result.status).toBe(502);
   expect(JSON.stringify(result.body)).not.toContain('hunter2');
+  expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('hunter2');
+  errorSpy.mockRestore();
 });
 
 test('a request over the limit is refused with Retry-After, before verifyToken is ever called', async () => {
-  const d = deps('user-1', 3, false);
+  const d = deps('user-1', false);
   const result = await handleClaim(d, CTX);
 
   expect(result.status).toBe(429);

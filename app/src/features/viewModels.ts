@@ -1,5 +1,6 @@
 import type { SeverityKey } from '../ui';
 import type { EvidenceStatus } from '../ui';
+import type { SupportedFruit } from '../core/ml/manifest';
 
 /**
  * The shapes screens render. Repositories in core/ produce these; screens never
@@ -24,13 +25,42 @@ export interface VarietySummary {
   parentName?: string;
 }
 
+export interface RemedySummary {
+  key: string;
+  nameEn: string;
+  nameFil: string;
+  instructionEn: string | null;
+  instructionFil: string | null;
+  isPrevention: boolean;
+  source?: Source | null;
+}
+
+export interface DiseaseSummary {
+  key: string;
+  nameEn: string;
+  nameFil: string;
+  descriptionEn: string | null;
+  descriptionFil: string | null;
+  remedies: RemedySummary[];
+  source?: Source | null;
+}
+
+
 export interface ScanSummary {
   id: string;
+  imageUri?: string;
+  /** Source fields for language-aware display; stored records never infer a diagnosis. */
+  createdAtIso?: string;
+  fruitNameEn?: string | null;
+  fruitNameFil?: string | null;
+  varietyNameEn?: string | null;
+  varietyNameFil?: string | null;
   emoji: string;
   title: string;
   status: SeverityKey;
   detail: string;
   timeLabel: string;
+  fruitKey?: string | null;
 }
 
 export type Freshness = 'live' | 'cached' | 'stale' | 'unavailable';
@@ -45,7 +75,9 @@ export interface ClimateSnapshot {
   feelsLikeLabel: string;
   humidityPct: number;
   rainTodayMm: number;
-  elevationM: number;
+  elevationM: number | null;
+  /** Fetch time for current conditions, independent of historical evidence. */
+  fetchedAt?: number | null;
 }
 
 export interface ClimateNormals {
@@ -74,6 +106,15 @@ export interface Suitability {
   evidence: Evidence[];
   basisLabel: string;
   sourceLabel: string;
+  provisional?: boolean;
+  warning?: string;
+  missingFields?: string[];
+  evidenceFetchedAt?: number | null;
+  evidenceSource?: string | null;
+  evidencePeriod?: { fromYear: number; toYear: number } | null;
+  evidenceCached?: boolean;
+  evidenceStatus?: 'live' | 'cached' | 'stale' | 'unavailable';
+  evidenceAgeMs?: number | null;
 }
 
 export interface DetectionStage {
@@ -101,22 +142,27 @@ export interface ScanResult {
   savedLabel: string;
 }
 
-export interface Checkpoint {
-  day: 0 | 5 | 10;
-  dateLabel: string;
-  status: SeverityKey | null;
-  percent: number | null;
-  note: string;
-  done: boolean;
+export type MonitoringCheckpointStatus = 'due' | 'incomplete' | 'completed' | 'completed_late';
+export type MonitoringMissingField = 'photo_missing' | 'note_missing' | 'observation_needed';
+
+export interface MonitoringCheckpointView {
+  id: string;
+  dayNumber: number;
+  scheduledDate: number;
+  completedDate: number | null;
+  status: MonitoringCheckpointStatus;
+  missingFields: MonitoringMissingField[];
+  observation: 'better' | 'same' | 'worse' | 'unsure' | null;
+  note: string | null;
+  photoUri: string | null;
 }
 
-export interface MonitoringSession {
+export interface MonitoringView {
+  id: string;
   emoji: string;
   title: string;
-  subtitle: string;
-  progress: 'improving' | 'worsening' | 'stable';
-  progressDetail: string;
-  checkpoints: Checkpoint[];
+  overallTrend: 'unavailable';
+  checkpoints: MonitoringCheckpointView[];
 }
 
 export interface ChatMessage {
@@ -127,11 +173,12 @@ export interface ChatMessage {
    * How the answer was produced, so the screen can label it honestly.
    *
    * `grounded` traces to a knowledge-base row. `general` is model-generated and
-   * carries a visible caveat. `refusal` is the app's own wording for an
+   * carries a visible caveat. `restricted` is awareness/referral output for
+   * unreviewed crop-health topics. `refusal` is the app's own wording for an
    * off-topic question — never the model's. `notice` reports a failure and
    * never stands in for an answer.
    */
-  kind?: 'grounded' | 'general' | 'refusal' | 'notice';
+  kind?: 'grounded' | 'general' | 'restricted' | 'refusal' | 'notice';
   /**
    * Attached when the answer computed a suitability verdict, so the evidence
    * card renders under the message it belongs to rather than at a fixed index.
@@ -151,6 +198,8 @@ export interface ModelRow {
   id: string;
   /** Pipeline stage, as declared in models/manifest.json. */
   stage: number;
+  /** Fruits explicitly covered by the source manifest entry. */
+  fruits?: SupportedFruit[];
   state: ModelState;
   source: 'bundled' | 'device' | null;
   version: string | null;

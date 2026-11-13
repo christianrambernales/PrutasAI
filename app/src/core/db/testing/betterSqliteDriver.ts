@@ -7,5 +7,6 @@ export function createTestDriver(): SqlDriver {
     exec: (sql) => { db.exec(sql); },
     all: <T>(sql: string, params: unknown[] = []) => db.prepare(sql).all(...params) as T[],
     get: <T>(sql: string, params: unknown[] = []) => db.prepare(sql).get(...params) as T | undefined,
+    transaction: (fn: () => void) => db.transaction(fn)(),
   };
 }

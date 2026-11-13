@@ -3,6 +3,7 @@ import { handleConversationMessages } from '../_lib/handlers/conversationMessage
 import { bearerToken, clientIp, deviceIdOf, send } from '../_lib/http.js';
 import { createRateStore } from '../_lib/rateStore.js';
 import { createSupabaseRateClient, serviceClient } from '../_lib/supabase.js';
+import { OwnershipConflictError } from '../_lib/validate.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return send(res, { status: 405, body: { error: 'method not allowed' } });
@@ -35,13 +36,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return data?.user_id ?? null;
       },
       async insertMessage(row) {
-        // ignoreDuplicates: false, so a replayed row overwrites its stored
-        // twin. That replay is how a reworded assistant reply reaches the
-        // user's other devices; ignoring it stranded the curated wording
-        // there forever. The handler has already established that any row
-        // under this id belongs to the caller.
-        const { error } = await supabase.from('conversation_message').upsert(row, { onConflict: 'id', ignoreDuplicates: false });
-        if (error) throw new Error(error.message);
+        const { error } = await supabase.rpc('upsert_conversation_message_atomic', {
+          p_id: row.id,
+          p_conversation_id: row.conversation_id,
+          p_user_id: row.user_id,
+          p_role: row.role,
+          p_kind: row.kind,
+          p_text: row.text,
+          p_verdict_json: row.verdict_json,
+          p_created_at: row.created_at,
+        });
+        if (error) {
+          if (
+            error.message?.includes('ownership conflict') ||
+            error.message?.includes('parent') ||
+            error.code === '23505' ||
+            error.code === 'P0001'
+          ) {
+            throw new OwnershipConflictError(
+              error.message?.includes('parent')
+                ? 'parent ownership conflict'
+                : 'ownership conflict: message owned by another account'
+            );
+          }
+          throw new Error(error.message);
+        }
       },
     },
     req.body,

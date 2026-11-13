@@ -54,6 +54,19 @@ jest.mock('../../core/auth/session', () => ({
 }));
 
 let db: SqlDriver;
+let renderedTrees: ReactTestRenderer[] = [];
+
+afterEach(async () => {
+  for (const tree of renderedTrees) {
+    act(() => {
+      tree.unmount();
+    });
+  }
+  renderedTrees = [];
+  await act(async () => {
+    await Promise.resolve();
+  });
+});
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -70,22 +83,23 @@ async function render(): Promise<ReactTestRenderer> {
   await act(async () => {
     tree = renderer.create(<AppNavigator />);
   });
+  renderedTrees.push(tree);
   return tree;
 }
 
-/** Settings → Account → press "Sign in". The mocked signIn always succeeds. */
-async function signInFromSettings(tree: ReactTestRenderer): Promise<void> {
-  press(tree, 'Settings');
+/** Account → Log In → press "Sign in". The mocked signIn always succeeds. */
+async function signInFromAccount(tree: ReactTestRenderer): Promise<void> {
   press(tree, 'Account');
+  press(tree, 'Sign in');
   await act(async () => { press(tree, 'Sign in'); });
 }
 
-test('signing in from Settings records the account mode an offline install now runs in', async () => {
+test('signing in from Account records the account mode an offline install now runs in', async () => {
   seedSyncMode('offline');
   const tree = await render();
 
   expect(getSyncMode(db)).toBe('offline');
-  await signInFromSettings(tree);
+  await signInFromAccount(tree);
 
   // sync_mode used to stay 'offline' forever while the install uploaded on
   // every launch — a persisted value that was an active lie.
@@ -96,7 +110,6 @@ test('signing up records the account mode too, whichever entry point was used', 
   seedSyncMode('offline');
   const tree = await render();
 
-  press(tree, 'Settings');
   press(tree, 'Account');
   press(tree, 'New here? Create an account');
   await act(async () => { press(tree, 'Create account'); });
@@ -113,7 +126,7 @@ test('a sign-in that left rows queued does not claim the history was restored', 
   mockRestore.restored = 3;
 
   const tree = await render();
-  await signInFromSettings(tree);
+  await signInFromAccount(tree);
 
   const content = textOf(tree.root);
   expect(content).toContain('Some scans have not been uploaded yet');
@@ -126,7 +139,7 @@ test('a sign-in with a failed upload says so rather than reporting success', asy
   mockRestore.restored = 2;
 
   const tree = await render();
-  await signInFromSettings(tree);
+  await signInFromAccount(tree);
 
   expect(textOf(tree.root)).toContain('Some scans have not been uploaded yet');
 });
@@ -136,7 +149,7 @@ test('a sign-in that fully drained still reports what was restored', async () =>
   mockRestore.restored = 2;
 
   const tree = await render();
-  await signInFromSettings(tree);
+  await signInFromAccount(tree);
 
   // Nothing pending and nothing failed: the honest signal is the good one.
   expect(textOf(tree.root)).toContain('2 scans restored');
@@ -158,12 +171,12 @@ test('an expired session is announced and the account treated as signed out', as
   expect(textOf(tree.root)).toContain('Your session expired.');
   expect(signOut).toHaveBeenCalled();
 
-  press(tree, 'Settings');
   press(tree, 'Account');
   // Signed out means the screen offers sign-in again, not the stale email.
   const content = textOf(tree.root);
   expect(content).not.toContain('grower@example.test');
-  expect(content).toContain('Sign in and your scan history follows you');
+  expect(content).toContain('Guest Farmer');
+  expect(content).toContain('Log In');
 });
 
 test('a live session is left alone', async () => {
@@ -181,24 +194,24 @@ test('a live session is left alone', async () => {
 test('forgot password sends a reset request and shows a neutral confirmation', async () => {
   seedSyncMode('offline');
   const tree = await render();
-  press(tree, 'Settings');
   press(tree, 'Account');
+  press(tree, 'Sign in');
+  press(tree, 'Forgot password?');
 
   const emailField = textInputs(tree).find(n => n.props.accessibilityLabel === 'Email');
   await act(async () => { emailField!.props.onChangeText('grower@example.test'); });
-  await act(async () => { press(tree, 'Forgot password?'); });
+  await act(async () => { press(tree, 'Send Reset Link'); });
 
   expect(resetPassword).toHaveBeenCalledWith('grower@example.test');
   expect(textOf(tree.root)).toContain('If an account exists for that email, a reset link has been sent.');
 });
 
 /**
- * Everything local goes up on sign-in, and a conversation without its turns
- * is not "everything": re-queueing the conversation rows while leaving the
- * message rows marked synced uploads a set of empty threads to the new
- * account.
+ * Local records made before sign-in stay unowned until the user accepts the
+ * explicit claim prompt. A sign-in must never silently re-queue or upload a
+ * previous user's device data.
  */
-test('signing in re-queues stored messages, not just the conversations holding them', async () => {
+test('signing in keeps unowned stored conversations and messages out of the account queue', async () => {
   seedSyncMode('offline');
   const when = '2026-08-30T12:00:00.000Z';
   insertConversation(db, {
@@ -212,8 +225,32 @@ test('signing in re-queues stored messages, not just the conversations holding t
   expect(pendingMessages(db, 50)).toHaveLength(0);
 
   const tree = await render();
-  await signInFromSettings(tree);
+  await signInFromAccount(tree);
 
-  expect(pendingConversations(db, 50).map(c => c.uuid)).toEqual(['c1']);
-  expect(pendingMessages(db, 50).map(m => m.uuid)).toEqual(['m1']);
+  expect(pendingConversations(db, 50, { activeAccountId: 'u1' })).toEqual([]);
+  expect(pendingMessages(db, 50, { activeAccountId: 'u1' })).toEqual([]);
+  expect(db.get<{ account_id: string | null }>('SELECT account_id FROM conversation WHERE uuid = ?', ['c1'])?.account_id).toBeNull();
+});
+
+test('mode toggles in Account do not replay onboarding and preserve data', async () => {
+  seedSyncMode('account');
+  mockSession.email = 'grower@example.test';
+  mockSession.accessToken = 'good-token';
+
+  const tree = await render();
+  await act(async () => {});
+
+  press(tree, 'Account');
+
+  // Try switching to offline mode
+  await act(async () => { press(tree, 'Use offline'); });
+
+  expect(getSyncMode(db)).toBe('offline');
+  expect(textOf(tree.root)).not.toContain('Maligayang Pagdating sa PrutasAI'); // Not replaying onboarding
+
+  // Switch back to account using the typed, localized mode label.
+  await act(async () => { press(tree, 'Use account sync'); });
+
+  expect(getSyncMode(db)).toBe('account');
+  expect(textOf(tree.root)).not.toContain('Maligayang Pagdating sa PrutasAI'); // Not replaying onboarding
 });

@@ -14,7 +14,7 @@ test('opening the menu shows Rename and Delete, nothing else', () => {
 
   const text = require('../../../testing/interaction').textOf(tree.root);
   expect(text).toContain('Rename');
-  expect(text).toContain('Delete');
+  expect(text).toContain('Move to Trash');
   expect(text).not.toContain('Share');
   expect(text).not.toContain('Pin');
   expect(text).not.toContain('Archive');
@@ -29,7 +29,7 @@ test('choosing Delete calls onDelete and closes the menu', () => {
     );
   });
   act(() => { press(tree, 'More options'); });
-  act(() => { press(tree, 'Delete'); });
+  act(() => { press(tree, 'Move to Trash'); });
 
   expect(onDelete).toHaveBeenCalledTimes(1);
   expect(require('../../../testing/interaction').textOf(tree.root)).not.toContain('Rename');

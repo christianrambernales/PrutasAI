@@ -5,8 +5,8 @@ test('starts on the home tab with nothing pushed', () => {
 });
 
 test('selecting a tab switches to it', () => {
-  const next = navReducer(initialNav, { type: 'selectTab', tab: 'climate' });
-  expect(next.tab).toBe('climate');
+  const next = navReducer(initialNav, { type: 'selectTab', tab: 'monitoring' });
+  expect(next.tab).toBe('monitoring');
 });
 
 test('pushing a route puts it on top of the stack', () => {
@@ -24,24 +24,42 @@ test('there is no current route while a tab root is showing', () => {
   expect(currentRoute(initialNav)).toBeNull();
 });
 
-test('going back pops the top route', () => {
+test('D-04: Detail Back pops exactly one route', () => {
   let state = navReducer(initialNav, { type: 'push', route: { name: 'settings' } });
   state = navReducer(state, { type: 'push', route: { name: 'modelStatus' } });
   expect(currentRoute(navReducer(state, { type: 'back' }))).toEqual({ name: 'settings' });
 });
 
-test('going back at a tab root leaves the state untouched', () => {
+test('D-04: Home root unchanged, platform delegates via canGoBack false', () => {
   expect(navReducer(initialNav, { type: 'back' })).toBe(initialNav);
+  expect(canGoBack(initialNav)).toBe(false);
+});
+
+test('D-04: non-Home root Back selects Home', () => {
+  const state = navReducer(initialNav, { type: 'selectTab', tab: 'monitoring' });
+  expect(navReducer(state, { type: 'back' })).toEqual(initialNav);
+});
+
+test('D-04: repeated Back without cycles returns to Home then exits', () => {
+  let state = navReducer(initialNav, { type: 'selectTab', tab: 'monitoring' });
+  state = navReducer(state, { type: 'push', route: { name: 'settings' } });
+  
+  // First back pops settings
+  state = navReducer(state, { type: 'back' });
+  expect(state).toEqual({ tab: 'monitoring', stack: [] });
+  
+  // Second back returns to home
+  state = navReducer(state, { type: 'back' });
+  expect(state).toEqual(initialNav);
+  
+  // Third back does nothing
+  state = navReducer(state, { type: 'back' });
+  expect(state).toBe(initialNav);
 });
 
 test('switching tabs drops any pushed detail screens', () => {
   const state = navReducer(initialNav, { type: 'push', route: { name: 'settings' } });
-  expect(navReducer(state, { type: 'selectTab', tab: 'history' }).stack).toEqual([]);
-});
-
-test('back is only available once something is pushed', () => {
-  expect(canGoBack(initialNav)).toBe(false);
-  expect(canGoBack(navReducer(initialNav, { type: 'push', route: { name: 'capture' } }))).toBe(true);
+  expect(navReducer(state, { type: 'selectTab', tab: 'account' }).stack).toEqual([]);
 });
 
 test('routes carry the id the screen needs', () => {
@@ -50,4 +68,10 @@ test('routes carry the id the screen needs', () => {
     route: { name: 'varietyInfo', fruitKey: 'mango' },
   });
   expect(currentRoute(state)).toEqual({ name: 'varietyInfo', fruitKey: 'mango' });
+});
+
+test.each(['history', 'climate', 'login', 'forgotPassword'] as const)('%s is a detail destination and Back restores Home', name => {
+  const state = navReducer(initialNav, { type: 'push', route: { name } });
+  expect(currentRoute(state)).toEqual({ name });
+  expect(navReducer(state, { type: 'back' })).toEqual(initialNav);
 });

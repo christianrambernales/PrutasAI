@@ -15,29 +15,61 @@ import {
   listFruits,
   listAllVarietiesByFruit,
   listSourcesByFruit,
+  listAllDiseasesByFruit,
 } from '../core/db/repositories/content';
 import { bundledModels } from '../core/ml/bundledModels';
 import manifest from '../core/ml/manifest.json';
-import { pipelineDepth, resolveModels } from '../core/ml/registry';
+import verifiedModels from '../core/ml/verifiedModels.json';
+import { resolveModelRegistry } from '../core/ml/registry';
 import { purgeTrash } from '../core/sync/purgeTrash';
 import { useAccountSync } from '../features/account/useAccountSync';
 import { CameraCapture } from '../features/capture/CameraCapture';
 import { useCaptureRoute } from '../features/capture/useCaptureRoute';
+import { ExpoPhotoStore } from '../core/files/expoPhotoStore';
 import { ConversationSidebar } from '../features/chat/ConversationSidebar';
 import { useChatRuntime } from '../features/chat/useChatRuntime';
 import { useConversationsUi } from '../features/chat/useConversationsUi';
 import { useClimateViews } from '../features/climate/useClimateViews';
 import { canGoBack, currentRoute, initialNav, navReducer, Route, TabKey } from './navState';
 import { needsOnboarding, OnboardingGate } from './render/onboarding';
-import { RouteBar, RouteBody } from './render/routes';
-import { TabBar, TabBody, tabItems } from './render/tabs';
+import { RouteBody } from './render/routes';
+import { TabBody, tabItems } from './render/tabs';
 import type { Shell } from './shell';
 import { useHistoryFilters } from '../features/history/useHistoryFilters';
+import { localizeScanGroups } from '../features/history/localizeScan';
+import { useMonitoring } from '../features/monitoring/useMonitoring';
+import { useMonitoringList } from '../features/monitoring/useMonitoringList';
 
-export function AppNavigator() {
+export function activeNavKey(tab: TabKey, route: Route | null): TabKey | 'scan' {
+  if (!route) return tab;
+  switch (route.name) {
+    case 'capture':
+    case 'captureResult':
+    case 'result':
+      return 'scan';
+    case 'monitoring':
+      return 'monitoring';
+    case 'account':
+    case 'login':
+    case 'signup':
+    case 'forgotPassword':
+    case 'resetPassword':
+    case 'modelStatus':
+    case 'trash':
+    case 'settings':
+      return 'account';
+    case 'history':
+    case 'climate':
+    case 'locationPicker':
+    case 'varietyInfo':
+      return 'home';
+  }
+}
+
+export function AppNavigator({ db: preparedDb }: { db?: import('../core/db/driver').SqlDriver } = {}) {
   // Opened once. History is read from here, so what the app shows is what the
   // device actually stored — there is no sample history behind it any more.
-  const db = useMemo(() => openAppDatabase(), []);
+  const db = useMemo(() => preparedDb ?? openAppDatabase(), [preparedDb]);
 
   // Once per day: sweep conversations past the Trash retention period. Any
   // device may run this — every other device's own sweep or next restore
@@ -99,6 +131,7 @@ export function AppNavigator() {
     [db],
   );
   const sourcesByFruit = useMemo(() => listSourcesByFruit(db), [db]);
+  const diseasesByFruit = useMemo(() => listAllDiseasesByFruit(db), [db]);
 
   // Read once from the database rather than held only in memory, so the
   // disclosure does not reappear on the next launch.
@@ -116,18 +149,37 @@ export function AppNavigator() {
   // first-run gate behind it, so the request is held here until acknowledged.
   const [accountRequested, setAccountRequested] = useState(false);
 
-  const scanGroups = useMemo(() => listScanGroups(db), [db, dataVersion]);
-  const allScans = useMemo(() => scanGroups.flatMap(g => g.scans), [scanGroups]);
-  const trashedConversations = useMemo(() => listTrashedConversations(db), [db, dataVersion]);
-
   const route = currentRoute(nav);
   // Read directly rather than through useT: this component *provides* the
   // context its children consume.
   const t = strings(app.language);
 
-  const push = useCallback((r: Route) => dispatch({ type: 'push', route: r }), []);
+  const backInterceptorRef = React.useRef<(() => boolean) | null>(null);
+  const pendingNavigationRef = React.useRef<(() => void) | null>(null);
+  const resumingNavigationRef = React.useRef(false);
+  const navigate = useCallback((action: () => void) => {
+    if (!resumingNavigationRef.current && backInterceptorRef.current?.()) {
+      pendingNavigationRef.current = action;
+      return;
+    }
+    pendingNavigationRef.current = null;
+    action();
+  }, []);
+  const push = useCallback((r: Route) => {
+    const action = () => dispatch({ type: 'push', route: r });
+    // The explicit checkpoint camera preserves the mounted monitoring draft.
+    if (r.name === 'capture' && r.target?.type === 'checkpoint') action();
+    else navigate(action);
+  }, [navigate]);
   const replace = useCallback((r: Route) => dispatch({ type: 'replace', route: r }), []);
-  const back = useCallback(() => dispatch({ type: 'back' }), []);
+  const pushAccountRoute = useCallback((r: Route) => {
+    if (r.name === 'account') navigate(() => dispatch({ type: 'selectTab', tab: 'account' }));
+    else push(r);
+  }, [navigate, push]);
+
+  const back = useCallback(() => {
+    navigate(() => dispatch({ type: 'back' }));
+  }, [navigate]);
   // Straight to the reducer, not through `dispatchApp`: a notice persists
   // nothing, and this keeps the empty dependency array honest. A useReducer
   // dispatch is stable; `dispatchApp` is rebuilt whenever `useLocation` or
@@ -138,64 +190,165 @@ export function AppNavigator() {
   );
 
   const accountSync = useAccountSync({
-    db, t, notify, push, back, consented, dataVersion,
+    db, t, notify, push: pushAccountRoute, back, consented, syncMode, dataVersion,
     bumpData,
     onSyncModeChange: setSyncModeState,
     onAccountRequested: () => setAccountRequested(true),
   });
+  const accountScope = useMemo(
+    () => ({ activeAccountId: accountSync.account.userId }),
+    [accountSync.account.userId],
+  );
+  const scanGroups = useMemo(
+    () => localizeScanGroups(listScanGroups(db, accountScope), app.language, t),
+    [db, dataVersion, accountScope, app.language, t],
+  );
+  const allScans = useMemo(() => scanGroups.flatMap(g => g.scans), [scanGroups]);
+  const trashedConversations = useMemo(
+    () => listTrashedConversations(db, accountScope),
+    [db, dataVersion, accountScope],
+  );
 
-  // Android hardware back mirrors the in-app back button.
+  const navRef = React.useRef(nav);
+  navRef.current = nav;
+  const conversationSidebarRef = React.useRef({
+    open: false,
+    close: () => {},
+  });
+
+  // Android hardware back dismisses the conversation overlay before changing
+  // route or tab. The ref keeps the native listener current without replacing
+  // it while the overlay opens or closes.
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!canGoBack(nav)) return false;
+      if (conversationSidebarRef.current.open) {
+        conversationSidebarRef.current.close();
+        return true;
+      }
+      if (!canGoBack(navRef.current)) return false;
       back();
       return true;
     });
     return () => sub.remove();
-  }, [nav, back]);
+  }, [back]);
 
-  const statuses = useMemo(() => resolveModels(manifest, bundledModels, {}), []);
-  const capability = useMemo(() => describeDetectionCapability(statuses), [statuses]);
-  const depth = useMemo(() => pipelineDepth(statuses), [statuses]);
+  const registry = useMemo(() => resolveModelRegistry(manifest, bundledModels, verifiedModels), []);
+  const statuses = registry.models;
+  const capability = useMemo(() => describeDetectionCapability(registry), [registry]);
+  const depth = capability.depth;
   const readyCount = statuses.filter(s => s.state === 'ready').length;
 
   // --- climate ---------------------------------------------------------------
 
-  const climateViews = useClimateViews({ savedLocation: app.savedLocation, fruits });
+  const climateViews = useClimateViews({ savedLocation: app.savedLocation, fruits, db });
 
   const { chat, aiAvailable } = useChatRuntime({
     db, notify, app, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit,
     climate: climateViews, capability, depth,
-    bumpData,
+    bumpData, scope: accountScope,
   });
 
   const conversations = useConversationsUi({
-    db, chat, dataVersion, bumpData,
+    db, chat, dataVersion, bumpData, scope: accountScope,
   });
+  conversationSidebarRef.current = {
+    open: conversations.sidebarOpen,
+    close: conversations.closeSidebar,
+  };
 
   // --- history ---------------------------------------------------------------
 
   const history = useHistoryFilters({
     scanGroups, allScans, historyFilter: app.historyFilter, historyQuery: app.historyQuery, t,
   });
+  const monitoringList = useMonitoringList({ db, scope: accountScope, dataVersion });
+  useEffect(() => {
+    // A detail visit may create a new persisted session without saving a
+    // checkpoint. Refresh the root list when it becomes visible again.
+    if (nav.tab === 'monitoring' && !route) void monitoringList.reload();
+  }, [nav.tab, route?.name, monitoringList.reload]);
+
+  // Using ExpoPhotoStore for handling scan images
+  const photoStore = useMemo(() => new ExpoPhotoStore(), []);
+
+  // Keep the draft mounted while the camera temporarily covers Monitoring.
+  const monitoringScanId = [...nav.stack].reverse().find(entry => entry.name === 'monitoring');
+  const monitoring = useMonitoring({
+    db, photoStore, scope: accountScope,
+    sessionId: monitoringScanId?.name === 'monitoring' ? monitoringScanId.sessionId : null,
+    bumpData,
+  });
+  const monitoringForRoute = {
+    ...monitoring,
+    cancelDiscard: () => {
+      pendingNavigationRef.current = null;
+      monitoring.cancelDiscard();
+    },
+    discard: async () => {
+      const discarded = await monitoring.discard();
+      if (discarded && pendingNavigationRef.current) {
+        const resume = pendingNavigationRef.current;
+        pendingNavigationRef.current = null;
+        // AccountSync can call the navigation adapter inside this action.
+        // Discard has succeeded; the prior render's interceptor is now stale.
+        resumingNavigationRef.current = true;
+        try { resume(); } finally { resumingNavigationRef.current = false; }
+      }
+      return discarded;
+    },
+  };
+
+  useEffect(() => {
+    if (route?.name !== 'monitoring' || !route.stagedPhotoUri || !route.dayNumber) return;
+    void monitoring.acceptStagedPhoto(route.dayNumber, route.stagedPhotoUri);
+    // Capture replaced only the camera route; reveal the original Monitoring
+    // entry so Back does not land on a duplicate timeline.
+    dispatch({ type: 'back' });
+  }, [route, monitoring.acceptStagedPhoto]);
+
+  useEffect(() => {
+    if (route?.name !== 'monitoring') return;
+    backInterceptorRef.current = () => {
+      if (!monitoring.hasUnsavedChanges) {
+        return false;
+      }
+      void monitoring.requestBack();
+      return true;
+    };
+    return () => {
+      backInterceptorRef.current = null;
+    };
+  }, [route?.name, monitoring.hasUnsavedChanges, monitoring.requestBack]);
+  useEffect(() => {
+    pendingNavigationRef.current = null;
+  }, [route?.name, accountScope.activeAccountId]);
 
   const capture = useCaptureRoute({
     db,
+    photoStore,
     savedLocation: app.savedLocation,
     bumpData,
     replace,
+    notify,
+    accountId: accountScope.activeAccountId,
+    target: route?.name === 'capture' ? route.target : undefined,
   });
 
   const shell: Shell = {
     t,
     nav: {
       push, replace, back, notify,
-      selectTab: tab => dispatch({ type: 'selectTab', tab }),
+      selectTab: tab => navigate(() => {
+        conversations.closeSidebar();
+        if (tab === 'account') accountSync.openAccount();
+        else conversations.selectTab(tab, next => dispatch({ type: 'selectTab', tab: next }));
+      }),
       openVariety, setOpenVariety,
       openCheckpoint, setOpenCheckpoint,
+      setBackIntercept: (fn) => { backInterceptorRef.current = fn; },
     },
     data: {
-      db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit,
+      db, accountScope, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit,
       scanGroups, allScans, trashedConversations,
       statuses, capability, depth, readyCount,
       aiAvailable,
@@ -205,6 +358,7 @@ export function AppNavigator() {
     dispatchApp,
     climate: climateViews,
     history,
+    monitoringList,
     account: accountSync,
     chat,
     conversations,
@@ -222,21 +376,27 @@ export function AppNavigator() {
         saveSetting(db, SETTING_KEYS.languagePicked, '1');
         setLanguagePicked(true);
       }}
-      onChooseOffline={() => { setSyncMode(db, 'offline'); setSyncModeState('offline'); }}
+      onChooseOffline={() => {
+        setSyncMode(db, 'offline');
+        setSyncModeState('offline');
+        setAccountRequested(false);
+      }}
       onChooseAccount={() => {
         setSyncMode(db, 'account');
         setSyncModeState('account');
-        // The consent screen pushes the account route itself on acknowledge.
-        // On an install that already consented under the old first-run flow
-        // that screen never renders, so nothing would push and the button
-        // would look dead.
-        if (consented) push({ name: 'account' });
+        setAccountRequested(false);
+        push({ name: 'signup' });
       }}
       onAcknowledgeConsent={() => {
         recordConsent(db, new Date().toISOString());
         setConsented(true);
         setAccountRequested(false);
-        push({ name: 'account' });
+      }}
+      onSignIn={() => {
+        setSyncMode(db, 'account');
+        setSyncModeState('account');
+        setAccountRequested(false);
+        replace({ name: 'login' });
       }}
     />
   );
@@ -248,52 +408,50 @@ export function AppNavigator() {
 
   if (route?.name === 'capture') {
     return (
-      <CameraCapture onClose={back} onCaptured={capture.onCaptured} onError={notify} />
+      <LanguageProvider language={app.language}>
+        <CameraCapture onClose={back} onCaptured={capture.onCaptured} />
+      </LanguageProvider>
     );
   }
 
   const body = route
-    ? <RouteBody shell={shell} route={route} />
+    ? <RouteBody shell={shell} route={route} monitoring={monitoringForRoute} />
     : <TabBody shell={shell} tab={nav.tab} />;
-  const bar = route
-    ? <RouteBar shell={shell} route={route} />
-    : <TabBar shell={shell} tab={nav.tab} />;
   const chatTabActive = nav.tab === 'chat' && !route;
 
   return (
     <LanguageProvider language={app.language}>
-    <Screen>
-      {bar}
-      {chatTabActive ? (
-        <View style={{ flex: 1 }} {...conversations.edgeSwipe.panHandlers}>
-          {body}
-        </View>
-      ) : (
-        <ScreenBody>{body}</ScreenBody>
-      )}
-      {app.notice ? (
-        <NoticeBar
-          message={app.notice}
-          onDismiss={() => dispatchApp({ type: 'dismissNotice' })}
+      <Screen>
+        {chatTabActive ? (
+          <View style={{ flex: 1 }} {...conversations.edgeSwipe.panHandlers}>
+            {body}
+          </View>
+        ) : (
+          <ScreenBody>{body}</ScreenBody>
+        )}
+        {app.notice ? (
+          <NoticeBar
+            message={app.notice}
+            onDismiss={() => dispatchApp({ type: 'dismissNotice' })}
+          />
+        ) : null}
+        <BottomNav
+          tabs={tabItems(t)}
+          active={activeNavKey(nav.tab, route)}
+          onSelect={key => shell.nav.selectTab(key as TabKey)}
+          onScan={() => push({ name: 'capture' })}
         />
-      ) : null}
-      <BottomNav
-        tabs={tabItems(t)}
-        active={nav.tab}
-        onSelect={key => conversations.selectTab(key as TabKey, tab => dispatch({ type: 'selectTab', tab }))}
-        onScan={() => push({ name: 'capture' })}
-      />
-      <ConversationSidebar
-        visible={conversations.sidebarOpen}
-        conversations={conversations.list}
-        activeId={chat.conversationId}
-        onSelect={uuid => chat.openConversation(uuid)}
-        onNew={() => chat.startNewConversation()}
-        onClose={conversations.closeSidebar}
-        onRename={conversations.rename}
-        onDelete={conversations.remove}
-      />
-    </Screen>
+        <ConversationSidebar
+          visible={conversations.sidebarOpen}
+          conversations={conversations.list}
+          activeId={chat.conversationId}
+          onSelect={uuid => chat.openConversation(uuid)}
+          onNew={() => chat.startNewConversation()}
+          onClose={conversations.closeSidebar}
+          onRename={conversations.rename}
+          onDelete={conversations.remove}
+        />
+      </Screen>
     </LanguageProvider>
   );
 }

@@ -25,4 +25,18 @@ config.resolver.assetExts.push('wasm');
 config.resolver.sourceExts.push('sql');
 config.transformer.babelTransformerPath = require.resolve('./metro-sql-transformer.js');
 
+try {
+  const { withCrossOriginIsolation } = require('./metro-coi-headers');
+  const prevEnhance = config.server && config.server.enhanceMiddleware;
+  config.server = {
+    ...config.server,
+    enhanceMiddleware: (metroMiddleware, server) => {
+      const wrapped = prevEnhance ? prevEnhance(metroMiddleware, server) : metroMiddleware;
+      return withCrossOriginIsolation(wrapped);
+    },
+  };
+} catch {
+  // Fall back cleanly if metro-coi-headers is not available
+}
+
 module.exports = config;

@@ -36,8 +36,11 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-test('the .env file carries no credential, only the public Vercel API URL', () => {
-  const env = readFileSync(join(APP_ROOT, '.env'), 'utf8');
+test('a local .env, when present, carries no credential and only the public API URL', () => {
+  const envPath = join(APP_ROOT, '.env');
+  if (!existsSync(envPath)) return;
+
+  const env = readFileSync(envPath, 'utf8');
   for (const pattern of FORBIDDEN) {
     expect(env).not.toMatch(pattern);
   }

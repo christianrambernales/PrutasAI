@@ -1,11 +1,9 @@
 /**
- * Deliberately left unedited below this note, other than renaming "Worker" to
- * "API" in this same header comment block. The backend moved from a
- * Cloudflare Worker to a Vercel function during the platform-accounts
- * migration; this file's code did not change at all, and that is the
- * evidence the wire contract survived the migration intact. If you are
- * tempted to "fix" the wording further, don't — editing this file is exactly
- * how that evidence would be destroyed.
+ * Historical migration note: during the Cloudflare Worker to Vercel function
+ * migration, this provider's request contract remained unchanged. Phase 5
+ * later tightened client-side rephrase acceptance while preserving the
+ * request body shape; the historical statement applies to that migration
+ * point only.
  *
  * Talks to the PrutasAI API.
  *
@@ -17,11 +15,10 @@
  *
  * Two tiers, two contracts:
  *
- *   `rephrase`  — the grounded tier. Unchanged from before: the model is given
- *                 already-computed facts and a verdict and asked only to reword
- *                 them, and `guardRephrasing` discards anything that changes the
- *                 conclusion or introduces a number the facts did not supply.
- *                 Any failure resolves to the curated wording.
+ *   `rephrase`  — the grounded tier. The model is given the curated wording,
+ *                 already-computed facts and verdict. The client accepts
+ *                 formatting-only output; any content change returns a typed
+ *                 rejection so the curated answer and visible notice survive.
  *
  *   `answerGeneral` — the general tier. No numeric guard applies, because there
  *                 are no supplied facts to check against; the visible caveat in
@@ -31,8 +28,9 @@
  */
 
 import type { GroundedAnswer } from '../answer';
-import { guardRephrasing, Rephrasing } from './guard';
-import type { ChatProvider, GeneralAnswer, GeneralErrorKind, HistoryTurn } from './types';
+import { guardRephrasing, type RephraseOutcome } from './guard';
+import { classifyAssistantPolicy } from '../intent';
+import type { ChatProvider, GeneralAnswer, GeneralErrorKind, GeneralPolicy } from './types';
 
 export interface ProxyOptions {
   /** The Worker's public URL. Empty means the app was built unconfigured. */
@@ -41,10 +39,9 @@ export interface ProxyOptions {
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   /**
-   * Called when a *rephrasing* fails for a reason the user should know about —
-   * an outage, a rejected request, a timeout. Deliberately NOT called when a
-   * guard rejects a rewording: that is the safety net working as designed, and
-   * the curated answer already on screen is the correct one.
+   * Called for transport failures that help diagnose an outage or timeout.
+   * Guard decisions are returned as typed outcomes; the hook shows a localized
+   * notice on rejection, without logging untrusted model output.
    *
    * Without this, every failure looked identical to success-with-no-change,
    * which is how a 404 on every single request once went unnoticed.
@@ -62,8 +59,25 @@ const ERRORS: Record<GeneralErrorKind, string> = {
   unavailable: 'The assistant is unavailable.',
 };
 
-function failed(kind: GeneralErrorKind): GeneralAnswer {
-  return { onTopic: false, text: '', error: ERRORS[kind], errorKind: kind };
+function failed(kind: GeneralErrorKind, policy: GeneralPolicy = 'general'): GeneralAnswer {
+  return { onTopic: false, text: '', error: ERRORS[kind], errorKind: kind, policy, warning: false };
+}
+
+const UNSAFE_AWARENESS = /\b(?:diagnos\w*|anthrac\w*|powdery mildew|rust|scab|blight|fungicide|pesticide|insecticide|chemical|treat\w*|cure\w*|spray\w*|apply|application|dose|dosage|ml|gram|grams|lit(?:er|re)s?|kill|eradicate|gamot|gamutin|lunas|dosis|wisik|ipahid|ilagay)\b|\b\d+(?:\.\d+)?\s*(?:%|mg|g|ml|l|lit(?:er|re)s?)\b/i;
+const REFERRAL = /\b(?:local agriculturist|agriculturist|agricultural extension worker|extension worker|local expert|agriculturista)\b/i;
+
+function awarenessFallback(language: 'EN' | 'FIL'): string {
+  return language === 'FIL'
+    ? 'Maaaring maraming sanhi ang nakikitang sintomas at hindi nito natutukoy ang sakit. Ilarawan ito sa lokal na agriculturista o agricultural extension worker.'
+    : 'Visible plant symptoms can have several causes and cannot confirm a disease. Describe what you see to a local agriculturist or agricultural extension worker.';
+}
+
+function safeAwarenessText(text: string, language: 'EN' | 'FIL'): string {
+  const candidate = text.trim();
+  if (candidate.length > 1000 || UNSAFE_AWARENESS.test(candidate) || !REFERRAL.test(candidate)) {
+    return awarenessFallback(language);
+  }
+  return candidate;
 }
 
 interface Call {
@@ -108,8 +122,8 @@ export function createProxyProvider(options: ProxyOptions): ChatProvider {
     remote: true,
     isAvailable: () => configured,
 
-    async rephrase(answer: GroundedAnswer): Promise<string> {
-      if (!configured) return answer.text;
+    async rephrase(answer: GroundedAnswer): Promise<RephraseOutcome> {
+      if (!configured) return { status: 'rejected', reason: 'unavailable' };
 
       // Only the assembled facts and the computed verdict leave the device —
       // never the raw question, the photo, or a precise location.
@@ -122,39 +136,66 @@ export function createProxyProvider(options: ProxyOptions): ChatProvider {
 
       if (result === null) {
         onDiagnostic?.('Could not reach the assistant — using curated wording.');
-        return answer.text;
+      return { status: 'rejected', reason: 'unavailable' };
       }
       if (result.status >= 400) {
         onDiagnostic?.(`The assistant returned ${result.status} — using curated wording.`);
-        return answer.text;
+        return { status: 'rejected', reason: 'unavailable' };
       }
 
-      // A guard rejection is silent on purpose: the answer the user is already
-      // reading is the correct one.
-      return guardRephrasing(result.data as unknown as Rephrasing, answer) ?? answer.text;
+      return guardRephrasing(result.data, answer);
     },
 
-    async answerGeneral(question: string, context: string, history?: HistoryTurn[]): Promise<GeneralAnswer> {
-      if (!configured) return failed('unconfigured');
+    async answerGeneral(question, context, options = {
+      policy: classifyAssistantPolicy(question),
+      language: 'EN',
+    }): Promise<GeneralAnswer> {
+      const language = options.language;
+      const policy: GeneralPolicy = options.policy === 'restricted'
+        || classifyAssistantPolicy(question) === 'restricted'
+        ? 'restricted'
+        : 'general';
+      if (!configured) return failed('unconfigured', policy);
 
       const result = await call({
-        mode: 'general', question, context,
-        ...(history && history.length > 0 ? { history } : {}),
+        mode: 'general', question, context, policy, language,
+        ...(options.history && options.history.length > 0 ? { history: options.history } : {}),
       });
-      if (result === null) return failed('unreachable');
-      if (result.status === 429) return failed('rateLimited');
-      if (result.status >= 400) return failed('unavailable');
+      if (result === null) return failed('unreachable', policy);
+      if (result.status === 429) return failed('rateLimited', policy);
+      if (result.status >= 400) return failed('unavailable', policy);
 
       // An off-topic verdict must not smuggle an answer through its text field.
       if (result.data.on_topic !== true) {
-        return { onTopic: false, text: '', error: null, errorKind: null };
+        return { onTopic: false, text: '', error: null, errorKind: null, policy, warning: false };
       }
 
       const text = typeof result.data.text === 'string' ? result.data.text.trim() : '';
+      // The server owns the authoritative question classifier. It can discover
+      // an uncertain symptom that the offline client classifier missed.
+      const effectivePolicy: GeneralPolicy = result.data.policy === 'restricted' ? 'restricted' : policy;
       // On-topic with nothing to say is a malformed reply, not an empty answer.
-      if (text === '') return failed('unavailable');
+      if (text === '') {
+        return effectivePolicy === 'restricted'
+          ? { onTopic: true, text: awarenessFallback(language), error: null, errorKind: null, policy: effectivePolicy, warning: true }
+          : failed('unavailable', effectivePolicy);
+      }
 
-      return { onTopic: true, text, error: null, errorKind: null };
+      if (effectivePolicy === 'restricted') {
+        const metadataValid = result.data.policy === 'restricted' && result.data.warning === true;
+        return {
+          onTopic: true,
+          text: metadataValid ? safeAwarenessText(text, language) : awarenessFallback(language),
+          error: null,
+          errorKind: null,
+          policy: effectivePolicy,
+          warning: true,
+        };
+      }
+
+      if (result.data.policy !== 'general' || result.data.warning !== true) return failed('unavailable', policy);
+
+      return { onTopic: true, text, error: null, errorKind: null, policy, warning: true };
     },
   };
 }

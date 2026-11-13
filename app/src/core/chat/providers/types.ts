@@ -1,4 +1,8 @@
 import type { GroundedAnswer } from '../answer';
+import type { GeneralPolicy } from '../intent';
+import type { RephraseOutcome } from './guard';
+export type { GeneralPolicy } from '../intent';
+export type { RephraseOutcome, RephraseRejectionReason } from './guard';
 
 /**
  * Why the general tier could not answer. The provider carries a code rather
@@ -17,6 +21,14 @@ export interface GeneralAnswer {
   text: string;
   error: string | null;
   errorKind: GeneralErrorKind | null;
+  policy: GeneralPolicy;
+  warning: boolean;
+}
+
+export interface GeneralRequestOptions {
+  policy: GeneralPolicy;
+  language: 'EN' | 'FIL';
+  history?: HistoryTurn[];
 }
 
 /** One prior turn of a general-tier conversation, oldest first. */
@@ -27,8 +39,9 @@ export interface HistoryTurn {
 
 /**
  * Adding a provider means implementing this and registering it in the provider
- * list. `rephrase` may never fail: it resolves to the template wording rather
- * than rejecting, so a provider outage is invisible to the user.
+ * list. `rephrase` may never fail: it resolves to a typed accepted/rejected
+ * result. A rejection keeps the curated wording and gives the caller a safe
+ * reason for a visible, persistent fallback notice.
  *
  * `answerGeneral` is the opposite contract — it may not invent an answer, so a
  * failure comes back as an error the caller shows.
@@ -43,6 +56,6 @@ export interface ChatProvider {
    */
   remote: boolean;
   isAvailable(): boolean;
-  rephrase(answer: GroundedAnswer): Promise<string>;
-  answerGeneral(question: string, context: string, history?: HistoryTurn[]): Promise<GeneralAnswer>;
+  rephrase(answer: GroundedAnswer): Promise<RephraseOutcome>;
+  answerGeneral(question: string, context: string, options?: GeneralRequestOptions): Promise<GeneralAnswer>;
 }

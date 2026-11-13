@@ -19,11 +19,10 @@ import type {
   DetectionStage,
   FruitSummary,
   ModelRow,
-  MonitoringSession,
+  MonitoringView,
   ScanGroup,
   ScanResult,
   ScanSummary,
-  Checkpoint,
   Source,
   Suitability,
   VarietySummary,
@@ -67,6 +66,7 @@ export const CLIMATE: ClimateSnapshot = {
   humidityPct: 74,
   rainTodayMm: 2.5,
   elevationM: 21,
+  fetchedAt: Date.parse('2026-06-12T00:00:00.000Z'),
 };
 
 export const NORMALS: ClimateNormals = {
@@ -84,6 +84,15 @@ export const SUITABILITY: Suitability = {
   detail: 'Within tolerated ranges, outside optimal on one parameter.',
   basisLabel: NORMALS.fetchedLabel,
   sourceLabel: 'Ranges unverified · Data: Open-Meteo (CC BY 4.0)',
+  provisional: true,
+  warning: 'Provisional suitability only. Crop ranges have not been verified by an agriculturist.',
+  missingFields: [],
+  evidenceFetchedAt: Date.parse('2026-06-12T00:00:00.000Z'),
+  evidenceSource: 'Open-Meteo Best Match (reanalysis)',
+  evidencePeriod: { fromYear: 2021, toYear: 2025 },
+  evidenceCached: true,
+  evidenceStatus: 'cached',
+  evidenceAgeMs: 2 * 60 * 60 * 1000,
   evidence: [
     { label: 'Mean temperature', value: '27.4 °C', rangeLabel: 'optimal 26–30 °C', status: 'optimal', icon: 'thermometer' },
     { label: 'Annual rainfall', value: '2,930 mm', rangeLabel: 'optimal 1,800–2,600 mm', status: 'tolerated', icon: 'cloudRain' },
@@ -157,16 +166,15 @@ export const MANGO_SOURCES: Source[] = [
   },
 ];
 
-export const SESSION: MonitoringSession = {
+export const SESSION: MonitoringView = {
+  id: 'preview-session-1',
   emoji: '🍌',
   title: 'Banana · Lakatan',
-  subtitle: 'Anthracnose · started Aug 5',
-  progress: 'improving',
-  progressDetail: 'Severity fell from 27% to 12% over 5 days.',
+  overallTrend: 'unavailable',
   checkpoints: [
-    { day: 0, dateLabel: 'Aug 5', status: 'moderate', percent: 27, note: 'Initial scan', done: true },
-    { day: 5, dateLabel: 'Aug 10', status: 'early', percent: 12, note: 'Improving since day 0', done: true },
-    { day: 10, dateLabel: 'Aug 15', status: null, percent: null, note: 'in 5 days', done: false },
+    { id: 'cp0', dayNumber: 1, scheduledDate: Date.now() - 5 * 86400000, completedDate: Date.now() - 5 * 86400000, status: 'completed', missingFields: [], observation: null, note: 'Initial scan', photoUri: null },
+    { id: 'cp1', dayNumber: 5, scheduledDate: Date.now(), completedDate: Date.now(), status: 'completed', missingFields: [], observation: 'better', note: 'Looking better', photoUri: null },
+    { id: 'cp2', dayNumber: 10, scheduledDate: Date.now() + 5 * 86400000, completedDate: null, status: 'due', missingFields: ['observation_needed'], observation: null, note: null, photoUri: null },
   ],
 };
 
@@ -258,36 +266,19 @@ export function resultForScan(scanId: string): ScanResult | null {
  * show a banana session, because the screen was handed one frozen constant no
  * matter which scan started it.
  */
-export function sessionForScan(scanId: string): MonitoringSession | null {
+export function sessionForScan(scanId: string): MonitoringView | null {
   const scan = ALL_SCANS.find(s => s.id === scanId);
   if (!scan) return null;
 
-  const percent = SEVERITY_PERCENT[scan.status];
-  const diseased = percent !== null;
-
-  // Nothing is being tracked yet for a healthy or unidentified scan, so the
-  // session opens with only its first checkpoint recorded.
-  const later: Checkpoint[] = diseased
-    ? [
-        { day: 5, dateLabel: '+5 days', status: 'early', percent: Math.round(percent * 0.45), note: 'Improving since day 0', done: true },
-        { day: 10, dateLabel: '+10 days', status: null, percent: null, note: 'due', done: false },
-      ]
-    : [
-        { day: 5, dateLabel: '+5 days', status: null, percent: null, note: 'due', done: false },
-        { day: 10, dateLabel: '+10 days', status: null, percent: null, note: 'due', done: false },
-      ];
-
   return {
+    id: `preview-session-${scan.id}`,
     emoji: scan.emoji,
     title: scan.title,
-    subtitle: `${scan.detail} · started ${scan.timeLabel}`,
-    progress: diseased ? 'improving' : 'stable',
-    progressDetail: diseased
-      ? `Severity fell from ${percent}% to ${Math.round(percent * 0.45)}% over 5 days.`
-      : 'Nothing to track yet — no lesion was measured on the first scan.',
+    overallTrend: 'unavailable',
     checkpoints: [
-      { day: 0, dateLabel: scan.timeLabel, status: scan.status, percent, note: 'Initial scan', done: true },
-      ...later,
+      { id: 'cp0', dayNumber: 1, scheduledDate: Date.now() - 5 * 86400000, completedDate: Date.now() - 5 * 86400000, status: 'completed', missingFields: [], observation: null, note: 'Initial scan', photoUri: null },
+      { id: 'cp1', dayNumber: 5, scheduledDate: Date.now(), completedDate: null, status: 'due', missingFields: ['observation_needed'], observation: null, note: null, photoUri: null },
+      { id: 'cp2', dayNumber: 10, scheduledDate: Date.now() + 5 * 86400000, completedDate: null, status: 'incomplete', missingFields: ['observation_needed'], observation: null, note: null, photoUri: null },
     ],
   };
 }

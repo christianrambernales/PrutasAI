@@ -1,24 +1,24 @@
 /**
- * POST /api/v1/claim — attach this device's anonymous rows to a signed-in user.
+ * POST /api/v1/claim — fail-closed legacy claim route.
  *
- * It needs the service role because no RLS policy grants a user access to rows
- * with `user_id is null`; that is the point of the policy, not a gap in it.
+ * Obsolete and deprecated: the current database schema forbids unowned cloud rows
+ * (migration 0003 made scan.user_id NOT NULL and purged unowned rows).
+ * Local unowned claiming remains a client/SQLite decision (D-07, D-15).
  *
- * Known weakness, stated deliberately: claiming trusts `device_id`, an
- * unverified value the client sends. Someone who obtained another device's ID
- * could claim its anonymous scans. Exposure is low — the rows carry no personal
- * data — but it is a real limitation of anonymous-then-claim.
+ * This handler preserves method, authentication, validation, and rate-limit contracts,
+ * but fails closed with 410 Gone so that device-id-based privileged ownership
+ * transitions are impossible.
  */
 
-import type { RateLimitBinding } from '../limits';
-import { checkLimits } from '../limits';
-import type { ApiResult } from '../http';
+import type { RateLimitBinding } from '../limits.js';
+import { checkLimits } from '../limits.js';
+import type { ApiResult } from '../http.js';
 
 export interface ClaimDeps {
   limiter: RateLimitBinding;
   /** Returns the user id the token belongs to, or null if it does not verify. */
   verifyToken(token: string): Promise<string | null>;
-  claim(userId: string, deviceId: string): Promise<number>;
+  claim?(userId: string, deviceId: string): Promise<number>;
 }
 
 export interface ClaimContext {
@@ -28,12 +28,7 @@ export interface ClaimContext {
 }
 
 export async function handleClaim(deps: ClaimDeps, ctx: ClaimContext): Promise<ApiResult> {
-  // Throttle first, same as handleScans: an unverified device_id is not a
-  // security boundary, but every request past this point costs a service-role
-  // round trip (auth.getUser, then a write), and this is the one write path
-  // that RLS cannot bound by frequency. Reuses the 'scan' scope deliberately —
-  // claiming is a write on the same per-device budget, and 'claim' has no
-  // ceiling of its own in rateStore's CEILINGS.
+  // Throttle first: rate limiting protects against resource exhaustion.
   const gate = await checkLimits(deps.limiter, 'scan', ctx.deviceId, ctx.ip);
   if (!gate.allowed) {
     return { status: 429, body: { error: 'rate limited' }, headers: { 'Retry-After': String(gate.retryAfter) } };
@@ -42,16 +37,16 @@ export async function handleClaim(deps: ClaimDeps, ctx: ClaimContext): Promise<A
   if (ctx.accessToken === null) return { status: 401, body: { error: 'authentication required' } };
   if (ctx.deviceId === null) return { status: 400, body: { error: 'X-Device-Id required' } };
 
-  const userId = await deps.verifyToken(ctx.accessToken);
-  if (userId === null) return { status: 401, body: { error: 'authentication required' } };
-
+  let userId: string | null;
   try {
-    const claimed = await deps.claim(userId, ctx.deviceId);
-    return { status: 200, body: { claimed } };
-  } catch (cause) {
-    // Never echo the cause in the response, but log it server-side so a
-    // validation bug and a database outage don't look identical from outside.
-    console.error('claim: claim failed', cause);
+    userId = await deps.verifyToken(ctx.accessToken);
+  } catch {
+    console.error('claim: verifyToken failed');
     return { status: 502, body: { error: 'upstream unavailable' } };
   }
+  if (userId === null) return { status: 401, body: { error: 'authentication required' } };
+
+  // Fail closed with 410 Gone: remote rows can no longer be unowned, so
+  // remote anonymous-claim is permanently retired (D-07, D-15).
+  return { status: 410, body: { error: 'claim endpoint deprecated' } };
 }

@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "computedAt": 1790059715657,
+  "entries": [
+    {
+      "id": "task-260920-9o6",
+      "content": "Task completed: Phase 3 privileged RPC ownership remediation and evidence reconciliation (agent: root)",
+      "summary": "260920-9o6",
+      "category": "tasks",
+      "confidence": 0.7000000000000002,
+      "pageRank": 0.5,
+      "accessCount": 4,
+      "words": [
+        "task",
+        "completed",
+        "phase",
+        "privileged",
+        "rpc",
+        "ownership",
+        "remediation",
+        "evidence",
+        "reconciliation",
+        "agent",
+        "root",
+        "260920-9o6"
+      ]
+    },
+    {
+      "id": "insight-1789878216279-rv09",
+      "content": "File unknown was edited 158 times this session — likely a hot path worth monitoring.",
+      "summary": "Frequently edited: unknown (158x)",
+      "category": "insights",
+      "confidence": 0.7000000000000002,
+      "pageRank": 0.5,
+      "accessCount": 4,
+      "words": [
+        "file",
+        "unknown",
+        "edited",
+        "158",
+        "times",
+        "session",
+        "likely",
+        "hot",
+        "path",
+        "worth",
+        "monitoring",
+        "frequently",
+        "edited",
+        "unknown",
+        "158x"
+      ]
+    }
+  ]
+}

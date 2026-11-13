@@ -5,7 +5,11 @@
   "scripts": {
     "compile:knowledge": "node scripts/compile-knowledge.mjs",
     "sync:models": "node scripts/sync-models.mjs",
-    "test:scripts": "node --test scripts/*.test.mjs",
+    "validate:evidence": "node scripts/baseline/validate-evidence.mjs",
+    "validate:traceability": "node scripts/baseline/validate-traceability.mjs",
+    "validate:prototype-mapping": "node scripts/baseline/validate-prototype-mapping.mjs",
+    "test:baseline": "node --test scripts/baseline/*.test.mjs",
+    "test:scripts": "node --test scripts/*.test.mjs && npm run test:baseline",
     "test:app": "npm --prefix app test",
     "test:api": "npm --prefix api test",
     "typecheck": "npm --prefix app run typecheck && npm --prefix api run typecheck",

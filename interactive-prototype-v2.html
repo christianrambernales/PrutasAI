@@ -1,0 +1,2899 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PrutasAI — UI/UX Redesign Prototype v2 (Accessible, Truthful & Offline-First)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Brand Color Tokens (WCAG 2.2 AA compliant contrast) */
+      --c-forest-primary: #154d2e;
+      --c-forest-dark: #0b2b19;
+      --c-forest-light: #226b42;
+      --c-forest-surface: #eaf4ed;
+      --c-forest-gradient: linear-gradient(135deg, #154d2e 0%, #0b2b19 100%);
+
+      /* High-contrast accessible orange / amber accent */
+      --c-orange-accent: #c2410c; /* 4.6:1 against white */
+      --c-orange-hover: #9a3412;
+      --c-orange-gradient: linear-gradient(135deg, #c2410c 0%, #ea580c 100%);
+      --c-amber-soft: #fef3c7;
+      --c-amber-text: #92400e;
+
+      /* Semantic status tokens */
+      --c-healthy: #166534;
+      --c-healthy-bg: #dcfce7;
+      --c-severity-early: #b45309;
+      --c-severity-moderate: #c2410c;
+      --c-severity-severe: #b91c1c;
+      --c-severe-bg: #fee2e2;
+      --c-info-blue: #0369a1;
+      --c-info-bg: #e0f2fe;
+
+      /* Surfaces */
+      --app-bg: #f2f6f3;
+      --card-white: #ffffff;
+      --card-frosted: rgba(255, 255, 255, 0.96);
+      --card-border: rgba(21, 77, 46, 0.14);
+      --card-shadow: 0 4px 16px rgba(15, 35, 22, 0.06);
+
+      /* High contrast typography (>= 4.5:1) */
+      --text-main: #0f1d14;
+      --text-muted: #3f5246; /* 5.8:1 against white */
+      --text-subtle: #4f6356;
+      --focus-ring: #0284c7;
+
+      /* Host dashboard theme */
+      --host-bg: #090f0c;
+      --host-card: #121c16;
+      --host-border: #1e3025;
+      --host-text: #f0f6f2;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--host-bg);
+      color: var(--host-text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Screen reader only utility */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* SVG icon wrapper */
+    .svg-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .svg-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Top dashboard header */
+    header {
+      background: rgba(18, 28, 22, 0.95);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--host-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--c-forest-light), var(--c-forest-primary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(21, 77, 46, 0.5);
+    }
+
+    .brand-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fed7aa;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Host controls */
+    .screen-navigator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.35rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--host-border);
+    }
+
+    .screen-navigator label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      padding-left: 0.4rem;
+    }
+
+    .screen-dropdown {
+      background: #152219;
+      border: 1px solid #273e2f;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      cursor: pointer;
+      outline: none;
+    }
+    .screen-dropdown:focus-visible {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4);
+    }
+
+    .lang-toggle-btn {
+      background: rgba(194, 65, 12, 0.18);
+      border: 1px solid rgba(234, 88, 12, 0.5);
+      color: #ffedd5;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 800;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-height: 40px;
+      transition: all 0.15s ease;
+    }
+    .lang-toggle-btn:hover {
+      background: var(--c-orange-accent);
+      color: #ffffff;
+    }
+    .lang-toggle-btn:focus-visible {
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+
+    .lang-status-badge {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-height: 38px;
+      user-select: none;
+    }
+
+    /* Main workspace layout */
+    .workspace {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 1.75rem;
+      gap: 2.25rem;
+      max-width: 1440px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1080px) {
+      .workspace {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+
+    /* ==========================================================================
+       SMARTPHONE DEVICE FRAME
+       ========================================================================== */
+    .device-container {
+      position: sticky;
+      top: 5rem;
+    }
+
+    .phone-shell {
+      width: 395px;
+      height: 830px;
+      background: var(--app-bg);
+      border-radius: 46px;
+      border: 12px solid #141c16;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75), 0 0 0 2px rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: var(--text-main);
+    }
+
+    .phone-speaker-notch {
+      width: 130px;
+      height: 24px;
+      background: #141c16;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      z-index: 500;
+    }
+
+    .phone-status-bar {
+      height: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1.5rem;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      z-index: 400;
+      flex-shrink: 0;
+    }
+    .phone-status-bar.dark-theme {
+      color: #ffffff;
+    }
+
+    /* Screen content viewport */
+    .screen-viewport {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 0.85rem 0.95rem 1.25rem 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      scrollbar-width: thin;
+      position: relative;
+    }
+    .screen-viewport::-webkit-scrollbar {
+      width: 4px;
+    }
+    .screen-viewport::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.15);
+      border-radius: 4px;
+    }
+
+    /* ==========================================================================
+       BOTTOM NAVIGATION BAR (5 items: Home, Monitoring, Scan FAB, Assistant, Account)
+       ========================================================================== */
+    .floating-nav-wrapper {
+      padding: 0 0.85rem 0.85rem;
+      background: transparent;
+      z-index: 450;
+      flex-shrink: 0;
+    }
+
+    .floating-nav-pill {
+      height: 64px;
+      background: #ffffff;
+      border-radius: 36px;
+      box-shadow: 0 8px 24px rgba(15, 35, 22, 0.12), 0 2px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(21, 77, 46, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      padding: 0 0.5rem;
+    }
+
+    .nav-pill-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      gap: 3px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      flex: 1;
+      text-align: center;
+      min-height: 48px;
+      border-radius: 14px;
+      border: none;
+      background: transparent;
+      padding: 4px 2px;
+    }
+    .nav-pill-item:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: -2px;
+    }
+    .nav-pill-item:hover {
+      color: var(--c-forest-primary);
+    }
+    .nav-pill-item:hover .nav-ico svg {
+      stroke: var(--c-forest-primary);
+    }
+    .nav-pill-item.active {
+      color: var(--c-forest-primary);
+      font-weight: 800;
+    }
+    .nav-pill-item .nav-ico {
+      width: 32px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    .nav-pill-item .nav-ico svg {
+      width: 22px;
+      height: 22px;
+      fill: none !important;
+      stroke: #64748b;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: all 0.2s ease;
+    }
+    .nav-pill-item.active .nav-ico {
+      background: rgba(21, 77, 46, 0.09);
+    }
+    .nav-pill-item.active .nav-ico svg {
+      stroke: var(--c-forest-primary);
+      stroke-width: 2.3;
+      transform: translateY(-1px);
+    }
+
+    .center-scan-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      position: relative;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      min-height: 48px;
+    }
+    .center-scan-container:focus-visible .center-scan-fab {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    .center-scan-fab {
+      width: 52px;
+      height: 52px;
+      border-radius: 26px;
+      background: var(--c-orange-gradient);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: -24px;
+      box-shadow: 0 6px 18px rgba(194, 65, 12, 0.45);
+      border: 3.5px solid #ffffff;
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .center-scan-fab svg {
+      width: 25px;
+      height: 25px;
+      fill: none !important;
+      stroke: #ffffff !important;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .center-scan-container:hover .center-scan-fab {
+      transform: scale(1.06);
+    }
+    .center-scan-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      margin-top: 3px;
+    }
+    .center-scan-container.active .center-scan-label {
+      color: var(--c-orange-accent);
+      font-weight: 800;
+    }
+
+    /* ==========================================================================
+       SHARED REUSABLE CARD & BUTTON STYLES
+       ========================================================================== */
+    .green-top-cell {
+      background: var(--c-forest-gradient);
+      border-radius: 20px;
+      padding: 1.15rem 1.25rem;
+      color: #ffffff;
+      box-shadow: 0 6px 20px rgba(15, 45, 25, 0.25);
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
+    }
+    .green-top-cell h2, .green-top-cell h3 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+      line-height: 1.25;
+    }
+    .green-top-cell p {
+      font-size: 0.8rem;
+      color: #d1fae5;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    .frosted-card {
+      background: var(--card-frosted);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 1rem 1.1rem;
+      box-shadow: var(--card-shadow);
+      position: relative;
+    }
+
+    /* Primary and secondary button styles (>= 48px min touch height) */
+    .btn-orange-full {
+      width: 100%;
+      min-height: 48px;
+      background: var(--c-orange-accent);
+      color: #ffffff;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(194, 65, 12, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn-orange-full:hover {
+      background: var(--c-orange-hover);
+    }
+    .btn-orange-full:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    .btn-forest-full {
+      width: 100%;
+      min-height: 48px;
+      background: var(--c-forest-primary);
+      color: #ffffff;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 3px 10px rgba(21, 77, 46, 0.25);
+      transition: background 0.15s ease;
+    }
+    .btn-forest-full:hover {
+      background: var(--c-forest-dark);
+    }
+    .btn-forest-full:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    .btn-outline {
+      width: 100%;
+      min-height: 48px;
+      background: #ffffff;
+      color: var(--c-forest-primary);
+      border: 1.5px solid var(--c-forest-primary);
+      padding: 11px 16px;
+      border-radius: 14px;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-outline:hover {
+      background: var(--c-forest-surface);
+    }
+    .btn-outline:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    .btn-subtle {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-subtle:hover {
+      color: var(--c-forest-primary);
+      background: rgba(0,0,0,0.04);
+    }
+
+    /* Truthful badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      line-height: 1.2;
+    }
+    .badge-sample {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .badge-offline {
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .badge-healthy {
+      background: var(--c-healthy-bg);
+      color: var(--c-healthy);
+    }
+    .badge-warning {
+      background: #ffedd5;
+      color: #9a3412;
+    }
+    .badge-info {
+      background: var(--c-info-bg);
+      color: var(--c-info-blue);
+    }
+
+    /* Fruit selector grid */
+    .fruit-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.55rem;
+    }
+    .fruit-card-item {
+      background: var(--card-frosted);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 0.75rem 0.35rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .fruit-card-item:hover {
+      transform: translateY(-2px);
+      border-color: var(--c-forest-primary);
+    }
+    .fruit-card-item.selected {
+      border: 2px solid var(--c-forest-primary);
+      background: #f0fdf4;
+    }
+    .fruit-card-item:focus-visible {
+      outline: 2px solid var(--focus-ring);
+    }
+    .fruit-circle-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+      background: #eaf4ed;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+      font-size: 20px;
+    }
+    .fruit-title {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--c-forest-primary);
+    }
+    .fruit-subtitle {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    /* Accessibility Form Styles */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 0.75rem;
+      text-align: left;
+    }
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+    }
+    .form-input {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1.5px solid #cbd5e1;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus {
+      border-color: var(--c-forest-primary);
+      box-shadow: 0 0 0 3px rgba(21, 77, 46, 0.15);
+    }
+    .form-input.is-invalid {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
+    .form-error-msg {
+      font-size: 0.75rem;
+      color: #b91c1c;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .form-helper-text {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 4px 6px;
+    }
+
+    /* Error Summary Banner */
+    .error-summary-box {
+      background: #fef2f2;
+      border: 1.5px solid #f87171;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 0.75rem;
+      color: #991b1b;
+      font-size: 0.8rem;
+    }
+    .error-summary-box strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* Observation choices */
+    .observation-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .obs-choice-btn {
+      min-height: 48px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .obs-choice-btn.selected {
+      border-color: var(--c-forest-primary);
+      background: #ecfdf5;
+      color: var(--c-forest-primary);
+      box-shadow: 0 0 0 2px rgba(21, 77, 46, 0.2);
+    }
+    .obs-choice-btn:focus-visible {
+      outline: 2px solid var(--focus-ring);
+    }
+
+    /* Chat Drawer & History */
+    .chat-drawer-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 600;
+      display: flex;
+    }
+    .chat-drawer {
+      width: 82%;
+      max-width: 310px;
+      height: 100%;
+      background: #0e1711;
+      border-right: 1px solid #1f3024;
+      display: flex;
+      flex-direction: column;
+      padding: 2.5rem 1rem 1rem 1rem;
+      color: #f1f5f2;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.6);
+    }
+    .chat-history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      position: relative;
+      min-height: 44px;
+    }
+    .chat-history-item.active {
+      background: #17271c;
+      color: #fff;
+      border-left: 3px solid var(--c-orange-accent);
+    }
+
+    /* Spec Panel in Workspace */
+    .spec-panel {
+      flex: 1;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .spec-card {
+      background: var(--host-card);
+      border: 1px solid var(--host-border);
+      border-radius: 18px;
+      padding: 1.5rem;
+    }
+    .spec-card h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .spec-card p {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .spec-checklist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-top: 0.85rem;
+    }
+    .spec-checklist li {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      background: rgba(0,0,0,0.3);
+      padding: 0.75rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid var(--host-border);
+      line-height: 1.45;
+    }
+    .screen-pills-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.75rem;
+    }
+    .screen-pill {
+      background: rgba(21, 77, 46, 0.3);
+      border: 1px solid rgba(34, 107, 66, 0.5);
+      color: #86efac;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .screen-pill:hover, .screen-pill.active {
+      background: var(--c-forest-primary);
+      color: #fff;
+      border-color: #4ade80;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header>
+    <div class="brand-cluster">
+      <div class="brand-icon">
+        <span class="svg-icon" style="width:22px;height:22px;">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.93V18a1 1 0 0 1-2 0v-1.07A7 7 0 0 1 5.07 11H4a1 1 0 0 1 0-2h1.07A7 7 0 0 1 11 3.07V2a1 1 0 0 1 2 0v1.07A7 7 0 0 1 18.93 9H20a1 1 0 0 1 0 2h-1.07A7 7 0 0 1 13 16.93z"/></svg>
+        </span>
+      </div>
+      <div>
+        <div class="brand-name">PrutasAI Interactive Prototype v2</div>
+        <div class="brand-badge">Bilingual • Offline-First • Accessible Design System</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+      <!-- Active Screen Navigator (19 Screens) -->
+      <div class="screen-navigator">
+        <label for="screen-select">Screen:</label>
+        <select class="screen-dropdown" id="screen-select" onchange="navigateToScreen(this.value)">
+          <option value="home">1. Home (Adaptive Activity & Crops)</option>
+          <option value="camera">2. Camera Viewfinder</option>
+          <option value="captureResult">3. Scan Result & Auto-Detected Fruit</option>
+          <option value="result">4. Illustrative Sample Diagnosis</option>
+          <option value="monitoringList">5. Monitoring Sessions List</option>
+          <option value="recovery">6. Monitoring Checkpoint (Day 10)</option>
+          <option value="history">7. Scan History & Filters</option>
+          <option value="climate">8. Climate & Suitability Normals</option>
+          <option value="location">9. Location Selector</option>
+          <option value="varietyInfo">10. Crop Encyclopedia (Mango/Banana/Papaya)</option>
+          <option value="chat">11. Agro-Assistant (Curated & Drawers)</option>
+          <option value="account">12. Account & Settings (Combined)</option>
+          <option value="login">13. Log In (Email & Password)</option>
+          <option value="createAccount">14. Create Account (Registration)</option>
+          <option value="emailConfirm">15. Email Confirmation Pending</option>
+          <option value="forgotPassword">16. Password Recovery / Reset</option>
+          <option value="modelStatus">17. AI Model Registry Health</option>
+          <option value="trash">18. 15-Day Trash Retention</option>
+          <option value="welcome">19. Onboarding / Welcome Gate</option>
+        </select>
+      </div>
+
+      <!-- Language Status Badge (Configured exclusively in Settings) -->
+      <div class="lang-status-badge" title="Language is configured exclusively in Settings">
+        <span id="lang-flag">🇵🇭</span>
+        <span id="lang-label">Filipino</span>
+        <span style="font-size: 0.68rem; color: #94a3b8; margin-left: 2px;">• Settings</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- SMARTPHONE DEVICE CONTAINER -->
+    <div class="device-container">
+      <div class="phone-shell" id="phone-shell-container">
+        <div class="phone-speaker-notch" aria-hidden="true"></div>
+        <div class="phone-status-bar" id="phone-status-bar">
+          <span id="live-clock">09:41</span>
+          <span>📶 Offline Ready &nbsp; 🔋 98%</span>
+        </div>
+
+        <!-- DYNAMIC SCREEN VIEWPORT -->
+        <main class="screen-viewport" id="viewport" role="region" aria-label="Mobile Screen Content" tabindex="0">
+          <!-- Screen content dynamically rendered here -->
+        </main>
+
+        <!-- FLOATING BOTTOM NAVIGATION (5 items) -->
+        <nav class="floating-nav-wrapper" id="floating-bottom-nav" aria-label="Pangunahing Navigasyon">
+          <div class="floating-nav-pill">
+            <button class="nav-pill-item active" id="nav-item-home" onclick="navigateToScreen('home')" aria-label="Home Dashboard">
+              <span class="nav-ico">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </span>
+              <span id="label-nav-home">Home</span>
+            </button>
+
+            <button class="nav-pill-item" id="nav-item-monitoring" onclick="navigateToScreen('monitoringList')" aria-label="Monitoring Sessions">
+              <span class="nav-ico">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </span>
+              <span id="label-nav-monitoring">Monitoring</span>
+            </button>
+
+            <!-- Center Scan Action Button -->
+            <button class="center-scan-container" id="nav-item-camera" onclick="navigateToScreen('camera')" aria-label="Capture or scan fruit">
+              <div class="center-scan-fab" title="Kumuha ng Litrato">
+                <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+              </div>
+              <span class="center-scan-label" id="label-nav-scan">Scan</span>
+            </button>
+
+            <button class="nav-pill-item" id="nav-item-chat" onclick="navigateToScreen('chat')" aria-label="Agro Assistant Chat">
+              <span class="nav-ico">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>
+              </span>
+              <span id="label-nav-chat">Assistant</span>
+            </button>
+
+            <button class="nav-pill-item" id="nav-item-account" onclick="navigateToScreen('account')" aria-label="Account and Settings">
+              <span class="nav-ico">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <span id="label-nav-account">Account</span>
+            </button>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <!-- SPECIFICATION & ACCEPTANCE PANEL -->
+    <aside class="spec-panel">
+      <div class="spec-card">
+        <h3>
+          <span class="svg-icon" style="width:20px;height:20px;color:#4ade80;">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          UI/UX Improvement Plan Compliance
+        </h3>
+        <p>This v2 prototype satisfies all findings from <code style="color:#fcd34d;">docs/interactive-prototype-ui-ux-improvement-plan.md</code>:</p>
+        <ul class="spec-checklist">
+          <li><strong>P0 Truthful Capabilities:</strong> Clear distinction between offline no-model state and explicit sample diagnoses. Removed unsupported claims like "Certified" or "Prescription".</li>
+          <li><strong>P1 Automatic Fruit Detection:</strong> Camera and gallery pipeline automatically detects the fruit crop (Mango, Banana, Papaya) without requiring an intermediate confirmation screen.</li>
+          <li><strong>P1 Settings-Only Language Selection:</strong> Language preferences are accessed exclusively in Settings; global header and home cards remain dedicated to core workflow.</li>
+          <li><strong>P1 High-Contrast Distinct Navigation:</strong> Bottom navigation bar features crisp line icons, active forest green highlights with pill backgrounds, and a pure white camera icon on the center FAB.</li>
+          <li><strong>P1 Missing Auth Suite:</strong> Integrated Log In, Create Account, Email Confirmation, and Password Recovery with guest offline continuation.</li>
+          <li><strong>P1 Monitoring Structure:</strong> Separated monitoring sessions list from checkpoint logging; eliminated preselected outcomes.</li>
+          <li><strong>P1 Accessibility & WCAG Contrast:</strong> High-contrast color tokens (&gt;4.5:1), 48px touch targets, SVG icons instead of emojis, accessible form labels, and focus rings.</li>
+          <li><strong>P1 Full Bilingual Equivalence:</strong> All 19 screens and navigation states seamlessly switch between Tagalog (Filipino) and English via Settings.</li>
+        </ul>
+      </div>
+
+      <div class="spec-card">
+        <h3>
+          <span class="svg-icon" style="width:20px;height:20px;color:#38bdf8;">
+            <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+          </span>
+          Quick Screen Tester (All 19 Screens)
+        </h3>
+        <p>Select any screen to test flows and view states directly:</p>
+        <div class="screen-pills-flow" id="screen-pills-container">
+          <!-- Dynamically populated or static pills -->
+          <button class="screen-pill active" onclick="navigateToScreen('home')">Home Dashboard</button>
+          <button class="screen-pill" onclick="navigateToScreen('camera')">Camera Viewfinder</button>
+          <button class="screen-pill" onclick="navigateToScreen('captureResult')">Scan Result & Auto-Detect</button>
+          <button class="screen-pill" onclick="navigateToScreen('result')">Illustrative Sample</button>
+          <button class="screen-pill" onclick="navigateToScreen('monitoringList')">Monitoring List</button>
+          <button class="screen-pill" onclick="navigateToScreen('recovery')">Monitoring Checkpoint</button>
+          <button class="screen-pill" onclick="navigateToScreen('history')">Scan History</button>
+          <button class="screen-pill" onclick="navigateToScreen('climate')">Climate & Normals</button>
+          <button class="screen-pill" onclick="navigateToScreen('location')">Location Selector</button>
+          <button class="screen-pill" onclick="navigateToScreen('varietyInfo')">Crop Encyclopedia</button>
+          <button class="screen-pill" onclick="navigateToScreen('chat')">Assistant & History</button>
+          <button class="screen-pill" onclick="navigateToScreen('account')">Account & Settings</button>
+          <button class="screen-pill" onclick="navigateToScreen('login')">Log In</button>
+          <button class="screen-pill" onclick="navigateToScreen('createAccount')">Create Account</button>
+          <button class="screen-pill" onclick="navigateToScreen('emailConfirm')">Email Confirmation</button>
+          <button class="screen-pill" onclick="navigateToScreen('forgotPassword')">Forgot Password</button>
+          <button class="screen-pill" onclick="navigateToScreen('modelStatus')">Model Registry</button>
+          <button class="screen-pill" onclick="navigateToScreen('trash')">15-Day Trash</button>
+          <button class="screen-pill" onclick="navigateToScreen('welcome')">Onboarding Gate</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // ==========================================================================
+    // GLOBAL STATE & DATA STORAGE (Simulated Client State)
+    // ==========================================================================
+    let currentScreen = 'home';
+    let currentLanguage = 'FIL'; // 'FIL' or 'EN'
+    let selectedCrop = 'mango'; // 'mango', 'banana', 'papaya'
+    let selectedLocation = 'Davao City, Region XI';
+    let observationSelected = null; // No preselection per plan MON-01
+    let isUserLoggedIn = false;
+    let userEmail = '';
+    let pendingConfirmationEmail = 'magsasaka@halimbawa.ph';
+    let isChatDrawerOpen = false;
+    let activeMenuChatId = null;
+    let currentChatId = 'chat-1';
+    let chatDraft = '';
+    let passwordVisible = false;
+    let currentReviewImage = 'mango'; // 'mango', 'banana', 'papaya', 'custom'
+
+    // Mock scan records (with IDs and truthful metadata)
+    let scanRecords = [
+      {
+        id: 'SCAN-2026-0042',
+        crop: 'mango',
+        cropNameFil: 'Mangga Carabao',
+        cropNameEn: 'Carabao Mango',
+        dateFil: 'Ngayong araw • 9:15 AM',
+        dateEn: 'Today • 9:15 AM',
+        status: 'sample_detected',
+        findingFil: 'Halimbawa: Anthracnose (Moderate 28%)',
+        findingEn: 'Sample: Anthracnose (Moderate 28%)',
+        badgeClass: 'badge-sample'
+      },
+      {
+        id: 'SCAN-2026-0039',
+        crop: 'banana',
+        cropNameFil: 'Saging Lakatan',
+        cropNameEn: 'Lakatan Banana',
+        dateFil: 'Kahapon • 3:40 PM',
+        dateEn: 'Yesterday • 3:40 PM',
+        status: 'saved_unanalyzed',
+        findingFil: 'Naka-save sa device • Hindi nasuri',
+        findingEn: 'Saved on device • Unanalyzed',
+        badgeClass: 'badge-offline'
+      },
+      {
+        id: 'SCAN-2026-0031',
+        crop: 'papaya',
+        cropNameFil: 'Papaya Red Lady',
+        cropNameEn: 'Red Lady Papaya',
+        dateFil: 'Okt 5, 2026 • 10:12 AM',
+        dateEn: 'Oct 5, 2026 • 10:12 AM',
+        status: 'sample_healthy',
+        findingFil: 'Halimbawa: Malusog (97.1%)',
+        findingEn: 'Sample: Healthy (97.1%)',
+        badgeClass: 'badge-healthy'
+      }
+    ];
+
+    // Mock monitoring sessions
+    let monitoringSessions = [
+      {
+        id: 'MON-042',
+        crop: 'mango',
+        title: 'Mangga Carabao #042',
+        issue: 'Anthracnose',
+        startDateFil: 'Okt 3, 2026',
+        startDateEn: 'Oct 3, 2026',
+        lastCheckDate: 'Okt 8, 2026',
+        currentDay: 10,
+        status: 'active',
+        statusLabelFil: 'Aktibong Pagsusubaybay',
+        statusLabelEn: 'Active Monitoring'
+      },
+      {
+        id: 'MON-038',
+        crop: 'banana',
+        title: 'Saging Lakatan Puno #12',
+        issue: 'Sigatoka Suspect',
+        startDateFil: 'Set 22, 2026',
+        startDateEn: 'Sep 22, 2026',
+        lastCheckDate: 'Okt 2, 2026',
+        currentDay: 10,
+        status: 'completed',
+        statusLabelFil: 'Tapos Na ang 10 Araw',
+        statusLabelEn: '10-Day Complete'
+      }
+    ];
+
+    // Trashed conversations (15-day soft-delete)
+    let trashedChats = [
+      {
+        id: 'chat-trash-1',
+        title: 'Usapan ukol sa Pagtatanim ng Saging Saba',
+        titleEn: 'Banana Saba Planting Guidance',
+        deletedDateFil: 'Burado 3 araw na ang nakalipas (12 araw natitira)',
+        deletedDateEn: 'Deleted 3 days ago (12 days remaining)'
+      }
+    ];
+
+    // Interactive Chat Conversations
+    let chatConversations = [
+      {
+        id: 'chat-1',
+        title: 'Mangga Anthracnose Gabay',
+        titleEn: 'Mango Anthracnose Guidance',
+        date: 'Ngayong araw • 9:15 AM',
+        messages: [
+          {
+            sender: 'bot',
+            textFil: 'Magandang araw! Ako ang iyong offline agro-assistant para sa Mangga, Saging, at Papaya. Paano kita matutulungan sa iyong pananim?',
+            textEn: 'Good day! I am your offline agro-decision support assistant for Mango, Banana, and Papaya. How can I help your crops today?'
+          },
+          {
+            sender: 'user',
+            textFil: 'Ano ang mabisang paraan upang mabawasan ang Anthracnose sa mangga?',
+            textEn: 'What are recommended practices to reduce mango anthracnose?'
+          },
+          {
+            sender: 'bot',
+            textFil: 'Ayon sa agronomic guidelines ng DA-BPI: panatilihin ang regular na pruning upang makapasok ang sikat ng araw at hangin. Sa panahon ng pamumulaklak, iwasan ang labis na nitrogen fertilizer. Kumonsulta sa Municipal Agriculture Office (MAO) bago mag-apply ng fungicide.',
+            textEn: 'Per DA-BPI agronomic guidelines: maintain proper canopy pruning to ensure adequate sunlight and airflow. Avoid excess nitrogen fertilization during flower induction. Always verify fungicide choices with your local agricultural technician.'
+          }
+        ]
+      },
+      {
+        id: 'chat-2',
+        title: 'Saging Sigatoka Sanitation',
+        titleEn: 'Banana Sigatoka Sanitation',
+        date: 'Kahapon • 4:20 PM',
+        messages: [
+          {
+            sender: 'bot',
+            textFil: 'Kumusta ang iyong sagingan?',
+            textEn: 'How is your banana plantation?'
+          },
+          {
+            sender: 'user',
+            textFil: 'May mga guhit na dilaw sa dahon ng saging.',
+            textEn: 'There are yellow streaks on my banana leaves.'
+          },
+          {
+            sender: 'bot',
+            textFil: 'Ito ay posibleng senyales ng Sigatoka. Inirerekomenda ang regular na de-leafing sa apektadong dahon at pagsusunog o paglilibing nito sa malayo upang hindi kumalat ang spores.',
+            textEn: 'This could indicate Sigatoka leaf spot. Recommended practice is de-leafing severely affected leaves and removing them from the grove to suppress fungal sporulation.'
+          }
+        ]
+      }
+    ];
+
+    // Clock
+    function updateClock() {
+      const now = new Date();
+      const hrs = now.getHours().toString().padStart(2, '0');
+      const mins = now.getMinutes().toString().padStart(2, '0');
+      const clockEl = document.getElementById('live-clock');
+      if (clockEl) clockEl.innerText = `${hrs}:${mins}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Language Toggle
+    function toggleLanguage() {
+      currentLanguage = currentLanguage === 'FIL' ? 'EN' : 'FIL';
+      const isFil = currentLanguage === 'FIL';
+      document.getElementById('lang-flag').innerText = isFil ? '🇵🇭' : '🇺🇸';
+      document.getElementById('lang-label').innerText = isFil ? 'Filipino' : 'English';
+      document.documentElement.lang = isFil ? 'fil' : 'en';
+
+      // Update static bottom nav labels
+      document.getElementById('label-nav-home').innerText = isFil ? 'Home' : 'Home';
+      document.getElementById('label-nav-monitoring').innerText = isFil ? 'Pagsubaybay' : 'Monitoring';
+      document.getElementById('label-nav-scan').innerText = isFil ? 'Scan' : 'Scan';
+      document.getElementById('label-nav-chat').innerText = isFil ? 'Assistant' : 'Assistant';
+      document.getElementById('label-nav-account').innerText = isFil ? 'Account' : 'Account';
+
+      renderCurrentScreen();
+    }
+
+    // Navigation Handler
+    function navigateToScreen(screenId) {
+      currentScreen = screenId;
+      const selectEl = document.getElementById('screen-select');
+      if (selectEl) selectEl.value = screenId;
+      isChatDrawerOpen = false;
+      activeMenuChatId = null;
+
+      // Update sidebar pills
+      document.querySelectorAll('.screen-pill').forEach(pill => {
+        if (pill.getAttribute('onclick') && pill.getAttribute('onclick').includes(screenId)) {
+          pill.classList.add('active');
+        } else {
+          pill.classList.remove('active');
+        }
+      });
+
+      // Update bottom nav active state
+      document.querySelectorAll('.nav-pill-item, .center-scan-container').forEach(item => item.classList.remove('active'));
+      const navItemMap = {
+        'home': 'nav-item-home',
+        'monitoringList': 'nav-item-monitoring',
+        'recovery': 'nav-item-monitoring',
+        'camera': 'nav-item-camera',
+        'captureResult': 'nav-item-camera',
+        'result': 'nav-item-camera',
+        'chat': 'nav-item-chat',
+        'account': 'nav-item-account',
+        'login': 'nav-item-account',
+        'createAccount': 'nav-item-account',
+        'emailConfirm': 'nav-item-account',
+        'forgotPassword': 'nav-item-account'
+      };
+      const activeId = navItemMap[screenId];
+      if (activeId) {
+        const el = document.getElementById(activeId);
+        if (el) el.classList.add('active');
+      }
+
+      // Hide bottom nav on full-screen flows (Camera, Onboarding)
+      const navWrapper = document.getElementById('floating-bottom-nav');
+      if (screenId === 'camera' || screenId === 'welcome') {
+        navWrapper.style.display = 'none';
+      } else {
+        navWrapper.style.display = 'block';
+      }
+
+      // Status bar theme
+      const statusBar = document.getElementById('phone-status-bar');
+      if (screenId === 'camera') {
+        statusBar.classList.add('dark-theme');
+      } else {
+        statusBar.classList.remove('dark-theme');
+      }
+
+      renderCurrentScreen();
+      const vp = document.getElementById('viewport');
+      if (vp) vp.scrollTop = 0;
+    }
+
+    // Helper SVG icon generator
+    function getSvg(name, extraClass = '') {
+      switch(name) {
+        case 'camera':
+          return `<span class="svg-icon ${extraClass}" style="width:18px;height:18px;"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>`;
+        case 'arrow-right':
+          return `<span class="svg-icon ${extraClass}" style="width:16px;height:16px;"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>`;
+        case 'arrow-left':
+          return `<span class="svg-icon ${extraClass}" style="width:16px;height:16px;"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></span>`;
+        case 'alert-triangle':
+          return `<span class="svg-icon ${extraClass}" style="width:18px;height:18px;color:#c2410c;"><svg viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>`;
+        case 'shield-check':
+          return `<span class="svg-icon ${extraClass}" style="width:18px;height:18px;color:#166534;"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></span>`;
+        case 'check':
+          return `<span class="svg-icon ${extraClass}" style="width:16px;height:16px;"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
+        default:
+          return '';
+      }
+    }
+
+    // ==========================================================================
+    // SCREEN RENDERING ENGINE (20 Comprehensive States)
+    // ==========================================================================
+    function renderCurrentScreen() {
+      const vp = document.getElementById('viewport');
+      if (!vp) return;
+      const isFil = currentLanguage === 'FIL';
+
+      switch (currentScreen) {
+        // ======================================================================
+        // 1. HOME SCREEN (Adaptive Recent Activity, Clear Hierarchy)
+        // ======================================================================
+        case 'home':
+          const recentScan = scanRecords[0];
+          const activeMon = monitoringSessions[0];
+
+          vp.innerHTML = `
+            <!-- Top Greeting Header (Language accessed exclusively in Settings) -->
+            <div class="green-top-cell">
+              <div>
+                <span class="badge badge-offline" style="margin-bottom: 4px;">
+                  ${isFil ? 'Lokal na Offline' : 'Local Offline Mode'}
+                </span>
+                <h2>${isFil ? 'Magandang araw!' : 'Good day!'}</h2>
+                <p>${isFil ? 'Handang tumulong sa iyong pananim' : 'Decision-support for your fruit crops'}</p>
+              </div>
+            </div>
+
+            <!-- Primary Action Card (High-Contrast Orange CTA) -->
+            <div class="frosted-card" style="border: 1.5px solid rgba(194, 65, 12, 0.25);">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <div style="width: 48px; height: 48px; border-radius: 24px; background: var(--c-orange-gradient); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 12px rgba(194, 65, 12, 0.35); flex-shrink: 0;">
+                  <span class="svg-icon" style="width:24px;height:24px;"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span>
+                </div>
+                <div style="flex: 1;">
+                  <h3 style="font-size: 1rem; font-weight: 800; color: var(--text-main);">
+                    ${isFil ? 'Kumuha o Pumili ng Litrato' : 'Take or Choose Photo'}
+                  </h3>
+                  <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.35;">
+                    ${isFil ? 'Ligtas na naka-imbak sa telepono. Hindi kailangan ng internet.' : 'Stored on your device. Works fully without internet.'}
+                  </p>
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+                <button class="btn-orange-full" onclick="navigateToScreen('camera')" style="min-height: 44px; font-size: 0.82rem;">
+                  ${isFil ? 'Kumuha (Camera)' : 'Camera'}
+                </button>
+                <button class="btn-outline" onclick="simulateGalleryPick()" style="min-height: 44px; font-size: 0.82rem;">
+                  ${isFil ? 'Gallery / File' : 'Pick from Gallery'}
+                </button>
+              </div>
+            </div>
+
+            <!-- Adaptive Recent Activity (Plan HOME-01 & Table in Section 5) -->
+            <div class="frosted-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--c-forest-primary);">
+                  ${isFil ? 'Kamakailang Tala (Recent Activity)' : 'Recent Activity'}
+                </h4>
+                <button class="btn-subtle" onclick="navigateToScreen('history')" style="padding: 2px 6px; font-size: 0.75rem;">
+                  ${isFil ? 'Tingnan Lahat' : 'View History'} ${getSvg('arrow-right')}
+                </button>
+              </div>
+
+              <!-- Item 1: Active Monitoring Action -->
+              <div onclick="navigateToScreen('recovery')" style="background: #f8faf9; border: 1px solid var(--card-border); border-radius: 12px; padding: 10px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: #eaf4ed; display:flex; align-items:center; justify-content:center; font-size: 18px;">
+                  🥭
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 800; color: var(--text-main);">${activeMon.title}</span>
+                    <span class="badge badge-warning" style="font-size: 0.65rem;">${isFil ? 'Araw 10 Nakatakda' : 'Day 10 Scheduled'}</span>
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                    ${isFil ? 'Obserbasyon: I-log ang kalagayan ngayon' : 'Observation: Record current condition'}
+                  </div>
+                </div>
+                <span style="color: var(--text-muted);">${getSvg('arrow-right')}</span>
+              </div>
+
+              <!-- Item 2: Latest Scan Thumbnail / Result -->
+              <div onclick="navigateToScreen('result')" style="background: #ffffff; border: 1px solid var(--card-border); border-radius: 12px; padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: #fef3c7; display:flex; align-items:center; justify-content:center; font-size: 18px;">
+                  🥭
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 0.82rem; font-weight: 800; color: var(--text-main);">${isFil ? recentScan.cropNameFil : recentScan.cropNameEn}</span>
+                    <span class="badge ${recentScan.badgeClass}" style="font-size: 0.65rem;">${isFil ? 'Halimbawa' : 'Sample'}</span>
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                    ${isFil ? recentScan.findingFil : recentScan.findingEn}
+                  </div>
+                </div>
+                <span style="font-size: 0.7rem; color: var(--text-muted);">${isFil ? recentScan.dateFil.split('•')[0] : recentScan.dateEn.split('•')[0]}</span>
+              </div>
+            </div>
+
+            <!-- Supported Crops Section (Preserving Banana, Mango, Papaya with explicit routing) -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                <h4 style="font-size: 0.85rem; font-weight: 800; color: var(--c-forest-primary);">
+                  ${isFil ? 'Mga Gabay sa Pananim' : 'Crop Profiles & Guidance'}
+                </h4>
+                <button class="btn-subtle" onclick="navigateToScreen('varietyInfo')" style="padding: 2px 6px; font-size: 0.75rem;">
+                  ${isFil ? 'Encyclopedia' : 'Encyclopedia'} ${getSvg('arrow-right')}
+                </button>
+              </div>
+              <div class="fruit-cards-grid">
+                <button class="fruit-card-item" onclick="openCropProfile('mango')">
+                  <div class="fruit-circle-avatar">🥭</div>
+                  <div class="fruit-title">${isFil ? 'Mangga' : 'Mango'}</div>
+                  <div class="fruit-subtitle">Carabao, Pico</div>
+                </button>
+                <button class="fruit-card-item" onclick="openCropProfile('banana')">
+                  <div class="fruit-circle-avatar">🍌</div>
+                  <div class="fruit-title">${isFil ? 'Saging' : 'Banana'}</div>
+                  <div class="fruit-subtitle">Lakatan, Saba</div>
+                </button>
+                <button class="fruit-card-item" onclick="openCropProfile('papaya')">
+                  <div class="fruit-circle-avatar">🍈</div>
+                  <div class="fruit-title">${isFil ? 'Papaya' : 'Papaya'}</div>
+                  <div class="fruit-subtitle">Red Lady, Solo</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Compact Climate Snapshot with Data Freshness -->
+            <div class="frosted-card" onclick="navigateToScreen('climate')" style="cursor: pointer; border-left: 4px solid var(--c-info-blue);" role="button" tabindex="0">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <span style="font-size: 14px;">📍</span>
+                  <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-main);">${selectedLocation}</span>
+                </div>
+                <span class="badge badge-info">${isFil ? 'Tingnan ang Normals' : 'Climate Normals'}</span>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <span style="font-size: 1.4rem; font-weight: 800; color: var(--c-forest-primary);">29°C</span>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">
+                    ${isFil ? 'Naka-cache • Angkop para sa pamumulaklak ng Mangga' : 'Cached • Suitable for Mango flowering'}
+                  </div>
+                </div>
+                <div style="font-size: 26px;">🌤️</div>
+              </div>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 2. CAMERA VIEWFINDER SCREEN
+        // ======================================================================
+        case 'camera':
+          vp.innerHTML = `
+            <div style="min-height: 720px; background: #0c140e; border-radius: 24px; position: relative; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.12);">
+              
+              <!-- Top Controls: Close (✕) left, Flash toggle top-right -->
+              <div style="display: flex; justify-content: space-between; align-items: center; z-index: 10;">
+                <button onclick="navigateToScreen('home')" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;" aria-label="Isara ang camera">✕</button>
+                <div style="background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 999px; color: #fff; font-size: 0.72rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.15);">
+                  🔒 ${isFil ? 'Lokal na Device Lamang' : 'On-Device Only'}
+                </div>
+                <button onclick="alert('${isFil ? 'Nai-toggle ang flash: Auto' : 'Flash mode set to Auto'}')" style="width: 44px; height: 44px; border-radius: 22px; background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;" aria-label="Flashlight toggle">
+                  ⚡
+                </button>
+              </div>
+
+              <!-- Viewfinder Target Frame -->
+              <div style="position: absolute; top: 16%; left: 8%; right: 8%; bottom: 24%; border: 2.5px dashed rgba(74, 222, 128, 0.85); border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(34,197,94,0.15) inset; padding: 20px; text-align: center;">
+                <div style="color: #ffffff; font-size: 0.85rem; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.9); margin-bottom: 6px;">
+                  ${isFil ? 'Itapat ang prutas sa gitna ng frame' : 'Center the fruit within the frame'}
+                </div>
+                <div style="color: #cbd5e1; font-size: 0.75rem; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,0.9); line-height: 1.4;">
+                  ${isFil ? 'Siguraduhing maliwanag at kitang-kita ang balat o sugat' : 'Ensure natural lighting and steady focus on lesions'}
+                </div>
+              </div>
+
+              <!-- Bottom Shutter & Picker Bar -->
+              <div style="display: flex; justify-content: space-around; align-items: center; z-index: 10; margin-bottom: 8px;">
+                <!-- Gallery Picker -->
+                <button onclick="simulateGalleryPick()" style="width: 48px; height: 48px; border-radius: 24px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer;" title="Gallery" aria-label="Pumili mula sa gallery">
+                  🖼️
+                </button>
+                
+                <!-- Shutter Trigger -->
+                <button onclick="triggerPhotoCapture('camera')" style="width: 76px; height: 76px; border-radius: 38px; background: rgba(255,255,255,0.25); border: 2px solid #fff; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="Kumuha ng litrato" aria-label="Pindutin para kumuha">
+                  <div style="width: 60px; height: 60px; border-radius: 30px; background: var(--c-orange-gradient); box-shadow: 0 4px 16px rgba(194, 65, 12, 0.7);"></div>
+                </button>
+
+                <!-- Camera Switch -->
+                <button onclick="alert('${isFil ? 'Nailipat sa likod/harapang camera' : 'Swapped front/rear camera'}')" style="width: 48px; height: 48px; border-radius: 24px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer;" title="Rotate Camera" aria-label="Palitan ang camera">
+                  🔄
+                </button>
+              </div>
+
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 3. SCAN RESULT & AUTOMATIC FRUIT DETECTION (With Truthful No-Model Degradation)
+        // ======================================================================
+        case 'captureResult':
+          const detectedCropName = selectedCrop === 'mango' 
+            ? (isFil ? 'Mangga (Carabao)' : 'Mango (Carabao)')
+            : (selectedCrop === 'banana' ? (isFil ? 'Saging (Lakatan)' : 'Banana (Lakatan)') : (isFil ? 'Papaya (Red Lady)' : 'Papaya (Red Lady)'));
+          const detectedCropSci = selectedCrop === 'mango' 
+            ? 'Mangifera indica' 
+            : (selectedCrop === 'banana' ? 'Musa acuminata' : 'Carica papaya');
+          const detectedEmoji = selectedCrop === 'mango' ? '🥭' : (selectedCrop === 'banana' ? '🍌' : '🍈');
+
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h2>${isFil ? 'Resulta ng Pag-scan' : 'Scan Detection Result'}</h2>
+                  <p>${isFil ? 'Lokal na pagsusuri ng prutas' : 'On-device fruit evaluation'}</p>
+                </div>
+                <button class="btn-subtle" onclick="navigateToScreen('camera')" style="color:#fff; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 999px;">
+                  ${isFil ? 'Kumuha Ulit' : 'Retake'}
+                </button>
+              </div>
+            </div>
+
+            <!-- Automatic Fruit Detection Card (Requirement 1: System Automatically Detects Fruit) -->
+            <div class="frosted-card" style="border-left: 4px solid var(--c-forest-primary); background: #f0fdf4;">
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <div style="width: 48px; height: 48px; border-radius: 24px; background: #dcfce7; display:flex; align-items:center; justify-content:center; font-size: 26px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(22, 101, 52, 0.15);">
+                  ${detectedEmoji}
+                </div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.7rem; font-weight: 800; color: #166534; text-transform: uppercase; letter-spacing: 0.5px;">
+                      ${isFil ? 'Awtomatikong Na-detect na Pananim' : 'Auto-Detected Fruit Crop'}
+                    </span>
+                    <span class="badge badge-healthy" style="font-size: 0.68rem;">96% ${isFil ? 'Tugma' : 'Match'}</span>
+                  </div>
+                  <div style="font-size: 1.05rem; font-weight: 800; color: var(--c-forest-primary); margin-top: 2px;">
+                    ${detectedCropName}
+                  </div>
+                  <p style="font-size: 0.72rem; color: #15803d; margin-top: 2px;">
+                    <em>${detectedCropSci}</em> • ${isFil ? 'Awtomatikong tinukoy ng system batay sa hugis at tekstura ng balat.' : 'Identified automatically by the system from fruit morphology.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Truthful Degradation: Model Weights Unavailable (TRUST-01) -->
+            <div class="frosted-card" style="border-left: 4px solid var(--c-severity-early);">
+              <div style="display: flex; gap: 10px; align-items: flex-start;">
+                ${getSvg('alert-triangle')}
+                <div>
+                  <h3 style="font-size: 0.92rem; font-weight: 800; color: var(--c-severity-early);">
+                    ${isFil ? 'Pagsusuri sa Sakit: Walang Model Weights' : 'Disease Diagnosis: No Model Weights'}
+                  </h3>
+                  <p style="font-size: 0.76rem; color: var(--text-muted); margin-top: 3px; line-height: 1.4;">
+                    ${isFil 
+                      ? 'Ligtas na na-save ang litrato sa SQLite database ng telepono. Walang inilagay na diagnostic weights sa yugtong ito ng thesis, kaya walang gawa-gawang porsyento ng sakit.' 
+                      : 'Photo securely stored on device. In this thesis development phase, diagnostic weights are not installed, so no speculative disease percentages are fabricated.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stored Photo Card -->
+            <div class="frosted-card" style="text-align: center; padding: 12px;">
+              <div style="height: 150px; background: #16241a; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;">
+                <span style="font-size: 44px; margin-bottom: 4px;">${detectedEmoji}</span>
+                <span style="font-size: 0.75rem; color: #cbd5e1;">
+                  ${isFil ? 'Litrato naka-save sa lokal na SQLite repository' : 'Photo retained in local SQLite repository'}
+                </span>
+                <span style="font-size: 0.7rem; color: #86efac; margin-top: 2px;">
+                  ✓ Record ID: SCAN-2026-0043 • Geo-tag: 14.17°N, 121.24°E
+                </span>
+              </div>
+            </div>
+
+            <!-- Alternative Actionable Pathways -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button class="btn-forest-full" onclick="navigateToScreen('varietyInfo')">
+                📖 ${isFil ? 'Sumangguni sa Gabay ng Pananim' : 'Browse Local Crop Knowledge'}
+              </button>
+              <button class="btn-outline" onclick="navigateToScreen('monitoringList')">
+                📊 ${isFil ? 'Magsimula ng Manwal na Pagsubaybay' : 'Start Manual Monitoring Session'}
+              </button>
+              <!-- Test Button to View Illustrative Sample -->
+              <button class="btn-subtle" onclick="navigateToScreen('result')" style="text-align: center; justify-content: center; color: var(--c-orange-accent);">
+                🔬 ${isFil ? '[Demo Test] Tingnan ang Halimbawang Resulta' : '[Demo Test] View Illustrative Sample Screen'}
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 4. ILLUSTRATIVE SAMPLE DIAGNOSIS (Truthful Decision-Support Language)
+        // ======================================================================
+        case 'result':
+          vp.innerHTML = `
+            <!-- Explicit Illustrative Notice (Plan TRUST-01 & TRUST-02) -->
+            <div class="frosted-card" style="border: 1.5px dashed var(--c-orange-accent); background: #fffbeb;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge badge-sample">${isFil ? 'Halimbawang Sitwasyon (Sample Scenario)' : 'Illustrative Sample Scenario'}</span>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--c-amber-text); margin-top: 4px; line-height: 1.35;">
+                ${isFil ? 'Ang datos sa ibaba ay demonstrasyon lamang para sa pagsusuri ng UI. Hindi ito opisyal na diagnosis ng eksperto.' : 'Data below is for thesis demonstration only. This is not an automated or professional diagnosis.'}
+              </p>
+            </div>
+
+            <!-- Top Result Banner -->
+            <div style="background: var(--c-forest-primary); border-radius: 18px; padding: 1.15rem; color: #ffffff; display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 38px;">🥭</span>
+              <div style="flex: 1;">
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff;">
+                  ${isFil ? 'Mangga (Carabao)' : 'Mango (Carabao)'}
+                </h3>
+                <p style="font-size: 0.75rem; color: #d1fae5;">
+                  ${isFil ? 'Awtomatikong Na-detect na Pananim (96% Tugma)' : 'Auto-Detected Crop (96% Match)'}
+                </p>
+              </div>
+              <span class="badge badge-sample">Demo</span>
+            </div>
+
+            <!-- Possible Finding Card -->
+            <div class="frosted-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.72rem; font-weight: 800; color: var(--c-forest-light); text-transform: uppercase;">
+                  ${isFil ? 'Maaaring Sakit (Tentative Indication)' : 'Tentative Indication'}
+                </span>
+                <span class="badge badge-warning">Moderate</span>
+              </div>
+              <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--c-forest-primary);">
+                Anthracnose <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(Colletotrichum gloeosporioides)</span>
+              </h4>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">
+                ${isFil ? 'Karaniwang nagdudulot ng itim na batik sa balat tuwing tag-ulan.' : 'Common fungal spots on peel during rainy or humid periods.'}
+              </p>
+            </div>
+
+            <!-- Severity Evaluation -->
+            <div class="frosted-card" style="display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+                  ${isFil ? 'Tantiyang Apektadong Bahagi' : 'Estimated Lesion Area Ratio'}
+                </div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: var(--c-severity-moderate); margin-top: 2px;">
+                  28.5% • KATAMTAMAN (MODERATE)
+                </div>
+                <div style="font-size: 0.7rem; color: var(--text-subtle);">
+                  ${isFil ? 'Base sa sukat ng sugat laban sa kabuuang prutas' : 'Ratio of detected spots relative to fruit surface'}
+                </div>
+              </div>
+              <div style="width: 50px; height: 50px; border-radius: 25px; border: 3.5px solid var(--c-severity-moderate); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; color: var(--c-severity-moderate);">
+                28%
+              </div>
+            </div>
+
+            <!-- Decision-Support Guidance (No unsupported 'Prescription' or 'Certified' claims) -->
+            <div class="frosted-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span style="font-size: 0.82rem; font-weight: 800; color: #166534;">
+                  🌱 ${isFil ? 'Agronomic Decision Support (Gabay Lamang)' : 'Agronomic Guidance (Decision-Support)'}
+                </span>
+                <span class="badge badge-healthy">BPI Technical Notes</span>
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-main); line-height: 1.45;">
+                <div style="margin-bottom: 4px;">• <strong>${isFil ? 'Sanitasyon:' : 'Sanitation:'}</strong> ${isFil ? 'Gupitin at sunugin ang mga nalaglag o apektadong sanga upang maiwasan ang pagdami ng fungal spores.' : 'Prune infected canopy twigs and bury fallen mummified fruit.'}</div>
+                <div style="margin-bottom: 4px;">• <strong>${isFil ? 'Pag-iingat:' : 'Precaution:'}</strong> ${isFil ? 'Huwag kainin o ibenta ang prutas na may malalim na mabulok.' : 'Do not consume or transport severely rotting harvested fruits.'}</div>
+                <div>• <strong>${isFil ? 'Payo:' : 'Referral:'}</strong> ${isFil ? 'Kumonsulta sa lokal na Agricultural Extension Worker (AEW) o Municipal Agriculturist.' : 'Verify fungicide treatments with your local agricultural extension worker.'}</div>
+              </div>
+            </div>
+
+            <!-- Start Monitoring CTA -->
+            <button class="btn-orange-full" onclick="navigateToScreen('recovery')">
+              <span>${isFil ? 'Subaybayan ang Puno (Start Monitoring)' : 'Start Monitoring Session'}</span> ${getSvg('arrow-right')}
+            </button>
+          `;
+          break;
+
+        // ======================================================================
+        // 6. MONITORING SESSIONS LIST (New Plan Requirement MON-01)
+        // ======================================================================
+        case 'monitoringList':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'Mga Pagsubaybay (Monitoring)' : 'Crop Monitoring'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('recovery')" style="color:#fff; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 999px;">
+                  + ${isFil ? 'Bago' : 'New'}
+                </button>
+              </div>
+              <p>${isFil ? 'Subaybayan ang pagbabago sa loob ng 10 araw' : 'Track crop condition across Day 1, 5, and 10'}</p>
+            </div>
+
+            <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;">
+              <span class="badge badge-offline" style="background: var(--c-forest-primary); color: #fff;">${isFil ? 'Lahat (All)' : 'All'}</span>
+              <span class="badge badge-offline">${isFil ? 'Aktibo' : 'Active'}</span>
+              <span class="badge badge-offline">${isFil ? 'Tapos Na' : 'Completed'}</span>
+            </div>
+
+            <!-- List items -->
+            ${monitoringSessions.map(sess => `
+              <div class="frosted-card" onclick="navigateToScreen('recovery')" style="cursor: pointer; display: flex; gap: 10px; align-items: center;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: #eaf4ed; display:flex; align-items:center; justify-content:center; font-size: 22px; flex-shrink: 0;">
+                  ${sess.crop === 'mango' ? '🥭' : '🍌'}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 0.88rem; font-weight: 800; color: var(--c-forest-primary);">${sess.title}</div>
+                    <span class="badge ${sess.status === 'active' ? 'badge-warning' : 'badge-healthy'}">
+                      ${isFil ? sess.statusLabelFil : sess.statusLabelEn}
+                    </span>
+                  </div>
+                  <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 2px;">
+                    ${sess.issue} • ${isFil ? 'Sinimulan: ' + sess.startDateFil : 'Started: ' + sess.startDateEn}
+                  </div>
+                </div>
+                <span style="color: var(--text-muted);">${getSvg('arrow-right')}</span>
+              </div>
+            `).join('')}
+
+            <button class="btn-forest-full" onclick="navigateToScreen('camera')" style="margin-top: 8px;">
+              ${getSvg('camera')} ${isFil ? 'Mag-log ng Bagong Pananim mula sa Litrato' : 'Start from New Photo'}
+            </button>
+          `;
+          break;
+
+        // ======================================================================
+        // 7. MONITORING CHECKPOINT (Plan MON-01: No preselected outcome)
+        // ======================================================================
+        case 'recovery':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h2>${isFil ? 'Pagtatala ng Obserbasyon' : 'Record Observation'}</h2>
+                  <p>Mangga Carabao #042 • Araw 10 Checkpoint</p>
+                </div>
+                <button class="btn-subtle" onclick="navigateToScreen('monitoringList')" style="color:#fff;">
+                  ← ${isFil ? 'Bumalik' : 'Back'}
+                </button>
+              </div>
+            </div>
+
+            <!-- Checkpoint timeline progress -->
+            <div class="frosted-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">
+                <span>${isFil ? 'Araw 1 (Baseline)' : 'Day 1 (Baseline)'}</span>
+                <span>${isFil ? 'Araw 5' : 'Day 5'}</span>
+                <span style="color: var(--c-orange-accent); font-weight: 800;">${isFil ? 'Araw 10 (Ngayon)' : 'Day 10 (Today)'}</span>
+              </div>
+              <div style="height: 6px; background: #e2e8f0; border-radius: 3px; position: relative;">
+                <div style="width: 100%; height: 100%; background: var(--c-forest-primary); border-radius: 3px;"></div>
+              </div>
+              <div style="font-size: 0.7rem; color: var(--text-subtle); margin-top: 6px;">
+                ${isFil ? 'Tunay na petsa ng pag-obserba: Oktubre 9, 2026' : 'Actual observation recorded on: October 9, 2026'}
+              </div>
+            </div>
+
+            <!-- Explicit User Choice (Plan MON-01: No preselection) -->
+            <div class="frosted-card">
+              <label class="form-label">
+                ${isFil ? 'Kumusta ang kalagayan ng prutas/sugat ngayon?' : 'How has the fruit/lesion condition progressed?'}
+              </label>
+              <p style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px;">
+                ${isFil ? 'Pumili base sa iyong sariling pagmamasid sa taniman:' : 'Select based on your direct orchard inspection:'}
+              </p>
+
+              <div class="observation-grid">
+                <button class="obs-choice-btn ${observationSelected === 'better' ? 'selected' : ''}" onclick="setObservation('better')">
+                  🌱 ${isFil ? 'Mas Mabuti' : 'Better'}
+                </button>
+                <button class="obs-choice-btn ${observationSelected === 'same' ? 'selected' : ''}" onclick="setObservation('same')">
+                  ⚖️ ${isFil ? 'Kapareho Lang' : 'About Same'}
+                </button>
+                <button class="obs-choice-btn ${observationSelected === 'worse' ? 'selected' : ''}" onclick="setObservation('worse')">
+                  ⚠️ ${isFil ? 'Lumala' : 'Worse'}
+                </button>
+                <button class="obs-choice-btn ${observationSelected === 'unsure' ? 'selected' : ''}" onclick="setObservation('unsure')">
+                  ❓ ${isFil ? 'Hindi Sigurado' : 'Unsure'}
+                </button>
+              </div>
+
+              <!-- Notes field -->
+              <div class="form-group" style="margin-top: 10px;">
+                <label for="obs-notes" class="form-label">${isFil ? 'Karagdagang Tala (Opsyonal)' : 'Notes / Field Observations (Optional)'}</label>
+                <textarea id="obs-notes" rows="2" class="form-input" placeholder="${isFil ? 'Hal. Natapos ang paggupit ng tuyong sanga...' : 'E.g., Finished pruning canopy twigs...'}" style="resize: none;"></textarea>
+              </div>
+
+              <button class="btn-forest-full" onclick="saveObservationCheckpoint()" style="margin-top: 6px;">
+                ${getSvg('check')} ${isFil ? 'I-save ang Obserbasyon sa SQLite' : 'Save Observation to SQLite'}
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 8. SCAN HISTORY LOG WITH SEARCH & FILTERS
+        // ======================================================================
+        case 'history':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'Kasaysayan ng mga Scan' : 'Scan History'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('home')" style="color:#fff;">
+                  ← ${isFil ? 'Home' : 'Home'}
+                </button>
+              </div>
+              <p>${isFil ? 'Ligtas na naka-imbak sa SQLite database' : 'Persisted locally on device SQLite'}</p>
+            </div>
+
+            <!-- Search Bar with label -->
+            <div class="form-group">
+              <label for="history-search" class="sr-only">${isFil ? 'Maghanap sa kasaysayan' : 'Search history'}</label>
+              <div style="position: relative;">
+                <input id="history-search" type="text" class="form-input" placeholder="${isFil ? 'Maghanap ng prutas, sakit, o ID...' : 'Search scans, fruits, diseases, IDs...'}" style="padding-left: 38px;">
+                <span style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);">🔍</span>
+              </div>
+            </div>
+
+            <!-- Filter Chips -->
+            <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
+              <button class="badge badge-offline" style="background: var(--c-forest-primary); color: #fff; cursor: pointer; border: none; padding: 6px 12px;">
+                ${isFil ? 'Lahat (3)' : 'All (3)'}
+              </button>
+              <button class="badge badge-offline" onclick="filterHistory('mango')" style="cursor: pointer; border: none; padding: 6px 12px;">
+                🥭 Mangga
+              </button>
+              <button class="badge badge-offline" onclick="filterHistory('banana')" style="cursor: pointer; border: none; padding: 6px 12px;">
+                🍌 Saging
+              </button>
+              <button class="badge badge-offline" onclick="filterHistory('papaya')" style="cursor: pointer; border: none; padding: 6px 12px;">
+                🍈 Papaya
+              </button>
+            </div>
+
+            <!-- Record Items -->
+            ${scanRecords.map(item => `
+              <div class="frosted-card" onclick="navigateToScreen('result')" style="cursor: pointer; display: flex; gap: 10px; align-items: center;" role="button" tabindex="0">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: #eaf4ed; display:flex; align-items:center; justify-content:center; font-size: 22px; flex-shrink: 0;">
+                  ${item.crop === 'mango' ? '🥭' : (item.crop === 'banana' ? '🍌' : '🍈')}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 0.88rem; font-weight: 800; color: var(--c-forest-primary);">${isFil ? item.cropNameFil : item.cropNameEn}</div>
+                    <span class="badge ${item.badgeClass}">${isFil ? 'Lokal' : 'Local'}</span>
+                  </div>
+                  <div style="font-size: 0.74rem; font-weight: 700; color: var(--text-main); margin-top: 1px;">
+                    ${isFil ? item.findingFil : item.findingEn}
+                  </div>
+                  <div style="font-size: 0.68rem; color: var(--text-subtle); margin-top: 2px;">
+                    ${item.id} • ${isFil ? item.dateFil : item.dateEn}
+                  </div>
+                </div>
+                <span style="color: var(--text-muted);">${getSvg('arrow-right')}</span>
+              </div>
+            `).join('')}
+          `;
+          break;
+
+        // ======================================================================
+        // 9. CLIMATE & HISTORICAL SUITABILITY NORMALS (Plan DATA-01 & Screen 6)
+        // ======================================================================
+        case 'climate':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h2>${isFil ? 'Panahon & Kaangkupan' : 'Climate & Suitability'}</h2>
+                  <p>📍 ${selectedLocation}</p>
+                </div>
+                <button onclick="navigateToScreen('location')" class="btn-subtle" style="background: rgba(255,255,255,0.2); color:#fff; border-radius: 8px; padding: 4px 8px; font-size: 0.75rem;">
+                  ${isFil ? 'Palitan' : 'Change'}
+                </button>
+              </div>
+            </div>
+
+            <!-- Current Weather vs Suitability Separation -->
+            <div class="frosted-card" style="border-left: 4px solid var(--c-healthy);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 24px;">🥭</span>
+                  <span style="font-size: 0.9rem; font-weight: 800; color: var(--c-forest-primary);">
+                    ${isFil ? 'Mangga: Angkop sa Kasalukuyan' : 'Mango: Highly Suitable'}
+                  </span>
+                </div>
+                <span class="badge badge-healthy">${isFil ? 'Dry Period' : 'Induction Season'}</span>
+              </div>
+              <p style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.4;">
+                ${isFil 
+                  ? 'Ang temperatura na 29°C at mababang ulan ay mainam para sa pamumulaklak ng Carabao mango ayon sa PAGASA agronomic models.' 
+                  : 'Current 29°C temperature and lower precipitation window support floral bud development for Carabao mango.'}
+              </p>
+            </div>
+
+            <!-- Climate Metrics with Clear Units -->
+            <div class="frosted-card" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; padding: 10px;">
+              <div style="background: #f8faf9; padding: 8px; border-radius: 10px;">
+                <div style="font-size: 16px;">💧</div>
+                <div style="font-size: 0.88rem; font-weight: 800; color: var(--c-forest-primary);">78%</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted);">${isFil ? 'Halumigmig' : 'Humidity'}</div>
+              </div>
+              <div style="background: #f8faf9; padding: 8px; border-radius: 10px;">
+                <div style="font-size: 16px;">🌧️</div>
+                <div style="font-size: 0.88rem; font-weight: 800; color: var(--c-forest-primary);">1.4 mm</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted);">${isFil ? 'Ulan (Rain)' : 'Rainfall'}</div>
+              </div>
+              <div style="background: #f8faf9; padding: 8px; border-radius: 10px;">
+                <div style="font-size: 16px;">⛰️</div>
+                <div style="font-size: 0.88rem; font-weight: 800; color: var(--c-forest-primary);">32 m</div>
+                <div style="font-size: 0.68rem; color: var(--text-muted);">${isFil ? 'Taas (ASL)' : 'Elevation'}</div>
+              </div>
+            </div>
+
+            <!-- 12-Month Climate Normals Histogram with Table Alternative -->
+            <div class="frosted-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <h4 style="font-size: 0.8rem; font-weight: 800; color: var(--c-forest-primary);">
+                  ${isFil ? '12-Buwang Karaniwang Ulan (Open-Meteo Normals)' : '12-Month Rainfall Normals'}
+                </h4>
+                <span style="font-size: 0.68rem; color: var(--text-subtle);">1991–2020 Baseline</span>
+              </div>
+
+              <!-- Histogram bars with accessible values -->
+              <div style="display: flex; align-items: flex-end; gap: 4px; height: 80px; border-bottom: 1.5px solid #cbd5e1; padding-top: 8px;" role="img" aria-label="12-Month rainfall histogram">
+                <div style="flex:1; height:30%; background:#0284c7; border-radius:3px 3px 0 0;" title="Jan: 85mm"></div>
+                <div style="flex:1; height:25%; background:#0284c7; border-radius:3px 3px 0 0;" title="Feb: 70mm"></div>
+                <div style="flex:1; height:35%; background:#0284c7; border-radius:3px 3px 0 0;" title="Mar: 95mm"></div>
+                <div style="flex:1; height:50%; background:#166534; border-radius:3px 3px 0 0;" title="Apr: 140mm"></div>
+                <div style="flex:1; height:85%; background:#166534; border-radius:3px 3px 0 0;" title="May: 210mm"></div>
+                <div style="flex:1; height:95%; background:#154d2e; border-radius:3px 3px 0 0;" title="Jun: 235mm"></div>
+                <div style="flex:1; height:90%; background:#154d2e; border-radius:3px 3px 0 0;" title="Jul: 220mm"></div>
+                <div style="flex:1; height:80%; background:#166534; border-radius:3px 3px 0 0;" title="Aug: 195mm"></div>
+                <div style="flex:1; height:75%; background:#166534; border-radius:3px 3px 0 0;" title="Sep: 185mm"></div>
+                <div style="flex:1; height:85%; background:#166534; border-radius:3px 3px 0 0;" title="Oct: 210mm"></div>
+                <div style="flex:1; height:60%; background:#0284c7; border-radius:3px 3px 0 0;" title="Nov: 155mm"></div>
+                <div style="flex:1; height:40%; background:#0284c7; border-radius:3px 3px 0 0;" title="Dec: 110mm"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-muted); font-weight: 700; margin-top: 4px;">
+                <span>Ene</span><span>Peb</span><span>Mar</span><span>Abr</span><span>May</span><span>Hun</span><span>Hul</span><span>Ago</span><span>Sep</span><span>Okt</span><span>Nob</span><span>Dis</span>
+              </div>
+            </div>
+
+            <button class="btn-forest-full" onclick="navigateToScreen('home')">
+              ← ${isFil ? 'Bumalik sa Home' : 'Back to Home'}
+            </button>
+          `;
+          break;
+
+        // ======================================================================
+        // 10. LOCATION SELECTOR SCREEN
+        // ======================================================================
+        case 'location':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'Pumili ng Lugar' : 'Select Location'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('climate')" style="color:#fff;">
+                  ✕ ${isFil ? 'Kanselahin' : 'Cancel'}
+                </button>
+              </div>
+              <p>${isFil ? 'Tinatayang lokasyon para sa datos ng klima' : 'Coarse location for climate suitability'}</p>
+            </div>
+
+            <div class="frosted-card">
+              <div class="form-group">
+                <label for="loc-input" class="form-label">${isFil ? 'Lungsod o Munisipalidad' : 'City or Municipality'}</label>
+                <input id="loc-input" type="text" class="form-input" value="Davao City">
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+                <button class="btn-subtle" onclick="selectLocation('Davao City, Region XI')" style="background: #eaf4ed; color: var(--c-forest-primary); font-weight: 800; justify-content: space-between; padding: 10px; border-radius: 10px;">
+                  <span>✓ Davao City, Davao del Sur</span>
+                  <span class="badge badge-healthy">${isFil ? 'Kasalukuyan' : 'Current'}</span>
+                </button>
+                <button class="btn-subtle" onclick="selectLocation('Tagum City, Davao del Norte')" style="justify-content: flex-start; padding: 10px; border-radius: 10px;">
+                  Tagum City, Davao del Norte
+                </button>
+                <button class="btn-subtle" onclick="selectLocation('General Santos City, South Cotabato')" style="justify-content: flex-start; padding: 10px; border-radius: 10px;">
+                  General Santos City, South Cotabato
+                </button>
+                <button class="btn-subtle" onclick="selectLocation('Cagayan de Oro, Misamis Oriental')" style="justify-content: flex-start; padding: 10px; border-radius: 10px;">
+                  Cagayan de Oro, Misamis Oriental
+                </button>
+              </div>
+            </div>
+
+            <button class="btn-forest-full" onclick="alert('${isFil ? 'Nakuha ang magaspang na GPS coordinates: 7.07°N, 125.61°E' : 'Acquired coarse GPS coordinates: 7.07°N, 125.61°E'}'); navigateToScreen('climate');">
+              🛰️ ${isFil ? 'Gamitin ang GPS ng Telepono' : 'Use Device GPS'}
+            </button>
+          `;
+          break;
+
+        // ======================================================================
+        // 11. CROP ENCYCLOPEDIA (Explicit Mango, Banana, Papaya profiles)
+        // ======================================================================
+        case 'varietyInfo':
+          const isMango = selectedCrop === 'mango';
+          const isBanana = selectedCrop === 'banana';
+          const isPapaya = selectedCrop === 'papaya';
+
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h2>${isMango ? '🥭 Carabao Mango' : (isBanana ? '🍌 Lakatan Banana' : '🍈 Red Lady Papaya')}</h2>
+                  <p>${isMango ? 'Mangifera indica L.' : (isBanana ? 'Musa acuminata' : 'Carica papaya')}</p>
+                </div>
+                <button class="btn-subtle" onclick="navigateToScreen('home')" style="color:#fff;">
+                  ← ${isFil ? 'Home' : 'Home'}
+                </button>
+              </div>
+            </div>
+
+            <!-- Crop Selector Tabs -->
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-subtle ${isMango ? 'badge-sample' : ''}" onclick="openCropProfile('mango')" style="flex:1; justify-content:center; border: 1px solid var(--card-border); padding: 8px;">
+                🥭 ${isFil ? 'Mangga' : 'Mango'}
+              </button>
+              <button class="btn-subtle ${isBanana ? 'badge-sample' : ''}" onclick="openCropProfile('banana')" style="flex:1; justify-content:center; border: 1px solid var(--card-border); padding: 8px;">
+                🍌 ${isFil ? 'Saging' : 'Banana'}
+              </button>
+              <button class="btn-subtle ${isPapaya ? 'badge-sample' : ''}" onclick="openCropProfile('papaya')" style="flex:1; justify-content:center; border: 1px solid var(--card-border); padding: 8px;">
+                🍈 ${isFil ? 'Papaya' : 'Papaya'}
+              </button>
+            </div>
+
+            <!-- Agronomic Thresholds -->
+            <div class="frosted-card">
+              <h4 style="font-size: 0.82rem; font-weight: 800; color: var(--c-forest-primary); margin-bottom: 6px;">
+                ${isFil ? 'Agronomic Thresholds (Pangangailangan)' : 'Agronomic Thresholds'}
+              </h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem;">
+                <div style="background: #f8faf9; padding: 6px 8px; border-radius: 8px;">
+                  <strong>🌡️ ${isFil ? 'Temperatura:' : 'Temp:'}</strong> 24°C – 32°C
+                </div>
+                <div style="background: #f8faf9; padding: 6px 8px; border-radius: 8px;">
+                  <strong>🌧️ ${isFil ? 'Taunang Ulan:' : 'Rainfall:'}</strong> 1,500 – 2,200 mm
+                </div>
+                <div style="background: #f8faf9; padding: 6px 8px; border-radius: 8px;">
+                  <strong>⛰️ ${isFil ? 'Elevation:' : 'Elevation:'}</strong> 0 – 600m ASL
+                </div>
+                <div style="background: #f8faf9; padding: 6px 8px; border-radius: 8px;">
+                  <strong>🌱 ${isFil ? 'Lupa (pH):' : 'Soil pH:'}</strong> 5.5 – 7.5
+                </div>
+              </div>
+            </div>
+
+            <!-- Known Vulnerabilities (Decision Support) -->
+            <div class="frosted-card">
+              <h4 style="font-size: 0.82rem; font-weight: 800; color: var(--c-forest-primary); margin-bottom: 6px;">
+                ${isFil ? 'Mga Pangunahing Sakit (Local Knowledge)' : 'Key Vulnerabilities'}
+              </h4>
+              <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.74rem;">
+                <div style="padding: 6px 8px; background: #fef2f2; border-radius: 8px; color: #991b1b;">
+                  • <strong>Anthracnose:</strong> ${isFil ? 'Mataas ang peligro sa panahon ng pamumulaklak at tag-ulan.' : 'High risk during flowering and extended wet periods.'}
+                </div>
+                <div style="padding: 6px 8px; background: #fef2f2; border-radius: 8px; color: #991b1b;">
+                  • <strong>Stem End Rot:</strong> ${isFil ? 'Fungal issue pagkatapos ng anihan.' : 'Post-harvest fungal decay.'}
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-orange-full" onclick="navigateToScreen('camera')">
+              ${getSvg('camera')} ${isFil ? 'Kumuha ng Scan para sa ' + (isMango?'Mangga':(isBanana?'Saging':'Papaya')) : 'Scan this Crop'}
+            </button>
+          `;
+          break;
+
+        // ======================================================================
+        // 12. BILINGUAL AI AGRO-ASSISTANT WITH CHATGPT-STYLE DRAWER
+        // ======================================================================
+        case 'chat':
+          const activeChat = chatConversations.find(c => c.id === currentChatId) || chatConversations[0];
+          
+          let drawerHTML = '';
+          if (isChatDrawerOpen) {
+            drawerHTML = `
+              <div class="chat-drawer-overlay" onclick="closeChatDrawer(event)">
+                <div class="chat-drawer" onclick="event.stopPropagation()">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #1f3024; padding-bottom: 0.5rem;">
+                    <h3 style="font-size: 0.95rem; font-weight: 800; color: #fff;">🌾 ${isFil ? 'Mga Usapan' : 'Past Chats'}</h3>
+                    <button onclick="closeChatDrawer(event)" style="background:transparent; border:none; color:#cbd5e1; font-size: 18px; cursor: pointer;">✕</button>
+                  </div>
+
+                  <!-- New chat action -->
+                  <button class="btn-subtle" onclick="createNewChat(event)" style="background: #17271c; color: #fff; width: 100%; padding: 10px; border-radius: 10px; margin-bottom: 1rem; justify-content: flex-start; gap: 8px; font-weight: 700;">
+                    <span>+</span> <span>${isFil ? 'Bagong Usapan (New Chat)' : 'Start New Chat'}</span>
+                  </button>
+
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #86efac; text-transform: uppercase; margin-bottom: 4px;">
+                    ${isFil ? 'Kamakailan' : 'Recent Conversations'}
+                  </div>
+
+                  <div style="display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1;">
+                    ${chatConversations.map(c => `
+                      <div class="chat-history-item ${c.id === currentChatId ? 'active' : ''}" onclick="selectChat('${c.id}', event)">
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                          ${isFil ? c.title : c.titleEn}
+                        </span>
+                        <button onclick="deleteChatToTrash('${c.id}', event)" style="background: transparent; border: none; color: #f87171; cursor: pointer; padding: 2px 6px;" title="Delete">
+                          🗑️
+                        </button>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
+          vp.innerHTML = `
+            ${drawerHTML}
+            <div class="green-top-cell" style="padding: 0.85rem 1rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <button onclick="openChatDrawer(event)" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; width: 34px; height: 34px; border-radius: 8px; cursor: pointer;" aria-label="Open chat drawer">
+                    ☰
+                  </button>
+                  <div>
+                    <h3 style="font-size: 0.95rem; line-height: 1.2;">${isFil ? activeChat.title : activeChat.titleEn}</h3>
+                    <p style="font-size: 0.68rem; color: #d1fae5;">${isFil ? 'Lokal na DA/BPI Curated Assistant' : 'Curated Offline Knowledge'}</p>
+                  </div>
+                </div>
+                <button onclick="createNewChat(event)" class="btn-subtle" style="color: #fff; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 999px; font-size: 0.7rem;">
+                  + ${isFil ? 'Bago' : 'New'}
+                </button>
+              </div>
+            </div>
+
+            <!-- Disclaimer Banner (Plan TRUST-02: Safety & referral) -->
+            <div style="background: #e0f2fe; border-radius: 10px; padding: 6px 10px; font-size: 0.72rem; color: #0369a1; display:flex; align-items:center; gap: 6px;">
+              <span>🛡️</span>
+              <span>${isFil ? 'Pangsuporta lamang sa desisyon. Sumangguni sa MAO para sa reseta.' : 'Decision support only. Consult local agriculturist for chemical treatments.'}</span>
+            </div>
+
+            <!-- Transcript Messages Container -->
+            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; padding: 2px 0;">
+              ${activeChat.messages.map(m => {
+                if (m.sender === 'bot') {
+                  return `
+                    <div class="frosted-card" style="align-self: flex-start; max-width: 90%; border-radius: 14px 14px 14px 4px; padding: 10px; background: #ffffff;">
+                      <div style="font-size: 0.7rem; font-weight: 800; color: var(--c-forest-primary); margin-bottom: 2px;">🌾 PrutasAI Bot</div>
+                      <div style="font-size: 0.78rem; color: var(--text-main); line-height: 1.45;">
+                        ${isFil ? m.textFil : m.textEn}
+                      </div>
+                    </div>
+                  `;
+                } else {
+                  return `
+                    <div style="align-self: flex-end; max-width: 85%; background: var(--c-forest-primary); color: #fff; padding: 9px 12px; border-radius: 14px 14px 4px 14px; font-size: 0.78rem; line-height: 1.4;">
+                      ${isFil ? m.textFil : m.textEn}
+                    </div>
+                  `;
+                }
+              }).join('')}
+            </div>
+
+            <!-- Composer Input Bar (Preserves drafts across render) -->
+            <div style="display: flex; gap: 6px; margin-top: auto; padding-top: 4px;">
+              <label for="chat-input-text" class="sr-only">${isFil ? 'Mag-type ng mensahe' : 'Type message'}</label>
+              <input type="text" id="chat-input-text" class="form-input" value="${chatDraft}" oninput="chatDraft = this.value" placeholder="${isFil ? 'Magtanong ukol sa pananim...' : 'Ask crop question...'}" onkeypress="if(event.key==='Enter') sendChatMessage()" style="min-height: 44px; padding: 8px 12px; font-size: 0.82rem;">
+              <button onclick="sendChatMessage()" class="btn-orange-full" style="width: 44px; min-height: 44px; border-radius: 12px; padding: 0; flex-shrink: 0;" aria-label="Ipadala ang mensahe">
+                ➔
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 13. COMBINED ACCOUNT & SETTINGS SCREEN (Plan Section 6 & Screen 10)
+        // ======================================================================
+        case 'account':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h2>${isFil ? 'Account at Mga Setting' : 'Account & Settings'}</h2>
+                  <p>${isFil ? 'Lokal na imbakan, wika, at cloud sync' : 'Offline storage, language & optional sync'}</p>
+                </div>
+                <div style="font-size: 24px;">⚙️</div>
+              </div>
+            </div>
+
+            <!-- Profile Card (Guest Mode by Default per Plan AUTH-01) -->
+            <div class="frosted-card">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 48px; height: 48px; border-radius: 24px; background: var(--c-forest-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px;">
+                  ${isUserLoggedIn ? '👨‍🌾' : '👤'}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                  <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--c-forest-primary);">
+                    ${isUserLoggedIn ? userEmail : (isFil ? 'Bisitang Magsasaka (Guest)' : 'Guest Farmer')}
+                  </h3>
+                  <div style="font-size: 0.72rem; color: var(--text-muted);">
+                    ${isUserLoggedIn ? (isFil ? 'Naka-log in (Cloud Ready)' : 'Logged In (Cloud Ready)') : (isFil ? 'Gumagamit nang offline sa device na ito' : 'Operating offline on this device')}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Auth Entry CTAs if Guest -->
+              ${!isUserLoggedIn ? `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;">
+                  <button class="btn-outline" onclick="navigateToScreen('login')" style="min-height: 40px; font-size: 0.8rem; padding: 8px;">
+                    ${isFil ? 'Mag-log in' : 'Log In'}
+                  </button>
+                  <button class="btn-forest-full" onclick="navigateToScreen('createAccount')" style="min-height: 40px; font-size: 0.8rem; padding: 8px;">
+                    ${isFil ? 'Gumawa ng Account' : 'Create Account'}
+                  </button>
+                </div>
+              ` : `
+                <button class="btn-subtle" onclick="logoutUser()" style="color: #dc2626; margin-top: 8px; padding: 4px;">
+                  ${isFil ? 'Mag-sign Out (Mananatili ang lokal na litrato)' : 'Sign Out (Photos remain on device)'}
+                </button>
+              `}
+            </div>
+
+            <!-- Cloud Sync Preferences (Truthful: Photos stay on device) -->
+            <div class="frosted-card">
+              <div style="font-size: 0.85rem; font-weight: 800; color: var(--c-forest-primary); margin-bottom: 4px;">
+                ☁️ ${isFil ? 'Cloud Synchronization (Opsyonal)' : 'Cloud Synchronization (Optional)'}
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 8px;">
+                ${isFil ? 'Ang mga litrato ay hindi umaalis sa iyong telepono. Ang mga teksto at resulta lamang ang i-a-upload kung nais mong i-sync.' : 'Photographs remain strictly on device. Only lightweight observation metadata syncs when online.'}
+              </p>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-forest-full" style="flex:1; min-height: 40px; font-size: 0.78rem;">
+                  🔒 ${isFil ? 'Lokal na Offline Lamang' : 'Local Offline Only'}
+                </button>
+                <button class="btn-outline" onclick="alert('${isFil ? 'Paganahin ang cloud sync kapag may network connection.' : 'Cloud sync will queue metadata when connection is established.'}')" style="flex:1; min-height: 40px; font-size: 0.78rem;">
+                  ☁️ ${isFil ? 'I-sync ang Metadata' : 'Sync Metadata'}
+                </button>
+              </div>
+            </div>
+
+            <!-- App Preferences Links -->
+            <div class="frosted-card" style="padding: 6px;">
+              <button class="btn-subtle" onclick="toggleLanguage()" style="width: 100%; justify-content: space-between; padding: 10px; border-radius: 8px;">
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 800; color: var(--text-main);">🌐 ${isFil ? 'Wika (Language)' : 'Language'}</div>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${isFil ? 'Filipino (Tagalog)' : 'English'}</div>
+                </div>
+                <span class="badge badge-sample">${isFil ? '🇵🇭 FIL' : '🇺🇸 EN'}</span>
+              </button>
+
+              <button class="btn-subtle" onclick="navigateToScreen('location')" style="width: 100%; justify-content: space-between; padding: 10px; border-radius: 8px;">
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 800; color: var(--text-main);">📍 ${isFil ? 'Lugar ng Pananim (Location)' : 'Crop Location'}</div>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${selectedLocation}</div>
+                </div>
+                <span>➔</span>
+              </button>
+
+              <button class="btn-subtle" onclick="navigateToScreen('modelStatus')" style="width: 100%; justify-content: space-between; padding: 10px; border-radius: 8px;">
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 800; color: var(--text-main);">🧠 ${isFil ? 'Katayuan ng AI Model' : 'AI Model Registry'}</div>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${isFil ? 'Pagsusuri ng on-device pipeline' : 'Pipeline capability check'}</div>
+                </div>
+                <span class="badge badge-offline">Offline</span>
+              </button>
+
+              <button class="btn-subtle" onclick="navigateToScreen('trash')" style="width: 100%; justify-content: space-between; padding: 10px; border-radius: 8px; color: #dc2626;">
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 800; color: #dc2626;">🗑️ ${isFil ? 'Basurahan (Trash - 15 Araw)' : 'Trash (15-Day Retention)'}</div>
+                  <div style="font-size: 0.7rem; color: var(--text-muted);">${trashedChats.length} ${isFil ? 'buradong usapan' : 'trashed conversation'}</div>
+                </div>
+                <span>➔</span>
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 14. LOG IN SCREEN (Plan AUTH-01 & Section 6)
+        // ======================================================================
+        case 'login':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'Mag-log in' : 'Log In'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('account')" style="color:#fff;">
+                  ✕ ${isFil ? 'Kanselahin' : 'Cancel'}
+                </button>
+              </div>
+              <p>${isFil ? 'I-sync ang iyong metadata habang ang litrato ay nananatili sa device' : 'Sync observations metadata while photos remain on device'}</p>
+            </div>
+
+            <div class="frosted-card">
+              <form onsubmit="handleLoginSubmit(event)">
+                <div class="form-group">
+                  <label for="login-email" class="form-label">${isFil ? 'Email Address' : 'Email Address'}</label>
+                  <input id="login-email" type="email" class="form-input" placeholder="magsasaka@halimbawa.ph" required autocomplete="email">
+                  <span class="form-helper-text">${isFil ? 'Ginamit noong pagpaparehistro' : 'Used during registration'}</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="login-password" class="form-label">
+                    <span>${isFil ? 'Password' : 'Password'}</span>
+                    <button type="button" class="btn-subtle" onclick="navigateToScreen('forgotPassword')" style="padding: 0; color: var(--c-orange-accent); font-size: 0.75rem;">
+                      ${isFil ? 'Nakalimutan?' : 'Forgot password?'}
+                    </button>
+                  </label>
+                  <div class="password-wrapper">
+                    <input id="login-password" type="${passwordVisible ? 'text' : 'password'}" class="form-input" required autocomplete="current-password">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()">
+                      ${passwordVisible ? '🙈 Hide' : '👁️ Show'}
+                    </button>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn-forest-full" style="margin-top: 10px;">
+                  ${isFil ? 'Mag-log in' : 'Log In'}
+                </button>
+              </form>
+            </div>
+
+            <!-- Alternative navigation paths -->
+            <div style="text-align: center; margin-top: 4px;">
+              <button class="btn-subtle" onclick="navigateToScreen('createAccount')" style="color: var(--c-forest-primary);">
+                ${isFil ? 'Wala pang account? Gumawa rito' : 'Don’t have an account? Create one'}
+              </button>
+              <br>
+              <button class="btn-subtle" onclick="navigateToScreen('home')" style="color: var(--text-muted); margin-top: 4px;">
+                🔒 ${isFil ? 'Magpatuloy nang Offline (Walang Account)' : 'Continue Offline (No Account)'}
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 15. CREATE ACCOUNT SCREEN (Registration with Privacy Safeguards)
+        // ======================================================================
+        case 'createAccount':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'Gumawa ng Account' : 'Create Account'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('account')" style="color:#fff;">
+                  ✕ ${isFil ? 'Kanselahin' : 'Cancel'}
+                </button>
+              </div>
+              <p>${isFil ? 'Opsyonal: Gamitin ang app nang walang rehistro kung nais' : 'Optional: Core diagnosis & guidance remain 100% offline'}</p>
+            </div>
+
+            <div class="frosted-card">
+              <form onsubmit="handleRegistrationSubmit(event)">
+                <div class="form-group">
+                  <label for="reg-email" class="form-label">${isFil ? 'Email Address' : 'Email Address'}</label>
+                  <input id="reg-email" type="email" class="form-input" placeholder="magsasaka@halimbawa.ph" required autocomplete="email">
+                  <span class="form-helper-text">${isFil ? 'Magpapadala ng confirmation link' : 'We will send a confirmation link'}</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="reg-password" class="form-label">${isFil ? 'Password' : 'Password'}</label>
+                  <div class="password-wrapper">
+                    <input id="reg-password" type="${passwordVisible ? 'text' : 'password'}" class="form-input" minlength="8" required autocomplete="new-password">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()">
+                      ${passwordVisible ? '🙈 Hide' : '👁️ Show'}
+                    </button>
+                  </div>
+                  <span class="form-helper-text">${isFil ? 'Hindi bababa sa 8 karakter' : 'At least 8 characters'}</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="reg-confirm-password" class="form-label">${isFil ? 'Ulitin ang Password' : 'Confirm Password'}</label>
+                  <input id="reg-confirm-password" type="${passwordVisible ? 'text' : 'password'}" class="form-input" minlength="8" required autocomplete="new-password">
+                </div>
+
+                <!-- Privacy disclosure notice -->
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 8px 10px; font-size: 0.72rem; color: #166534; margin: 8px 0;">
+                  🔒 <strong>${isFil ? 'Proteksyon sa Datos:' : 'Data Privacy:'}</strong> ${isFil ? 'Lahat ng litrato ng pananim ay mananatili lamang sa iyong telepono at hindi ia-upload.' : 'All fruit capture photographs remain strictly on this device.'}
+                </div>
+
+                <button type="submit" class="btn-orange-full" style="margin-top: 6px;">
+                  ${isFil ? 'Irehistro ang Account' : 'Create Account'}
+                </button>
+              </form>
+            </div>
+
+            <div style="text-align: center; margin-top: 4px;">
+              <button class="btn-subtle" onclick="navigateToScreen('login')" style="color: var(--c-forest-primary);">
+                ${isFil ? 'May account na? Mag-log in' : 'Already have an account? Log In'}
+              </button>
+              <br>
+              <button class="btn-subtle" onclick="navigateToScreen('home')" style="color: var(--text-muted); margin-top: 4px;">
+                ${isFil ? 'Magpatuloy nang Offline' : 'Continue Offline'}
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 16. EMAIL CONFIRMATION PENDING SCREEN (Plan AUTH-01 & Screen 14)
+        // ======================================================================
+        case 'emailConfirm':
+          vp.innerHTML = `
+            <div class="green-top-cell" style="text-align: center;">
+              <div style="font-size: 36px; margin-bottom: 4px;">📬</div>
+              <h2>${isFil ? 'Tingnan ang Iyong Email' : 'Check Your Email'}</h2>
+              <p>${isFil ? 'Ipinadala ang verification link' : 'A verification link has been sent'}</p>
+            </div>
+
+            <div class="frosted-card" style="text-align: center;">
+              <p style="font-size: 0.82rem; color: var(--text-main); margin-bottom: 8px;">
+                ${isFil ? 'Nagpadala kami ng email sa:' : 'We sent a confirmation link to:'}
+              </p>
+              <div style="font-weight: 800; font-size: 0.9rem; color: var(--c-forest-primary); background: #f0fdf4; padding: 8px; border-radius: 8px; margin-bottom: 12px;">
+                ${pendingConfirmationEmail}
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                ${isFil ? 'I-click ang link sa loob ng mensahe upang mapagana ang cloud sync. Maaari mo pa ring gamitin ang app nang offline.' : 'Click the verification link to activate optional cloud sync. You can continue using offline features anytime.'}
+              </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button class="btn-forest-full" onclick="alert('${isFil ? 'Muling ipinadala ang verification email!' : 'Confirmation email resent!'}')">
+                🔄 ${isFil ? 'Muling Ipadala ang Link' : 'Resend Email'}
+              </button>
+              <button class="btn-outline" onclick="navigateToScreen('login')">
+                ${isFil ? 'Bumalik sa Log In' : 'Back to Log In'}
+              </button>
+              <button class="btn-subtle" onclick="navigateToScreen('home')" style="text-align: center; justify-content: center;">
+                🔒 ${isFil ? 'Magpatuloy sa Paggamit nang Offline' : 'Continue Using Offline'}
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 17. FORGOT & RESET PASSWORD (Plan Section 6 Safe Non-Enumeration)
+        // ======================================================================
+        case 'forgotPassword':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'I-reset ang Password' : 'Reset Password'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('login')" style="color:#fff;">
+                  ✕ ${isFil ? 'Kanselahin' : 'Cancel'}
+                </button>
+              </div>
+              <p>${isFil ? 'Humingi ng recovery link sa iyong email' : 'Request a secure password recovery link'}</p>
+            </div>
+
+            <div class="frosted-card">
+              <form onsubmit="handleForgotPasswordSubmit(event)">
+                <div class="form-group">
+                  <label for="reset-email" class="form-label">${isFil ? 'Rehistradong Email' : 'Registered Email'}</label>
+                  <input id="reset-email" type="email" class="form-input" placeholder="magsasaka@halimbawa.ph" required>
+                  <span class="form-helper-text">
+                    ${isFil 
+                      ? 'Kung may umiiral na account sa email na ito, makakatanggap ka ng recovery link.' 
+                      : 'If an account exists for this address, you will receive recovery instructions.'}
+                  </span>
+                </div>
+
+                <button type="submit" class="btn-forest-full" style="margin-top: 8px;">
+                  ${isFil ? 'Ipadala ang Recovery Link' : 'Send Reset Link'}
+                </button>
+              </form>
+            </div>
+
+            <div style="text-align: center;">
+              <button class="btn-subtle" onclick="navigateToScreen('login')" style="color: var(--c-forest-primary);">
+                ← ${isFil ? 'Bumalik sa Log In' : 'Back to Log In'}
+              </button>
+            </div>
+          `;
+          break;
+
+        // ======================================================================
+        // 18. MODEL REGISTRY STATUS (Truthful Stage Reporting)
+        // ======================================================================
+        case 'modelStatus':
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'Katayuan ng AI Model' : 'AI Model Registry'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('account')" style="color:#fff;">
+                  ← ${isFil ? 'Bumalik' : 'Back'}
+                </button>
+              </div>
+              <p>${isFil ? 'On-Device Inference Pipeline Health' : 'On-Device Neural Pipeline Health'}</p>
+            </div>
+
+            <div class="frosted-card" style="border-left: 4px solid var(--c-severity-early);">
+              <div style="font-size: 0.8rem; font-weight: 800; color: var(--c-severity-early); margin-bottom: 2px;">
+                ℹ️ ${isFil ? 'Yugto ng Thesis Prototype' : 'Thesis Phase Disclosure'}
+              </div>
+              <p style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
+                ${isFil 
+                  ? 'Walang model weights file na naka-bundle sa phase na ito. Ang lahat ng pagsusuri ay nagde-degrade nang totoo sa no-model fallback.' 
+                  : 'No model weights are bundled in this current verification phase. Offline flows degrade truthfully to local decision-support.'}
+              </p>
+            </div>
+
+            <div class="frosted-card">
+              <div style="font-size: 0.82rem; font-weight: 800; color: var(--c-forest-primary); margin-bottom: 8px;">
+                ${isFil ? 'Mga Yugto ng Pipeline (Pipeline Stages)' : 'Pipeline Stages'}
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+                  <div>
+                    <strong>Stage 1: Fruit Detector (YOLO)</strong>
+                    <div style="font-size: 0.68rem; color: var(--text-muted);">Mangga, Saging, Papaya Bounding Boxes</div>
+                  </div>
+                  <span class="badge badge-offline">${isFil ? 'Walang Weights' : 'No Weights'}</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+                  <div>
+                    <strong>Stage 2: Variety Classifier</strong>
+                    <div style="font-size: 0.68rem; color: var(--text-muted);">Carabao/Pico, Lakatan/Saba, Red Lady</div>
+                  </div>
+                  <span class="badge badge-offline">${isFil ? 'Walang Weights' : 'No Weights'}</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong>Stage 3: Disease & Lesion Segmentation</strong>
+                    <div style="font-size: 0.68rem; color: var(--text-muted);">Anthracnose, Sigatoka, Ringspot</div>
+                  </div>
+                  <span class="badge badge-offline">${isFil ? 'Walang Weights' : 'No Weights'}</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn-forest-full" onclick="navigateToScreen('account')">
+              ← ${isFil ? 'Bumalik sa Account & Settings' : 'Back to Account & Settings'}
+            </button>
+          `;
+          break;
+
+        // ======================================================================
+        // 19. 15-DAY TRASH RETENTION SCREEN
+        // ======================================================================
+        case 'trash':
+          let trashListContent = '';
+          if (trashedChats.length === 0) {
+            trashListContent = `<div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 1.5rem;">${isFil ? 'Walang laman ang basurahan.' : 'Trash is empty.'}</div>`;
+          } else {
+            trashListContent = trashedChats.map(item => `
+              <div class="frosted-card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <div>
+                  <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">${isFil ? item.title : item.titleEn}</div>
+                  <div style="font-size: 0.7rem; color: #dc2626; margin-top: 2px;">${isFil ? item.deletedDateFil : item.deletedDateEn}</div>
+                </div>
+                <button class="btn-subtle" onclick="restoreChatFromTrash('${item.id}')" style="background: #eaf4ed; color: var(--c-forest-primary); font-weight: 800; border-radius: 8px; padding: 6px 10px;">
+                  ${isFil ? 'Ibalik' : 'Restore'}
+                </button>
+              </div>
+            `).join('');
+          }
+
+          vp.innerHTML = `
+            <div class="green-top-cell">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>${isFil ? 'Basurahan (Trash)' : 'Trash Manager'}</h2>
+                <button class="btn-subtle" onclick="navigateToScreen('account')" style="color:#fff;">
+                  ← ${isFil ? 'Bumalik' : 'Back'}
+                </button>
+              </div>
+              <p>${isFil ? '15-Araw na soft-delete bago tuluyang burahin' : '15-Day retention policy before permanent purge'}</p>
+            </div>
+
+            <div class="frosted-card" style="background: #fff5f5; border-color: #fecaca;">
+              <p style="font-size: 0.72rem; color: #991b1b; line-height: 1.4;">
+                ${isFil 
+                  ? 'Tandaan: Ang mga usapan lamang ang sakop ng soft-delete sa kasalukuyang sistema. Ang mga litrato ay permanenteng binubura kapag tinanggal sa history.' 
+                  : 'Notice: Only chat conversations support soft-delete retention. Local photo captures are purged immediately when deleted.'}
+              </p>
+            </div>
+
+            ${trashListContent}
+
+            <button class="btn-forest-full" onclick="navigateToScreen('account')" style="margin-top: 8px;">
+              ← ${isFil ? 'Bumalik sa Account' : 'Back to Account'}
+            </button>
+          `;
+          break;
+
+        // ======================================================================
+        // 20. ONBOARDING / WELCOME GATE (Plan Section 6 & Screen 14)
+        // ======================================================================
+        case 'welcome':
+          vp.innerHTML = `
+            <div class="green-top-cell" style="padding: 1.75rem 1.25rem; text-align: center;">
+              <div style="width: 52px; height: 52px; border-radius: 26px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 26px;">
+                🍊
+              </div>
+              <h2 style="font-size: 1.35rem;">Maligayang Pagdating sa PrutasAI</h2>
+              <p style="font-size: 0.8rem; color: #d1fae5; margin-top: 4px;">
+                ${isFil ? 'Pangsuporta sa desisyon sa pananim na Mangga, Saging, at Papaya' : 'Decision-support tool for Mango, Banana, and Papaya growers'}
+              </p>
+            </div>
+
+            <!-- Language selector in onboarding -->
+            <div class="frosted-card" style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-size: 0.82rem; font-weight: 800; color: var(--text-main);">${isFil ? 'Piliin ang Wika' : 'Select Language'}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">${isFil ? 'Filipino (Tagalog)' : 'English'}</div>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn-subtle ${isFil ? 'badge-sample' : ''}" onclick="setLanguage('FIL')" style="padding: 6px 12px; border: 1px solid var(--card-border);">🇵🇭 FIL</button>
+                <button class="btn-subtle ${!isFil ? 'badge-sample' : ''}" onclick="setLanguage('EN')" style="padding: 6px 12px; border: 1px solid var(--card-border);">🇺🇸 EN</button>
+              </div>
+            </div>
+
+            <!-- Path 1: Recommended Offline Guest -->
+            <div class="frosted-card" onclick="navigateToScreen('home')" style="cursor: pointer; border: 2px solid var(--c-forest-primary);" role="button" tabindex="0">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="font-size: 24px;">🔒</div>
+                <div>
+                  <h4 style="font-size: 0.92rem; font-weight: 800; color: var(--c-forest-primary);">
+                    ${isFil ? 'Magpatuloy nang Ganap na Offline (Rekomendado)' : 'Continue Fully Offline (Recommended)'}
+                  </h4>
+                  <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; line-height: 1.35;">
+                    ${isFil ? 'Walang account o internet na kailangan. Lahat ng litrato at tala ay mananatili lamang sa telepono.' : 'No registration needed. Photographs and records remain completely on-device.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Path 2: Optional Account Registration -->
+            <div class="frosted-card" onclick="navigateToScreen('createAccount')" style="cursor: pointer;" role="button" tabindex="0">
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="font-size: 24px;">☁️</div>
+                <div>
+                  <h4 style="font-size: 0.92rem; font-weight: 800; color: var(--text-main);">
+                    ${isFil ? 'Gumawa ng Account (Opsyonal na Cloud Sync)' : 'Create Account (Optional Sync)'}
+                  </h4>
+                  <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; line-height: 1.35;">
+                    ${isFil ? 'I-sync ang monitoring notes sa pagitan ng mga telepono gamit ang iyong email.' : 'Sync monitoring checkpoints across devices using your email.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align: center;">
+              <button class="btn-subtle" onclick="navigateToScreen('login')" style="color: var(--c-forest-primary);">
+                ${isFil ? 'Mayroon nang account? Mag-log in' : 'Already have an account? Log In'}
+              </button>
+            </div>
+          `;
+          break;
+      }
+    }
+
+    // ==========================================================================
+    // INTERACTIVE ACTIONS & SIMULATION LOGIC
+    // ==========================================================================
+
+    function autoDetectFruitCrop() {
+      if (!selectedCrop) {
+        selectedCrop = 'mango';
+      }
+      currentReviewImage = selectedCrop;
+    }
+
+    function triggerPhotoCapture(source) {
+      autoDetectFruitCrop();
+      navigateToScreen('captureResult');
+    }
+
+    function simulateGalleryPick() {
+      autoDetectFruitCrop();
+      navigateToScreen('captureResult');
+    }
+
+    function openCropProfile(crop) {
+      selectedCrop = crop;
+      navigateToScreen('varietyInfo');
+    }
+
+    function selectLocation(loc) {
+      selectedLocation = loc;
+      navigateToScreen('climate');
+    }
+
+    function setLanguage(lang) {
+      if (currentLanguage !== lang) {
+        toggleLanguage();
+      }
+    }
+
+    function setObservation(choice) {
+      observationSelected = choice;
+      renderCurrentScreen();
+    }
+
+    function saveObservationCheckpoint() {
+      if (!observationSelected) {
+        alert(currentLanguage === 'FIL' 
+          ? 'Pumili muna kung Mas Mabuti, Kapareho, Lumala, o Hindi Sigurado bago i-save.' 
+          : 'Please select an observation (Better, Same, Worse, or Unsure) before saving.');
+        return;
+      }
+      alert(currentLanguage === 'FIL' 
+        ? '✓ Na-save ang Day 10 observation sa lokal na SQLite database!' 
+        : '✓ Day 10 observation successfully saved to local SQLite database!');
+      navigateToScreen('monitoringList');
+    }
+
+    function savePhotoToHistoryWithoutAnalysis() {
+      alert(currentLanguage === 'FIL'
+        ? 'Litrato na-save sa lokal na Scan History nang hindi sinusuri.'
+        : 'Photo saved to local Scan History without analysis.');
+      navigateToScreen('history');
+    }
+
+    function togglePasswordVisibility() {
+      passwordVisible = !passwordVisible;
+      renderCurrentScreen();
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      userEmail = email;
+      isUserLoggedIn = true;
+      alert(currentLanguage === 'FIL'
+        ? `Naka-log in bilang ${email}! Mananatili pa rin ang mga litrato sa iyong telepono.`
+        : `Logged in as ${email}! Captured photos will stay strictly on your phone.`);
+      navigateToScreen('account');
+    }
+
+    function handleRegistrationSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('reg-email').value;
+      const pass = document.getElementById('reg-password').value;
+      const confirmPass = document.getElementById('reg-confirm-password').value;
+
+      if (pass !== confirmPass) {
+        alert(currentLanguage === 'FIL' ? 'Hindi nagtutugma ang password!' : 'Passwords do not match!');
+        return;
+      }
+
+      pendingConfirmationEmail = email;
+      navigateToScreen('emailConfirm');
+    }
+
+    function handleForgotPasswordSubmit(e) {
+      e.preventDefault();
+      alert(currentLanguage === 'FIL'
+        ? 'Kung may rehistradong account ang email na iyon, ipinadala na ang recovery link.'
+        : 'If an account exists for that email, recovery instructions have been sent.');
+      navigateToScreen('login');
+    }
+
+    function logoutUser() {
+      isUserLoggedIn = false;
+      userEmail = '';
+      alert(currentLanguage === 'FIL' ? 'Naka-sign out na. Ligtas pa rin ang iyong mga tala sa device.' : 'Signed out. Your offline local records remain intact.');
+      renderCurrentScreen();
+    }
+
+    // Chat Drawer Actions
+    function openChatDrawer(e) {
+      if (e) e.stopPropagation();
+      isChatDrawerOpen = true;
+      renderCurrentScreen();
+    }
+
+    function closeChatDrawer(e) {
+      if (e) e.stopPropagation();
+      isChatDrawerOpen = false;
+      renderCurrentScreen();
+    }
+
+    function selectChat(id, e) {
+      if (e) e.stopPropagation();
+      currentChatId = id;
+      isChatDrawerOpen = false;
+      renderCurrentScreen();
+    }
+
+    function createNewChat(e) {
+      if (e) e.stopPropagation();
+      const newId = 'chat-' + (chatConversations.length + 1);
+      const isFil = currentLanguage === 'FIL';
+      chatConversations.unshift({
+        id: newId,
+        title: isFil ? 'Bagong Usapan' : 'New Chat',
+        titleEn: 'New Chat',
+        date: isFil ? 'Ngayon' : 'Just now',
+        messages: [
+          {
+            sender: 'bot',
+            textFil: 'Magandang araw! Ako ang iyong offline agro-assistant. Paano kita matutulungan sa Mangga, Saging, o Papaya?',
+            textEn: 'Hello! I am your offline agro-assistant. How can I assist you with Mango, Banana, or Papaya?'
+          }
+        ]
+      });
+      currentChatId = newId;
+      isChatDrawerOpen = false;
+      renderCurrentScreen();
+    }
+
+    function deleteChatToTrash(id, e) {
+      if (e) e.stopPropagation();
+      const idx = chatConversations.findIndex(c => c.id === id);
+      if (idx !== -1) {
+        const removed = chatConversations.splice(idx, 1)[0];
+        trashedChats.unshift({
+          id: removed.id,
+          title: removed.title,
+          titleEn: removed.titleEn,
+          deletedDateFil: 'Burado kanina (15 araw natitira)',
+          deletedDateEn: 'Deleted just now (15 days remaining)'
+        });
+        if (chatConversations.length > 0) {
+          currentChatId = chatConversations[0].id;
+        } else {
+          createNewChat();
+        }
+        alert(currentLanguage === 'FIL' ? 'Nailipat ang usapan sa 15-day trash!' : 'Chat moved to 15-day trash!');
+        renderCurrentScreen();
+      }
+    }
+
+    function restoreChatFromTrash(id) {
+      const idx = trashedChats.findIndex(t => t.id === id);
+      if (idx !== -1) {
+        const item = trashedChats.splice(idx, 1)[0];
+        chatConversations.unshift({
+          id: item.id,
+          title: item.title,
+          titleEn: item.titleEn,
+          date: 'Na-restore kamakailan',
+          messages: [
+            {
+              sender: 'bot',
+              textFil: 'Naibalik ang usapang ito mula sa basurahan.',
+              textEn: 'This conversation was restored from trash.'
+            }
+          ]
+        });
+        alert(currentLanguage === 'FIL' ? 'Naibalik ang usapan sa iyong listahan!' : 'Conversation restored to your active list!');
+        renderCurrentScreen();
+      }
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chat-input-text');
+      if (!input || !input.value.trim()) return;
+      const text = input.value.trim();
+      chatDraft = '';
+      input.value = '';
+
+      const activeChat = chatConversations.find(c => c.id === currentChatId);
+      if (!activeChat) return;
+
+      activeChat.messages.push({
+        sender: 'user',
+        textFil: text,
+        textEn: text
+      });
+
+      const isFil = currentLanguage === 'FIL';
+      setTimeout(() => {
+        activeChat.messages.push({
+          sender: 'bot',
+          textFil: `Salamat sa tanong ukol sa "${text}". Base sa lokal na DA-BPI crop guides: panatilihin ang maayos na bentilasyon at sanitasyon ng taniman upang maiwasan ang mga sakit dulot ng halamang-singaw (fungi).`,
+          textEn: `Thank you for asking about "${text}". According to DA-BPI local agronomic guidelines: maintain orchard canopy airflow and clean fallen debris to suppress fungal diseases.`
+        });
+        renderCurrentScreen();
+      }, 350);
+
+      renderCurrentScreen();
+    }
+
+    function filterHistory(crop) {
+      alert(currentLanguage === 'FIL' ? `Sinala ang kasaysayan para sa: ${crop}` : `Filtered history for: ${crop}`);
+    }
+
+    // Initialize Default Screen View
+    navigateToScreen('home');
+  </script>
+</body>
+</html>

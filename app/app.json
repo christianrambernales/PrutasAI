@@ -36,6 +36,7 @@
       ],
       "expo-sqlite",
       "expo-secure-store"
-    ]
+    ],
+    "scheme": "prutasai"
   }
 }

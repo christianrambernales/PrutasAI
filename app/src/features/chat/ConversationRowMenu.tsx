@@ -21,7 +21,7 @@ export function ConversationRowMenu({ currentTitle, onRename, onDelete }: Conver
         value={draft}
         onChangeText={setDraft}
         autoFocus
-        onSubmitEditing={() => { onRename(draft.trim() || currentTitle); setRenaming(false); }}
+        onSubmitEditing={() => { onRename(draft); setRenaming(false); }}
         onBlur={() => setRenaming(false)}
       />
     );
@@ -38,7 +38,7 @@ export function ConversationRowMenu({ currentTitle, onRename, onDelete }: Conver
             <AppText variant="sm">{t.rename}</AppText>
           </PressableRow>
           <PressableRow onPress={() => { setOpen(false); onDelete(); }}>
-            <AppText variant="sm" color={COLORS.error}>{t.delete}</AppText>
+            <AppText variant="sm" color={COLORS.error}>{t.chatMoveToTrash}</AppText>
           </PressableRow>
         </View>
       ) : null}

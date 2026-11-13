@@ -11,7 +11,7 @@ import renderer, { act, ReactTestRenderer } from 'react-test-renderer';
 import { AppNavigator } from '../../navigation/AppNavigator';
 import type { SqlDriver } from '../../core/db/driver';
 import { resetAppDatabase, seedConsent, seedLanguagePicked, seedSyncMode } from '../../testing/appDatabase';
-import { press, typeInto } from '../../testing/interaction';
+import { press, textInputs, typeInto } from '../../testing/interaction';
 // jest.mock is hoisted above this, so it binds the mock rather than the module.
 import { drainConversations } from '../../core/sync/drainConversations';
 
@@ -42,6 +42,19 @@ jest.mock('../../core/auth/session', () => ({
 
 const drainConversationsMock = drainConversations as jest.Mock;
 let db: SqlDriver;
+let renderedTrees: ReactTestRenderer[] = [];
+
+afterEach(async () => {
+  for (const tree of renderedTrees) {
+    act(() => {
+      tree.unmount();
+    });
+  }
+  renderedTrees = [];
+  await act(async () => {
+    await Promise.resolve();
+  });
+});
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -56,13 +69,16 @@ async function render(): Promise<ReactTestRenderer> {
   await act(async () => {
     tree = renderer.create(<AppNavigator />);
   });
+  renderedTrees.push(tree);
   return tree;
 }
 
-/** Settings → Account → press "Sign in". The mocked signIn always succeeds. */
 async function signInFromSettings(tree: ReactTestRenderer): Promise<void> {
-  press(tree, 'Settings');
   press(tree, 'Account');
+  press(tree, 'Sign in');
+  typeInto(tree, 'magsasaka', 'alice@example.com');
+  const pwdField = textInputs(tree).find(n => n.props.accessibilityLabel === 'Password');
+  act(() => { pwdField?.props.onChangeText('secret123'); });
   await act(async () => { press(tree, 'Sign in'); });
 }
 
@@ -74,9 +90,9 @@ test('a message sent by a signed-in user is drained to the server', async () => 
   // *sending* drains, so only calls after this point count.
   const before = drainConversationsMock.mock.calls.length;
 
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
   act(() => {
-    typeInto(tree, 'Ask about a fruit, a disease or your location…', 'Anong mga uri ng saging?');
+    typeInto(tree, 'Ask about', 'Anong mga uri ng saging?');
   });
   await act(async () => { press(tree, 'Send'); });
   await act(async () => { await Promise.resolve(); });

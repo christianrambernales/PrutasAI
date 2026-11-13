@@ -55,7 +55,7 @@ describe('Settings Repository', () => {
     const loaded = loadSettings(db);
     expect(loaded).toEqual({
       language: 'FIL',
-      savedLocation: location,
+      savedLocation: { label: 'Davao City', latitude: 7.19, longitude: 125.46 },
       useLocation: true,
       aiAssistant: true,
     });
@@ -75,14 +75,15 @@ describe('Settings Repository', () => {
     saveSetting(db, 'app_ai_assistant', true);
 
     expect(getSetting(db, 'app_language')).toBe('FIL');
-    expect(getSetting(db, 'app_saved_location')).toBe(JSON.stringify(location));
+    const normalized = { label: 'Baguio City', latitude: 16.4, longitude: 120.6 };
+    expect(getSetting(db, 'app_saved_location')).toBe(JSON.stringify(normalized));
     expect(getSetting(db, 'app_use_location')).toBe('false');
     expect(getSetting(db, 'app_ai_assistant')).toBe('true');
 
     const loaded = loadSettings(db);
     expect(loaded).toEqual({
       language: 'FIL',
-      savedLocation: location,
+      savedLocation: normalized,
       useLocation: false,
       aiAssistant: true,
     });
@@ -102,7 +103,9 @@ describe('Settings Repository', () => {
     saveSetting(db, 'aiAssistant', false);
 
     expect(getSetting(db, SETTING_KEYS.language)).toBe('EN');
-    expect(getSetting(db, SETTING_KEYS.savedLocation)).toBe(JSON.stringify(location));
+    expect(getSetting(db, SETTING_KEYS.savedLocation)).toBe(JSON.stringify({
+      label: 'Cebu City', latitude: 10.32, longitude: 123.89,
+    }));
     expect(getSetting(db, SETTING_KEYS.useLocation)).toBe('true');
     expect(getSetting(db, SETTING_KEYS.aiAssistant)).toBe('false');
   });
@@ -115,5 +118,20 @@ describe('Settings Repository', () => {
     const loaded = loadSettings(db);
     expect(loaded.language).toBe('EN');
     expect(loaded.savedLocation).toBeUndefined();
+  });
+
+  test('restored legacy locations are reduced to a coarse label and two decimals', () => {
+    const db = freshDb();
+    setSetting(db, SETTING_KEYS.savedLocation, JSON.stringify({
+      label: 'Bacoor, Cavite, 4102, Building 7',
+      latitude: 14.45896,
+      longitude: 120.93851,
+    }));
+
+    expect(loadSettings(db).savedLocation).toEqual({
+      label: 'Bacoor, Cavite',
+      latitude: 14.46,
+      longitude: 120.94,
+    });
   });
 });

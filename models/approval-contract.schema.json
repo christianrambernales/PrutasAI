@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://prutasai.invalid/schemas/model-approval-contract.schema.json",
+  "title": "PrutasAI owner-approved model contract registry",
+  "description": "A future owner-submitted contract for actual approved model artifacts. The checked-in registry remains empty until real files and their owner-reviewed tensor contracts are supplied.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "approvals"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "approvals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/approval" }
+    }
+  },
+  "$defs": {
+    "fruit": {
+      "type": "string",
+      "enum": ["banana", "mango", "papaya"]
+    },
+    "role": {
+      "type": "string",
+      "enum": ["fruit_detector", "variety_banana", "variety_mango", "variety_papaya", "disease_detector"]
+    },
+    "tensor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "shape", "dtype"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "shape": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "anyOf": [
+              { "type": "integer", "minimum": 1 },
+              { "const": -1, "description": "Dynamic dimension reported by the actual model tensor contract." }
+            ]
+          }
+        },
+        "dtype": {
+          "type": "string",
+          "enum": ["bfloat16", "bool", "complex128", "complex64", "float16", "float32", "float64", "int4", "int8", "int16", "int32", "int64", "string", "uint4", "uint8", "uint16", "uint32", "uint64"]
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "file", "version", "sha256", "fruits", "min_confidence", "status", "approved_by", "approved_at", "inputs", "outputs", "label_mapping", "signatures"],
+      "properties": {
+        "id": { "$ref": "#/$defs/role" },
+        "file": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.tflite$",
+          "not": { "pattern": "\\.\\." }
+        },
+        "version": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[A-Fa-f0-9]{64}$" },
+        "fruits": { "type": "array", "items": { "$ref": "#/$defs/fruit" }, "minItems": 1, "uniqueItems": true },
+        "min_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "status": { "const": "owner_approved" },
+        "approved_by": { "type": "string", "minLength": 1 },
+        "approved_at": { "type": "string", "format": "date-time" },
+        "inputs": { "type": "array", "items": { "$ref": "#/$defs/tensor" }, "minItems": 1 },
+        "outputs": { "type": "array", "items": { "$ref": "#/$defs/tensor" }, "minItems": 1 },
+        "signatures": { "type": "array", "items": { "$ref": "#/$defs/signature" } },
+        "label_mapping": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["output_name", "index_to_label"],
+          "properties": {
+            "output_name": { "type": "string", "minLength": 1 },
+            "index_to_label": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true }
+          }
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "id": { "const": "variety_banana" } } }, "then": { "properties": { "fruits": { "const": ["banana"] } } } },
+        { "if": { "properties": { "id": { "const": "variety_mango" } } }, "then": { "properties": { "fruits": { "const": ["mango"] } } } },
+        { "if": { "properties": { "id": { "const": "variety_papaya" } } }, "then": { "properties": { "fruits": { "const": ["papaya"] } } } }
+      ]
+    },
+    "signatureBindings": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9._:/@+-]{0,255}$" },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[A-Za-z_][A-Za-z0-9._:/@+-]{0,255}$"
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "inputs", "outputs"],
+      "properties": {
+        "key": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9._:/@+-]{0,255}$" },
+        "inputs": { "$ref": "#/$defs/signatureBindings" },
+        "outputs": { "$ref": "#/$defs/signatureBindings" }
+      }
+    }
+  }
+}

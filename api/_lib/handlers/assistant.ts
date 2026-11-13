@@ -9,7 +9,8 @@
 import type { RateLimitBinding } from '../limits.js';
 import { checkLimits, RETRY_AFTER_SECONDS } from '../limits.js';
 import type { ApiResult, RequestContext } from '../http.js';
-import { GENERAL_INSTRUCTION, REPHRASE_INSTRUCTION } from '../instructions.js';
+import { GENERAL_INSTRUCTION, REPHRASE_INSTRUCTION, RESTRICTED_INSTRUCTION } from '../instructions.js';
+import { classifyAssistantPolicy, isClearCropCareQuestion, validateAssistantReply } from '../validate.js';
 
 export type AskResult = { ok: true; data: unknown } | { ok: false; status: number };
 export type Turn = { role: 'user' | 'model'; text: string };
@@ -32,12 +33,29 @@ interface AssistantBody {
   facts?: string[];
   curated?: string;
   history?: unknown;
+  language?: unknown;
 }
 
 /** How many prior turns ride along, matching the app's own history window. */
 const HISTORY_WINDOW = 10;
 /** Per-turn ceiling. Well above any real chat turn, far below a quota-burning one. */
 const MAX_TURN_TEXT = 4000;
+
+function safeAwarenessFallback(question: string, language: unknown): string {
+  const filipino = language === 'FIL';
+  const visibleFruitRisk = /\b(?:harvest(?:ed)?|picked|naani|ani)\b/i.test(question)
+    && /\b(?:mold\w*|mould\w*|amag|rot|rott\w*|bulok)\b/i.test(question);
+  if (filipino) {
+    const base = 'Maaaring maraming sanhi ang nakikitang sintomas at hindi nito natutukoy ang sakit. Ilarawan ito sa lokal na agriculturista o agricultural extension worker.';
+    return visibleFruitRisk
+      ? `${base} Huwag kainin o ibenta ang naaning prutas na may nakikitang amag o bulok; humingi ng payo sa lokal na eksperto.`
+      : base;
+  }
+  const base = 'Visible plant symptoms can have several causes and cannot confirm a disease. Describe what you see to a local agriculturist or agricultural extension worker.';
+  return visibleFruitRisk
+    ? `${base} Do not eat or sell harvested fruit with visible mold or rot; seek local expert advice.`
+    : base;
+}
 
 /**
  * Turns an untrusted `history` into turns worth forwarding.
@@ -75,9 +93,16 @@ export async function handleAssistant(
   // Anything that is not exactly 'general' is treated as a rephrase, which is
   // the guarded tier. An unrecognised mode must not open the unguarded one.
   const general = body.mode === 'general';
-  const instruction = general ? GENERAL_INSTRUCTION : REPHRASE_INSTRUCTION;
+  const question = typeof body.question === 'string' ? body.question : '';
+  const policy = general ? classifyAssistantPolicy(question) : null;
+  if (general && policy === 'general' && !isClearCropCareQuestion(question)) {
+    return { status: 200, body: { on_topic: false, text: '', policy: 'general', warning: false } };
+  }
+  const instruction = general
+    ? policy === 'restricted' ? RESTRICTED_INSTRUCTION : GENERAL_INSTRUCTION
+    : REPHRASE_INSTRUCTION;
   const payload = general
-    ? { question: body.question ?? '', context: body.context ?? '' }
+    ? { question, context: typeof body.context === 'string' ? body.context : '' }
     : { verdict: body.verdict ?? null, facts: body.facts ?? [], curated_wording: body.curated ?? '' };
 
   // History is a general-tier concept only: rephrase explains one scan's
@@ -99,5 +124,20 @@ export async function handleAssistant(
     return { status: 502, body: { error: 'upstream error' } };
   }
 
-  return { status: 200, body: result.data };
+  if (!general || policy === null) return { status: 200, body: result.data };
+
+  const validated = validateAssistantReply(result.data, policy);
+  if (policy === 'restricted' || (!validated.ok && validated.error === 'general reply contains restricted content')) {
+    return {
+      status: 200,
+      body: {
+        on_topic: true,
+        text: safeAwarenessFallback(question, body.language),
+        policy: 'restricted',
+        warning: true,
+      },
+    };
+  }
+  if (validated.ok) return { status: 200, body: validated.value };
+  return { status: 502, body: { error: 'invalid assistant response' } };
 }

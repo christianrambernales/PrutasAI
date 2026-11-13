@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, { act, type ReactTestRenderer } from 'react-test-renderer';
 import { ConversationSidebar, isEdgeSwipe, opensSidebar, useEdgeSwipe } from '../ConversationSidebar';
-import { press } from '../../../testing/interaction';
+import { findPressable, press, pressables, textOf } from '../../../testing/interaction';
 
 const CONVERSATIONS = [
   { uuid: 'c1', title: 'Banana care', createdAt: '2026-08-30T00:00:00.000Z', updatedAt: '2026-08-30T00:00:00.000Z', deletedAt: null },
@@ -42,6 +42,27 @@ test('the new-conversation row calls onNew and closes', () => {
   press(tree, 'New conversation');
   expect(onNew).toHaveBeenCalledTimes(1);
   expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test('the empty sidebar names Conversations and still offers a new conversation', () => {
+  const { tree } = render({ conversations: [] });
+  const text = textOf(tree.root);
+  expect(text).toContain('Conversations');
+  expect(text).toContain('No saved conversations yet');
+  expect(text).toContain('Start a new conversation when you are ready.');
+  expect(text).toContain('Start New Chat');
+  expect(findPressable(tree, 'New conversation')).toBeTruthy();
+});
+
+test('direct trash button on each row calls onDelete with uuid immediately', () => {
+  const onDelete = jest.fn();
+  const { tree } = render({ onDelete });
+  const trashButtons = pressables(tree).filter(n => n.props.accessibilityLabel === 'Move to Trash');
+  expect(trashButtons).toHaveLength(2);
+  act(() => {
+    trashButtons[0].props.onPress();
+  });
+  expect(onDelete).toHaveBeenCalledWith('c1');
 });
 
 test('when not visible, nothing is rendered', () => {

@@ -1,5 +1,7 @@
 import { drainScans } from '../drain';
-import { insertScan, pendingScans } from '../../db/repositories/scans';
+import {
+  countScans, insertScan, listScanGroups, markSynced, pendingScans, softDeleteScan
+} from '../../db/repositories/scans';
 import { freshDb, sampleScan } from '../../db/testing/scanFixtures';
 
 function okFetch() {
@@ -19,16 +21,31 @@ test('a pending scan is posted and then marked synced', async () => {
   expect(pendingScans(db)).toEqual([]);
 });
 
-test('the photo is never sent', async () => {
+test('the photo byte array is never sent, and image_uri is omitted to preserve privacy', async () => {
   const db = freshDb();
-  insertScan(db, sampleScan({ uuid: 'a1', imageUri: 'file:///private/photo.jpg' }));
-  const fetchImpl = okFetch();
+  insertScan(db, sampleScan({ uuid: 'c1', imageUri: 'file:///private/photo.jpg' }));
 
-  await drainScans({ db, baseUrl: 'https://x.test/api', deviceId: 'dev-1', accessToken: 'tok-1', fetchImpl });
+  const fetchImpl = jest.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response());
+  await drainScans({ db, baseUrl: 'https://test', deviceId: 'dev1', accessToken: 't', fetchImpl });
 
-  const body = JSON.parse((fetchImpl.mock.calls[0][1] as RequestInit).body as string);
+  const init = fetchImpl.mock.calls[0][1] as RequestInit;
+  const body = JSON.parse(init.body as string);
   expect(body).not.toHaveProperty('image_uri');
-  expect(JSON.stringify(body)).not.toContain('photo.jpg');
+  expect(body).not.toHaveProperty('image_bytes');
+});
+
+test('image_uri is omitted and deleted_at is sent for trashed scans', async () => {
+  const db = freshDb();
+  insertScan(db, sampleScan({ uuid: 'c1', imageUri: 'file:///private/photo.jpg' }));
+  softDeleteScan(db, 'c1', '2026-08-30T10:00:00.000Z');
+
+  const fetchImpl = jest.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response());
+  await drainScans({ db, baseUrl: 'https://test', deviceId: 'dev1', accessToken: 't', fetchImpl });
+
+  const init = fetchImpl.mock.calls[0][1] as RequestInit;
+  const body = JSON.parse(init.body as string);
+  expect(body).not.toHaveProperty('image_uri');
+  expect(body).toHaveProperty('deleted_at', '2026-08-30T10:00:00.000Z');
 });
 
 test('a scan with a location sends both lat and lon', async () => {
@@ -81,7 +98,7 @@ test('a 5xx leaves the scan pending so nothing is silently lost', async () => {
   expect(pendingScans(db).map(s => s.uuid)).toEqual(['a1']);
 });
 
-test('a 400 marks the scan synced, because retrying a rejected shape forever is a stuck queue', async () => {
+test('a permanent 400 moves the scan to needs attention without blocking later rows', async () => {
   const db = freshDb();
   insertScan(db, sampleScan({ uuid: 'a1' }));
   const fetchImpl = jest.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => (
@@ -90,8 +107,10 @@ test('a 400 marks the scan synced, because retrying a rejected shape forever is 
 
   const report = await drainScans({ db, baseUrl: 'https://x.test/api', deviceId: 'dev-1', accessToken: 'tok-1', fetchImpl });
 
-  expect(report.failed).toBe(0);
+  expect(report.failed).toBe(1);
   expect(pendingScans(db)).toEqual([]);
+  expect(db.get<{ sync_status: string; sync_error_code: string }>('SELECT sync_status, sync_error_code FROM scan WHERE uuid = ?', ['a1']))
+    .toEqual({ sync_status: 'needs_attention', sync_error_code: 'http_400' });
 });
 
 test('a 429 stops the drain rather than burning through the whole backlog', async () => {

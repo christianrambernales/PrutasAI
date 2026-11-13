@@ -3,12 +3,14 @@ import type { AppAction, AppState } from '../state/appState';
 import type { describeDetectionCapability } from '../core/status';
 import type { pipelineDepth, resolveModels } from '../core/ml/registry';
 import type { SqlDriver } from '../core/db/driver';
+import type { LocalAccountScope } from '../core/db/repositories/scans';
 import type { ConversationSummary } from '../core/db/repositories/conversations';
 import type { useChat } from '../features/chat/useChat';
 import type { AccountSync } from '../features/account/useAccountSync';
 import type { ClimateViews } from '../features/climate/useClimateViews';
 import type { ConversationsUi } from '../features/chat/useConversationsUi';
 import type { HistoryFilters } from '../features/history/useHistoryFilters';
+import type { useMonitoringList } from '../features/monitoring/useMonitoringList';
 import type {
   FruitSummary, ScanGroup, ScanSummary, Source, VarietySummary,
 } from '../features/viewModels';
@@ -43,14 +45,17 @@ export interface Shell {
     setOpenVariety: Dispatch<SetStateAction<string | null>>;
     openCheckpoint: number | null;
     setOpenCheckpoint: Dispatch<SetStateAction<number | null>>;
+    setBackIntercept: (intercept: (() => boolean) | null) => void;
   };
   /** What is stored or installed on this device, plus the invalidator for it. */
   data: {
     db: SqlDriver;
+    accountScope: LocalAccountScope;
     fruits: FruitSummary[];
     varietiesByFruit: Record<string, VarietySummary[]>;
     strainsByFruit: Record<string, VarietySummary[]>;
     sourcesByFruit: Record<string, Source[]>;
+    diseasesByFruit: Record<string, import('../features/viewModels').DiseaseSummary[]>;
     scanGroups: ScanGroup[];
     allScans: ScanSummary[];
     trashedConversations: ConversationSummary[];
@@ -67,6 +72,7 @@ export interface Shell {
   dispatchApp: (action: AppAction) => void;
   climate: ClimateViews;
   history: HistoryFilters;
+  monitoringList: ReturnType<typeof useMonitoringList>;
   account: AccountSync;
   chat: ReturnType<typeof useChat>;
   conversations: ConversationsUi;

@@ -55,5 +55,9 @@ export function openDatabase(name = DEFAULT_NAME): SqlDriver {
     get<T>(sql: string, params: unknown[] = []): T | undefined {
       return db.getFirstSync<T>(sql, params as SQLite.SQLiteBindValue[]) ?? undefined;
     },
+    transaction(fn: () => void): void {
+      db.withTransactionSync(fn);
+    },
+
   };
 }

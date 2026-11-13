@@ -1,8 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { AppText } from './primitives';
-import { COLORS, SPACING } from '../tokens';
+import { AppText, Card, COLORS, Icon, SPACING } from '../../ui';
 import { useT } from '../i18n/LanguageContext';
 
 interface Props {
@@ -53,20 +52,23 @@ function ErrorFallback({ detail }: { detail: string }) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: SPACING.xl,
-        backgroundColor: COLORS.surface,
+        backgroundColor: COLORS.background,
       }}
     >
-      <AppText variant="lg" color={COLORS.error} center>
-        {t.unexpectedErrorTitle}
-      </AppText>
-      <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
-        {t.startupFailedBody}
-      </AppText>
-      {/* The raw message. Unreadable to a grower, but it is the difference
-          between a bug report that can be acted on and "it went white". */}
-      <AppText variant="xs" color={COLORS.textLight} center style={{ marginTop: SPACING.lg }}>
-        {detail}
-      </AppText>
+      <Card style={{ padding: SPACING.xl, gap: SPACING.md, alignItems: 'center', maxWidth: 395, width: '100%' }}>
+        <Icon name="warning" size={32} color={COLORS.error} />
+        <AppText variant="lg" color={COLORS.error} center accessibilityRole="header">
+          {t.unexpectedErrorTitle}
+        </AppText>
+        <AppText variant="sm" color={COLORS.textSecondary} center style={{ marginTop: SPACING.sm }}>
+          {t.startupFailedBody}
+        </AppText>
+        {/* The raw message. Unreadable to a grower, but it is the difference
+            between a bug report that can be acted on and "it went white". */}
+        <AppText variant="xs" color={COLORS.textLight} center style={{ marginTop: SPACING.lg }}>
+          {detail}
+        </AppText>
+      </Card>
     </View>
   );
 }

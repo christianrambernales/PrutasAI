@@ -13,7 +13,7 @@ import { AppNavigator } from '../../navigation/AppNavigator';
 import {
   resetAppDatabase, seedConsent, seedLanguagePicked, seedStoredScans, seedSyncMode,
 } from '../../testing/appDatabase';
-import { press, textOf } from '../../testing/interaction';
+import { press, textOf, typeInto } from '../../testing/interaction';
 import { strings } from '../../ui/i18n/strings';
 
 beforeEach(() => {
@@ -23,12 +23,25 @@ beforeEach(() => {
   seedSyncMode();
 });
 
-function render(): ReactTestRenderer {
-  let tree!: ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<AppNavigator />);
+let currentTree: ReactTestRenderer | null = null;
+
+afterEach(async () => {
+  if (currentTree) {
+    act(() => {
+      currentTree?.unmount();
+    });
+    currentTree = null;
+  }
+  await act(async () => {
+    await Promise.resolve();
   });
-  return tree;
+});
+
+function render(): ReactTestRenderer {
+  act(() => {
+    currentTree = renderer.create(<AppNavigator />);
+  });
+  return currentTree!;
 }
 
 function screenText(tree: ReactTestRenderer): string {
@@ -36,9 +49,9 @@ function screenText(tree: ReactTestRenderer): string {
 }
 
 function switchToFilipino(tree: ReactTestRenderer) {
-  press(tree, 'Settings');
-  press(tree, 'FIL');
-  press(tree, 'Go back');
+  press(tree, 'Account');
+  press(tree, 'Language, English');
+  press(tree, 'Home');
 }
 
 test('the dictionaries cover exactly the same keys', () => {
@@ -58,7 +71,25 @@ test('no Filipino string was left as its English original', () => {
 
   // A handful are legitimately identical — loanwords a Filipino farmer uses in
   // English anyway, where a coined Tagalog term would read as stilted.
-  expect(untranslated.sort()).toEqual(['emailLabel', 'knowledgeBase', 'passwordLabel', 'tabHome', 'titleScan']);
+  expect(untranslated.sort()).toEqual([
+    'assistantBotName',
+    'brandName',
+    'emailAddressLabel',
+    'emailLabel',
+    'englishLanguageName',
+    'filipinoLanguageName',
+    'fruitPapaya',
+    'knowledgeBase',
+    'languageFilipino',
+    'passwordLabel',
+    'pipelineStage1Title',
+    'pipelineStage2Sub',
+    'pipelineStage2Title',
+    'pipelineStage3Sub',
+    'pipelineStage3Title',
+    'tabHome',
+    'titleScan',
+  ]);
 });
 
 test('switching to Filipino changes the home screen', () => {
@@ -69,62 +100,68 @@ test('switching to Filipino changes the home screen', () => {
   const after = screenText(tree);
 
   expect(after).not.toBe(before);
-  expect(after).toContain('Buksan ang kamera');
-  expect(after).not.toContain('Open camera');
+  expect(after).toContain('Magandang araw!');
+  expect(after).toContain('Kumuha (Camera)');
+  expect(after).not.toContain('Take or Choose Photo');
 });
 
 test('switching to Filipino changes the bottom navigation', () => {
   const tree = render();
-  expect(screenText(tree)).toContain('Climate');
+  expect(screenText(tree)).toContain('Assistant');
 
   switchToFilipino(tree);
-  expect(screenText(tree)).toContain('Panahon');
+  expect(screenText(tree)).toContain('Katuwang');
 });
 
 test('the language survives navigating to another tab', () => {
   const tree = render();
   switchToFilipino(tree);
 
-  press(tree, 'Panahon');
-  expect(screenText(tree)).toContain('Walang nakatakdang lokasyon');
+  press(tree, 'Katuwang');
+  expect(screenText(tree)).toContain('Katuwang sa Pananim');
 });
 
-test('the home language chip reports the active language', () => {
+test('the account language control reports the active language', () => {
   const tree = render();
-  expect(screenText(tree)).toContain('EN');
+  press(tree, 'Account');
+  expect(screenText(tree)).toContain('English');
 
+  press(tree, 'Language, English');
+  expect(screenText(tree)).toContain('Filipino');
+  press(tree, 'Home');
+});
+
+test('changing language toggles the app copy end to end', () => {
+  const tree = render();
   switchToFilipino(tree);
-  expect(screenText(tree)).toContain('FIL');
-});
+  expect(screenText(tree)).toContain('Magandang araw!');
 
-test('the chip toggles the language on its own', () => {
-  const tree = render();
-  press(tree, 'Change language');
-  expect(screenText(tree)).toContain('Buksan ang kamera');
-
-  press(tree, 'Palitan ang wika');
-  expect(screenText(tree)).toContain('Open camera');
+  press(tree, strings('FIL').tabAccount);
+  press(tree, `${strings('FIL').languageLabel}, ${strings('FIL').filipinoLanguageName}`);
+  press(tree, 'Home');
+  expect(screenText(tree)).toContain('Take or Choose Photo');
 });
 
 test('a translated history filter still selects the same scans', () => {
   seedStoredScans();
   const tree = render();
   switchToFilipino(tree);
-  press(tree, 'Kasaysayan');
-  expect(screenText(tree)).toContain('Banana · Lakatan');
+  press(tree, strings('FIL').prototypeViewHistory);
+  expect(screenText(tree)).toContain('Saging · Lakatan');
 
   // The label is Filipino; the key behind it is still "Diseased", so it selects
   // the same scans it would in English — here, none of them.
   press(tree, 'May sakit');
-  expect(screenText(tree)).not.toContain('Banana · Lakatan');
+  expect(screenText(tree)).not.toContain('Saging · Lakatan');
 });
 
 test('the assistant answers in Filipino once the language is switched', () => {
   const tree = render();
   switchToFilipino(tree);
-  press(tree, 'Usapan');
+  press(tree, strings('FIL').tabAssistant);
 
-  press(tree, 'Anong mga uri ng saging?');
+  typeInto(tree, strings('FIL').askPlaceholder, 'Anong mga uri ng saging?');
+  press(tree, strings('FIL').send);
   const content = screenText(tree);
   expect(content).toContain('Lakatan');
   expect(content).toContain('kayang tukuyin ng modelo');

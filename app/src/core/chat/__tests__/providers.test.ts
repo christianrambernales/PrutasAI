@@ -21,26 +21,26 @@ const ANSWER: GroundedAnswer = {
 
 // --- the guard --------------------------------------------------------------
 
-test('a faithful rewording passes', () => {
+test('a semantic paraphrase is rejected even when it sounds faithful', () => {
   const out = guardRephrasing(
     { text: 'Banana is potentially suitable for Los Baños.', verdict_echo: 'potentially_suitable' },
     ANSWER,
   );
-  expect(out).toBe('Banana is potentially suitable for Los Baños.');
+  expect(out).toEqual({ status: 'rejected', reason: 'protected_content_changed' });
 });
 
-test('a rewording that reuses the supplied numbers passes', () => {
+test('reusing supplied numbers does not permit other wording changes', () => {
   const out = guardRephrasing(
     { text: 'Rainfall is 2,930 mm against an optimal 1,800–2,600 mm.', verdict_echo: 'potentially_suitable' },
     ANSWER,
   );
-  expect(out).not.toBeNull();
+  expect(out).toEqual({ status: 'rejected', reason: 'protected_content_changed' });
 });
 
 test('a changed verdict is discarded', () => {
   expect(
     guardRephrasing({ text: 'Banana grows well here.', verdict_echo: 'suitable' }, ANSWER),
-  ).toBeNull();
+  ).toEqual({ status: 'rejected', reason: 'verdict_changed' });
 });
 
 test('a number that was never supplied is discarded', () => {
@@ -49,7 +49,7 @@ test('a number that was never supplied is discarded', () => {
       { text: 'Rainfall is 4,100 mm, well above optimal.', verdict_echo: 'potentially_suitable' },
       ANSWER,
     ),
-  ).toBeNull();
+  ).toEqual({ status: 'rejected', reason: 'protected_content_changed' });
 });
 
 test('an invented dosage is discarded', () => {
@@ -58,29 +58,31 @@ test('an invented dosage is discarded', () => {
       { text: 'Spray 25 ml per litre every 14 days.', verdict_echo: 'potentially_suitable' },
       ANSWER,
     ),
-  ).toBeNull();
+  ).toEqual({ status: 'rejected', reason: 'protected_content_changed' });
 });
 
 test('an empty rewording is discarded', () => {
-  expect(guardRephrasing({ text: '   ', verdict_echo: 'potentially_suitable' }, ANSWER)).toBeNull();
+  expect(guardRephrasing({ text: '   ', verdict_echo: 'potentially_suitable' }, ANSWER))
+    .toEqual({ status: 'rejected', reason: 'malformed_response' });
 });
 
 test('a missing verdict echo is discarded when a verdict was computed', () => {
-  expect(guardRephrasing({ text: 'Looks fine.', verdict_echo: null }, ANSWER)).toBeNull();
+  expect(guardRephrasing({ text: 'Looks fine.', verdict_echo: null }, ANSWER))
+    .toEqual({ status: 'rejected', reason: 'verdict_changed' });
 });
 
 test('an answer with no verdict needs no echo', () => {
   const noVerdict: GroundedAnswer = { ...ANSWER, verdict: null };
   expect(
     guardRephrasing({ text: 'The knowledge base has no rows for that.', verdict_echo: null }, noVerdict),
-  ).not.toBeNull();
+  ).toEqual({ status: 'rejected', reason: 'protected_content_changed' });
 });
 
 // --- template provider ------------------------------------------------------
 
 test('the template provider is always available and returns the curated text', async () => {
   expect(templateProvider.isAvailable()).toBe(true);
-  await expect(templateProvider.rephrase(ANSWER)).resolves.toBe(ANSWER.text);
+  await expect(templateProvider.rephrase(ANSWER)).resolves.toEqual({ status: 'accepted', text: ANSWER.text });
 });
 
 test('the template provider is not remote, so the general tier never routes to it', () => {
@@ -88,8 +90,9 @@ test('the template provider is not remote, so the general tier never routes to i
 });
 
 test('the template provider answers no open question rather than inventing one', async () => {
-  const answer = await templateProvider.answerGeneral('How do I control anthracnose?', 'ctx');
+  const answer = await templateProvider.answerGeneral('How do I control anthracnose?', 'ctx', { policy: 'restricted', language: 'EN' });
   expect(answer.text).toBe('');
   expect(answer.onTopic).toBe(false);
   expect(answer.errorKind).toBe('unconfigured');
+  expect(answer.policy).toBe('general');
 });

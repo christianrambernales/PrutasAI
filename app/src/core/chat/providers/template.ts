@@ -10,7 +10,7 @@ export const templateProvider: ChatProvider = {
   id: 'template',
   remote: false,
   isAvailable: () => true,
-  rephrase: async (answer: GroundedAnswer) => answer.text,
+  rephrase: async (answer: GroundedAnswer) => ({ status: 'accepted', text: answer.text }),
 
   /**
    * There is no model here, so there is nothing to answer an open question
@@ -23,5 +23,7 @@ export const templateProvider: ChatProvider = {
     text: '',
     error: 'The assistant is switched off.',
     errorKind: 'unconfigured',
+    policy: 'general',
+    warning: false,
   }),
 };

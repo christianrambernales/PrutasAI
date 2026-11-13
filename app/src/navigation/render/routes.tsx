@@ -1,28 +1,42 @@
 import React from 'react';
-import { AppBar } from '../../ui';
 import { CONTENT_VERSION } from '../../core/db/appDatabase';
 import { findScan } from '../../core/db/repositories/scans';
 import { restoreConversation } from '../../core/db/repositories/conversations';
 import { deleteConversationEverywhere } from '../../core/sync/purgeTrash';
 import { AccountScreen } from '../../features/account/AccountScreen';
+import { EmailConfirmationScreen } from '../../features/account/EmailConfirmationScreen';
+import { ForgotPasswordScreen } from '../../features/account/ForgotPasswordScreen';
+import { LoginScreen } from '../../features/account/LoginScreen';
 import { SignUpScreen } from '../../features/account/SignUpScreen';
+import { ResetPasswordScreen } from '../../features/account/ResetPasswordScreen';
 import { relativeTime } from '../../features/climate/useClimate';
 import { LocationPickerScreen } from '../../features/location/LocationPickerScreen';
 import { ModelStatusScreen } from '../../features/modelStatus/ModelStatusScreen';
 import { MonitoringScreen } from '../../features/monitoring/MonitoringScreen';
+import type { MonitoringController } from '../../features/monitoring/useMonitoring';
 import { CaptureResultScreen } from '../../features/result/CaptureResultScreen';
+import { ResultScreen } from '../../features/result/ResultScreen';
 import { SettingsScreen } from '../../features/settings/SettingsScreen';
 import { TrashScreen } from '../../features/trash/TrashScreen';
 import { VarietyInfoScreen } from '../../features/varietyInfo/VarietyInfoScreen';
 import type { FruitSummary } from '../../features/viewModels';
-import * as preview from '../../preview/previewContent';
+import type { Language } from '../../ui/i18n/strings';
 import type { Route } from '../navState';
 import type { Shell } from '../shell';
+import { ClimateBody, HistoryBody } from './localScreens';
 
 type Strings = Shell['t'];
 
-export function routeTitle(route: Route, t: Strings, fruits: FruitSummary[]): string {
+export function routeTitle(route: Route, t: Strings, fruits: FruitSummary[], language: Language = 'EN'): string {
   switch (route.name) {
+    case 'history':
+      return t.tabHistory;
+    case 'climate':
+      return t.tabClimate;
+    case 'login':
+      return t.signIn;
+    case 'forgotPassword':
+      return t.forgotPassword;
     case 'capture':
       return t.titleCapture;
     case 'captureResult':
@@ -30,8 +44,10 @@ export function routeTitle(route: Route, t: Strings, fruits: FruitSummary[]): st
     case 'result':
       return t.titleResult;
     // Titled from the route so opening Banana does not read "Mango".
-    case 'varietyInfo':
-      return fruits.find(f => f.key === route.fruitKey)?.nameEn ?? 'Fruit';
+    case 'varietyInfo': {
+      const fruit = fruits.find(f => f.key === route.fruitKey);
+      return fruit ? (language === 'FIL' ? fruit.nameFil : fruit.nameEn) : t.unknownFruit;
+    }
     case 'monitoring':
       return t.titleMonitoring;
     case 'settings':
@@ -44,111 +60,112 @@ export function routeTitle(route: Route, t: Strings, fruits: FruitSummary[]): st
       return t.titleAccount;
     case 'signup':
       return t.titleSignUp;
+    case 'resetPassword':
+      return t.titleResetPassword;
     case 'trash':
       return t.titleTrash;
   }
 }
 
-export function RouteBar({ shell, route: r }: { shell: Shell; route: Route }) {
-  const { t } = shell;
-  const { back, notify } = shell.nav;
-  const { fruits, statuses, readyCount } = shell.data;
-
-  if (r.name === 'modelStatus') {
-    return (
-      <AppBar
-        title={routeTitle(r, t, fruits)}
-        onBack={back}
-        action="refresh"
-        actionLabel={t.rereadRegistry}
-        onAction={() =>
-          notify(
-            `Registry re-read · ${readyCount} of ${statuses.length} models installed.`,
-          )
-        }
-      />
-    );
-  }
-  return <AppBar title={routeTitle(r, t, fruits)} onBack={back} />;
+export function RouteBar(_props: { shell: Shell; route: Route }) {
+  return null;
 }
 
-export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
+export function RouteBody({ shell, route: r, monitoring }: { shell: Shell; route: Route; monitoring?: MonitoringController }) {
   const { t, app, dispatchApp, climate, account } = shell;
   const {
     push, replace, back, notify, selectTab,
     openVariety, setOpenVariety, openCheckpoint, setOpenCheckpoint,
   } = shell.nav;
   const {
-    db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, allScans,
-    trashedConversations, statuses, capability, depth, readyCount, aiAvailable, bumpData,
+    db, fruits, varietiesByFruit, strainsByFruit, sourcesByFruit, diseasesByFruit, allScans,
+    trashedConversations, statuses, capability, depth, readyCount, aiAvailable, bumpData, accountScope,
   } = shell.data;
 
   switch (r.name) {
+    case 'history':
+      return <HistoryBody shell={shell} />;
+    case 'climate':
+      return <ClimateBody shell={shell} />;
     case 'captureResult':
       return (
         <CaptureResultScreen
           photoUri={r.photoUri}
-          capabilityHeadline={capability.headline}
-          capabilityDetail={capability.detail}
-          depth={depth}
-          onOpenModelStatus={() => push({ name: 'modelStatus' })}
-          onScanAgain={() => replace({ name: 'capture' })}
+          view={r.view}
+          onRetake={() => replace({ name: 'capture' })}
+          onBrowseKnowledge={() => push({ name: 'varietyInfo', fruitKey: 'mango' })}
+          onBrowseGuidance={() => selectTab('home')}
+          onStartMonitoring={() => selectTab('monitoring')}
+          onOpenDemoResult={() => push({ name: 'result', scanId: 'demo-sample' })}
+          onReviewPhoto={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: r.photoUri, view: 'photo' })}
+          onBackToSummary={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: r.photoUri, view: 'summary' })}
         />
       );
     case 'result': {
-      // A stored scan holds a photo, a time and whatever the pipeline
-      // recorded — which today is nothing, because no weights are installed.
-      // So reopening one shows the same honest state a fresh capture shows.
-      // It must never fall back to the design preview: that is how a
-      // fabricated diagnosis reached a screen once already.
-      const stored = findScan(db, r.scanId);
+      const record = r.scanId === 'demo-sample' ? null : findScan(db, r.scanId, accountScope);
+      if (r.scanId === 'demo-sample' || !record) {
+        return (
+          <ResultScreen
+            onStartMonitoring={() => selectTab('monitoring')}
+            onAskAssistant={() => selectTab('chat')}
+          />
+        );
+      }
       return (
         <CaptureResultScreen
-          photoUri={stored?.imageUri ?? ''}
-          capabilityHeadline={capability.headline}
-          capabilityDetail={capability.detail}
-          depth={depth}
-          record={
-            stored
-              ? { title: stored.title, detail: stored.detail, timeLabel: stored.timeLabel }
-              : {
-                  title: 'Scan not found',
-                  detail: 'This scan is no longer stored on this device.',
-                  timeLabel: '',
-                }
+          photoUri={record.imageUri ?? ''}
+          record={{ title: record.title, detail: record.detail, timeLabel: record.timeLabel }}
+          onRetake={() => replace({ name: 'capture' })}
+          onBrowseKnowledge={() =>
+            push({ name: 'varietyInfo', fruitKey: record.fruitKey ?? 'mango' })
           }
-          onOpenModelStatus={() => push({ name: 'modelStatus' })}
-          onScanAgain={() => replace({ name: 'capture' })}
+          onBrowseGuidance={() => {
+            if (record.fruitKey) {
+              push({ name: 'varietyInfo', fruitKey: record.fruitKey });
+            } else {
+              selectTab('home');
+            }
+          }}
+          onStartMonitoring={() => selectTab('monitoring')}
+          onOpenDemoResult={() => push({ name: 'result', scanId: 'demo-sample' })}
+          onReviewPhoto={() => replace({ name: 'captureResult', scanId: r.scanId, photoUri: record.imageUri ?? '', view: 'photo' })}
+          onBackToSummary={() => back()}
         />
       );
     }
     case 'varietyInfo': {
-      const fruit = fruits.find(f => f.key === r.fruitKey) ?? fruits[0];
+      const fruit = fruits.find(f => f.key === r.fruitKey) ?? null;
       return (
         <VarietyInfoScreen
           fruit={fruit}
-          modelVarieties={varietiesByFruit[fruit.key] ?? []}
-          informationOnly={strainsByFruit[fruit.key] ?? []}
+          selectedCrop={r.fruitKey as 'mango' | 'banana' | 'papaya'}
+          modelVarieties={r.fruitKey ? varietiesByFruit[r.fruitKey] ?? [] : []}
+          informationOnly={r.fruitKey ? strainsByFruit[r.fruitKey] ?? [] : []}
+          diseases={r.fruitKey ? diseasesByFruit[r.fruitKey] ?? [] : []}
           requirementsVerified={false}
           requirements={[
-            { label: 'Temperature', value: '24–30 °C', icon: 'thermometer' },
-            { label: 'Annual rainfall', value: '1,000–2,000 mm', icon: 'cloudRain' },
+            { label: 'Temperature', value: '24\u201330 \u00B0C', icon: 'thermometer' },
+            { label: 'Annual rainfall', value: '1,000\u20132,000 mm', icon: 'cloudRain' },
             { label: 'Elevation', value: 'below 600 m', icon: 'mountain' },
           ]}
-          sources={sourcesByFruit[fruit.key] ?? []}
+          sources={r.fruitKey ? sourcesByFruit[r.fruitKey] ?? [] : []}
           expandedVarietyKey={openVariety}
           onOpenVariety={key => setOpenVariety(current => (current === key ? null : key))}
+          onSelectCrop={fruitKey => replace({ name: 'varietyInfo', fruitKey })}
+          onScanCrop={() => push({ name: 'capture' })}
+          onBackHome={() => selectTab('home')}
+          onBack={back}
         />
       );
     }
     case 'monitoring': {
-      const session = preview.sessionForScan(r.sessionId) ?? preview.SESSION;
       return (
         <MonitoringScreen
-          session={session}
+          controller={monitoring}
           expandedCheckpointDay={openCheckpoint}
-          onScanCheckpoint={() => push({ name: 'capture' })}
+          onCapturePhoto={day => push({ name: 'capture', target: { type: 'checkpoint', sessionId: r.sessionId, dayNumber: day } })}
           onOpenCheckpoint={day => setOpenCheckpoint(current => (current === day ? null : day))}
+          onBack={back}
         />
       );
     }
@@ -161,7 +178,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
           climateProvider="Open-Meteo · no API key needed"
           normalsFetchedLabel={
             climate.climate.normals
-              ? `${climate.climate.normals.fromYear}–${climate.climate.normals.toYear} normals · fetched ${relativeTime(climate.climate.fetchedAt)}`
+              ? `${climate.climate.normals.fromYear}–${climate.climate.normals.toYear} historical mean · fetched ${relativeTime(climate.climate.historicalFetchedAt)}`
               : 'Not fetched yet'
           }
           aiAssistant={app.aiAssistant}
@@ -173,7 +190,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
                 : t.aiAssistantOff
           }
           contentVersion={CONTENT_VERSION}
-          modelsLabel={`${readyCount} of ${statuses.length} installed`}
+          modelsLabel={`${t.modelsInstalled(readyCount, statuses.length)} · ${t.modelInferenceUnverified}`}
           historyLabel={`${allScans.length} scans stored on this device`}
           accountLabel={account.account.email ?? t.accountSignedOut}
           onChangeLanguage={lang =>
@@ -191,7 +208,7 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
               return;
             }
             climate.climate.refresh();
-            notify('Refetching current conditions and 5-year normals…');
+            notify('Refetching current conditions and the five-year historical mean…');
           }}
           onToggleAiAssistant={() => {
             dispatchApp({ type: 'toggleAiAssistant' });
@@ -202,19 +219,15 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
             }
           }}
           onOpenModels={() => push({ name: 'modelStatus' })}
-          onOpenHistory={() => selectTab('history')}
+          onOpenHistory={() => push({ name: 'history' })}
           onOpenAccount={account.openAccount}
           onOpenTrash={() => push({ name: 'trash' })}
+          syncMode={account.account.syncMode}
+          onSetSyncMode={account.handleChooseMode}
         />
       );
     case 'modelStatus':
-      return (
-        <ModelStatusScreen
-          onImportModel={() =>
-            notify('Put the .tflite in models/, then run npm run sync:models and restart.')
-          }
-        />
-      );
+      return <ModelStatusScreen language={app.language} onBack={back} />;
     case 'locationPicker':
       return (
         <LocationPickerScreen
@@ -223,19 +236,103 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
             dispatchApp({ type: 'setLocation', location: place });
             back();
           }}
+          onCancel={back}
+        />
+      );
+    case 'login':
+      return (
+        <LoginScreen
+          busy={account.account.busy}
+          error={account.account.error}
+          onSignIn={(email, password) => void account.signIn(email, password)}
+          onForgotPassword={() => push({ name: 'forgotPassword' })}
+          onCreateAccount={() => push({ name: 'signup' })}
+          onContinueOffline={account.continueOffline}
+          onCancel={back}
+        />
+      );
+    case 'forgotPassword':
+      return (
+        <ForgotPasswordScreen
+          busy={account.account.busy}
+          error={account.account.error}
+          message={account.account.resetMessage}
+          onSubmit={email => void account.forgotPassword(email)}
+          onBack={back}
         />
       );
     case 'account':
+      if (account.account.confirmationPendingEmail) {
+        return (
+          <EmailConfirmationScreen
+            email={account.account.confirmationPendingEmail}
+            busy={account.account.busy}
+            error={account.account.error}
+            message={account.account.resetMessage}
+            onResend={() => void account.resendConfirmation(account.account.confirmationPendingEmail!)}
+            onContinueOffline={account.continueOffline}
+            onBackToSignIn={() => replace({ name: 'login' })}
+          />
+        );
+      }
       return (
         <AccountScreen
           email={account.account.email}
+          userId={account.account.userId}
           busy={account.account.busy}
           error={account.account.error}
           resetMessage={account.account.resetMessage}
+          confirmationPendingEmail={account.account.confirmationPendingEmail}
           onSignIn={(email, password) => void account.signIn(email, password)}
           onForgotPassword={email => void account.forgotPassword(email)}
           onCreateAccount={() => push({ name: 'signup' })}
+          onOpenLogin={() => push({ name: 'login' })}
           onSignOut={() => { void account.signOut(); }}
+          onResendConfirmation={email => void account.resendConfirmation(email)}
+          onContinueOffline={account.continueOffline}
+          syncMode={account.account.syncMode}
+          unownedClaimPending={account.account.unownedClaimPending}
+          onClaimUnowned={() => void account.claimUnowned()}
+          onDeclineUnowned={() => void account.declineUnowned()}
+          onSetSyncMode={account.handleChooseMode}
+          syncCounts={account.account.syncCounts}
+          lastSuccessfulSyncAt={account.account.lastSuccessfulSyncAt}
+          onSyncNow={() => void account.syncNow()}
+          onRemoveLocalDeviceCopy={() => void account.removeLocalDeviceCopy()}
+          language={app.language}
+          savedLocationLabel={climate.savedLocationLabel}
+          onChangeLanguage={lang =>
+            dispatchApp({ type: 'setLanguage', language: lang === 'FIL' ? 'FIL' : 'EN' })
+          }
+          onToggleLocation={() => dispatchApp({ type: 'toggleLocation' })}
+          onChangeLocation={() => push({ name: 'locationPicker' })}
+          onForgetLocation={() => {
+            dispatchApp({ type: 'forgetLocation' });
+            notify('Saved location and cached climate rows cleared.');
+          }}
+          onRefreshNormals={() => {
+            if (!app.savedLocation) {
+              notify('Choose a location first — normals are fetched for a place.');
+              return;
+            }
+            climate.climate.refresh();
+            notify('Refetching current conditions and the five-year historical mean…');
+          }}
+          onToggleAiAssistant={() => {
+            dispatchApp({ type: 'toggleAiAssistant' });
+            if (!app.aiAssistant && !aiAvailable) {
+              notify(t.aiAssistantUnset);
+            }
+          }}
+          onOpenModels={() => push({ name: 'modelStatus' })}
+          onOpenHistory={() => push({ name: 'history' })}
+          onOpenAccount={account.openAccount}
+          onOpenTrash={() => push({ name: 'trash' })}
+          modelsLabel={`${t.modelsInstalled(readyCount, statuses.length)} · ${t.modelInferenceUnverified}`}
+          historyLabel={`${allScans.length} scans stored on this device`}
+          accountLabel={account.account.email ?? t.accountSignedOut}
+          trashedCount={trashedConversations.length}
+          contentVersion={CONTENT_VERSION}
         />
       );
     case 'signup':
@@ -243,22 +340,47 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
         <SignUpScreen
           busy={account.account.busy}
           error={account.account.error}
+          confirmationPendingEmail={account.account.confirmationPendingEmail}
+          noticeMessage={account.account.resetMessage}
           onSignUp={(email, password) => void account.signUp(email, password)}
           onGoToSignIn={back}
+          onResendConfirmation={email => void account.resendConfirmation(email)}
+          onContinueOffline={account.continueOffline}
+          onCancel={back}
         />
       );
     case 'capture':
       return null;
+    case 'resetPassword':
+      return (
+        <ResetPasswordScreen
+          busy={account.account.busy}
+          error={account.account.error}
+          onSubmitNewPassword={account.setNewPassword}
+          onCancel={() => {
+            account.clearRecovery();
+            back();
+          }}
+          onDone={back}
+        />
+      );
     case 'trash':
       return (
         <TrashScreen
           conversations={trashedConversations}
+          onBack={back}
           onRestore={uuids => {
             const restoredAt = new Date().toISOString();
-            uuids.forEach(uuid => restoreConversation(db, uuid, restoredAt));
+            db.transaction(() => {
+              uuids.forEach(uuid => {
+                if (!restoreConversation(db, uuid, restoredAt, accountScope)) {
+                  throw new Error('Restore unavailable');
+                }
+              });
+            });
             bumpData();
           }}
-          onDeleteForever={uuids => {
+          onDeleteForever={async uuids => {
             // The same permanent deletion the retention sweep performs, so
             // the remote row goes too: deleting only locally means the
             // conversation returns on the next sign-in restore.
@@ -267,10 +389,11 @@ export function RouteBody({ shell, route: r }: { shell: Shell; route: Route }) {
             // remote one: refreshing first would re-read a Trash that has not
             // been emptied yet. A conversation whose remote delete failed
             // stays in the list, which is what actually happened to it.
-            void (async () => {
-              for (const uuid of uuids) await deleteConversationEverywhere(db, uuid);
+            for (const uuid of uuids) {
+              const deleted = await deleteConversationEverywhere(db, uuid, undefined, accountScope);
+              if (!deleted) throw new Error('Permanent deletion unavailable');
               bumpData();
-            })();
+            }
           }}
         />
       );

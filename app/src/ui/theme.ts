@@ -1,36 +1,43 @@
 // PrutasAI Mobile App Theme & Design System
 export const COLORS = {
   // Primary - deep forest green
-  primary: '#1a472a',
-  primaryLight: '#2d6a4f',
-  primaryDark: '#0d2818',
+  primary: '#154d2e',
+  primaryLight: '#226b42',
+  primaryDark: '#0b2b19',
+  primarySurface: '#eaf4ed',
 
   // Accent - vibrant tropical hue
-  accent: '#f77f00',
-  accentLight: '#fcbf49',
-  accentDark: '#d65f00',
+  accent: '#c2410c',
+  accentLight: '#fef3c7',
+  accentDark: '#9a3412',
 
   // Severity colors
-  severityEarly: '#f4a261',
-  severityModerate: '#e76f51',
-  severitySevere: '#d62828',
-  healthy: '#40916c',
+  severityEarly: '#b45309',
+  severityModerate: '#c2410c',
+  severitySevere: '#b91c1c',
+  healthy: '#166534',
+  healthySurface: '#dcfce7',
+  warningSurface: '#fef3c7',
+  warningText: '#92400e',
+  errorSurface: '#fee2e2',
+  infoSurface: '#e0f2fe',
+  focus: '#0284c7',
 
   // Progress status
-  improving: '#40916c',
-  worsening: '#d62828',
-  stable: '#457b9d',
+  improving: '#166534',
+  worsening: '#b91c1c',
+  stable: '#0369a1',
   newDisease: '#9b2226',
-  resolved: '#2d6a4f',
+  resolved: '#226b42',
 
   // Neutrals
-  background: '#f8f9fa',
+  background: '#f2f6f3',
   surface: '#ffffff',
-  surfaceAlt: '#f1f3f5',
-  text: '#212529',
-  textSecondary: '#6c757d',
-  textLight: '#adb5bd',
-  border: '#dee2e6',
+  surfaceAlt: '#eaf4ed',
+  text: '#0f1d14',
+  textSecondary: '#3f5246',
+  textLight: '#4f6356',
+  border: 'rgba(21, 77, 46, 0.14)',
 
   // Dark mode
   darkBg: '#0d1117',
@@ -39,16 +46,18 @@ export const COLORS = {
   darkBorder: '#30363d',
 
   // Alerts
-  error: '#d62828',
-  warning: '#f77f00',
-  success: '#40916c',
-  info: '#457b9d',
+  error: '#b91c1c',
+  warning: '#b45309',
+  success: '#166534',
+  info: '#0369a1',
 } as const;
 
 export const FONTS = {
-  regular: 'System',
-  medium: 'System',
-  bold: 'System',
+  regular: 'PlusJakartaSans-Regular',
+  medium: 'PlusJakartaSans-Medium',
+  semiBold: 'PlusJakartaSans-SemiBold',
+  bold: 'PlusJakartaSans-Bold',
+  extraBold: 'PlusJakartaSans-ExtraBold',
   sizes: {
     xs: 11,
     sm: 13,
@@ -75,15 +84,17 @@ export const RADIUS = {
   md: 12,
   lg: 16,
   xl: 24,
+  card: 18,
+  button: 14,
   full: 999,
 } as const;
 
 export const SHADOWS = {
   sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowColor: '#0f2316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
     elevation: 2,
   },
   md: {

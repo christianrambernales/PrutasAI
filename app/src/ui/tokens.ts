@@ -5,11 +5,11 @@ export { COLORS, FONTS, RADIUS, SHADOWS, SPACING } from './theme';
 
 /** The type ramp. Sizes come from FONTS.sizes; line heights are set here. */
 export const TEXT = {
-  hero: { fontSize: FONTS.sizes.hero, lineHeight: 40, fontWeight: '700' },
-  title: { fontSize: FONTS.sizes.title, lineHeight: 34, fontWeight: '700' },
-  xxl: { fontSize: FONTS.sizes.xxl, lineHeight: 30, fontWeight: '700' },
-  xl: { fontSize: FONTS.sizes.xl, lineHeight: 26, fontWeight: '700' },
-  lg: { fontSize: FONTS.sizes.lg, lineHeight: 22, fontWeight: '600' },
+  hero: { fontSize: FONTS.sizes.hero, lineHeight: 42, fontWeight: '800', letterSpacing: -0.7 },
+  title: { fontSize: FONTS.sizes.title, lineHeight: 35, fontWeight: '800', letterSpacing: -0.5 },
+  xxl: { fontSize: FONTS.sizes.xxl, lineHeight: 31, fontWeight: '800', letterSpacing: -0.4 },
+  xl: { fontSize: FONTS.sizes.xl, lineHeight: 26, fontWeight: '800', letterSpacing: -0.3 },
+  lg: { fontSize: FONTS.sizes.lg, lineHeight: 23, fontWeight: '700' },
   md: { fontSize: FONTS.sizes.md, lineHeight: 21, fontWeight: '400' },
   mdSemi: { fontSize: FONTS.sizes.md, lineHeight: 20, fontWeight: '600' },
   sm: { fontSize: FONTS.sizes.sm, lineHeight: 18, fontWeight: '400' },

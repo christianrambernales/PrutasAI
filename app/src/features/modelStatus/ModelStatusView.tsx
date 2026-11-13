@@ -1,140 +1,196 @@
 import React from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
-  AppText, Button, Card, Chip, Col, COLORS, Divider, Icon, Row, Section,
-  SectionHeader, SPACING, Tile,
+  BtnForestFull,
+  BtnSubtle,
+  FONTS,
+  FrostedCard,
+  GreenTopCell,
+  StatusBadge,
 } from '../../ui';
+import type { ModelRegistry } from '../../core/ml/registry';
 import type { ModelRow } from '../viewModels';
+import { strings, type Language } from '../../ui/i18n/strings';
+
+type Dictionary = ReturnType<typeof strings>;
 
 export interface ModelStatusViewProps {
-  headline: string;
-  detail: string;
-  /** 0–3, from pipelineDepth(). Drives which stage tiles read as available. */
-  depth: 0 | 1 | 2 | 3;
-  models: ModelRow[];
-  manifestVersion: number;
-  onImportModel: () => void;
+  headline?: string;
+  models?: ModelRow[];
+  fruits?: ModelRegistry['fruits'];
+  manifestVersion?: number;
+  t?: Dictionary;
+  language?: Language;
+  onBack?: () => void;
 }
 
-const STAGES = [
-  { stage: 1, label: 'Fruit' },
-  { stage: 2, label: 'Variety' },
-  { stage: 3, label: 'Disease' },
-] as const;
+export function ModelStatusView({
+  models = [],
+  t: propT,
+  language = 'EN',
+  onBack,
+}: ModelStatusViewProps) {
+  const t = propT ?? strings(language);
+  const isFil = language === 'FIL' || t.pipelineStagesTitle.includes('Mga Yugto');
 
-const STATE_DOT: Record<ModelRow['state'], string> = {
-  ready: COLORS.healthy,
-  missing: COLORS.textLight,
-  checksum_mismatch: COLORS.error,
-};
+  const stage1Ready = models.some(m => m.id === 'fruit_detector' && m.state === 'ready');
+  const stage2Ready = models.some(m => m.id.startsWith('variety_') && m.state === 'ready');
+  const stage3Ready = models.some(m => m.id === 'disease_detector' && m.state === 'ready');
 
-const STATE_LABEL: Record<ModelRow['state'], string> = {
-  ready: 'ready',
-  missing: 'missing',
-  checksum_mismatch: 'checksum mismatch',
-};
-
-export function ModelStatusView(props: ModelStatusViewProps) {
-  const { headline, detail, depth, models, manifestVersion } = props;
-  const complete = depth === 3;
+  const backAction = (
+    <BtnSubtle
+      label={`← ${isFil ? 'Bumalik' : 'Back'}`}
+      textColor="#ffffff"
+      onPress={onBack}
+      accessibilityLabel={t.goBack}
+      style={styles.backBtn}
+    />
+  );
 
   return (
-    <>
-      <Section>
-        <Card style={{ gap: SPACING.md - 4, borderColor: complete ? COLORS.border : COLORS.severityEarly }}>
-          <Row gap={SPACING.sm + 2} align="flex-start">
-            <Icon
-              name={complete ? 'check' : 'warning'}
-              size={20}
-              color={complete ? COLORS.healthy : COLORS.accent}
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+      {/* 1:1 Prototype Green Top Cell */}
+      <GreenTopCell
+        title={isFil ? 'Katayuan ng AI Model' : 'AI Model Registry'}
+        subtitle={isFil ? 'On-Device Inference Pipeline Health' : 'On-Device Neural Pipeline Health'}
+        rightAction={backAction}
+      />
+
+      {/* 1:1 Prototype Disclosure Card */}
+      <FrostedCard accentBorder="amber">
+        <Text style={styles.disclosureHeader}>
+          ℹ️ {isFil ? 'Yugto ng Thesis Prototype' : 'Thesis Phase Disclosure'}
+        </Text>
+        <Text style={styles.disclosureText}>
+          {isFil
+            ? 'Walang model weights file na naka-bundle sa phase na ito. Ang lahat ng pagsusuri ay nagde-degrade nang totoo sa no-model fallback.'
+            : 'No model weights are bundled in this current verification phase. Offline flows degrade truthfully to local decision-support.'}
+        </Text>
+      </FrostedCard>
+
+      {/* 1:1 Prototype Pipeline Stages Card */}
+      <FrostedCard>
+        <Text style={styles.pipelineTitle} accessibilityRole="header">
+          {isFil ? 'Mga Yugto ng Pipeline (Pipeline Stages)' : 'Pipeline Stages'}
+        </Text>
+
+        <View style={styles.stageList}>
+          {/* Stage 1 */}
+          <View style={[styles.stageRow, styles.stageBorderBottom]}>
+            <View style={styles.stageContent}>
+              <Text style={styles.stageTitle}>Stage 1: Fruit Detector (YOLO)</Text>
+              <Text style={styles.stageSub}>Mangga, Saging, Papaya Bounding Boxes</Text>
+            </View>
+            <StatusBadge
+              variant={stage1Ready ? 'healthy' : 'offline'}
+              label={stage1Ready ? (isFil ? 'Handa' : 'Ready') : (isFil ? 'Walang Weights' : 'No Weights')}
             />
-            <Col gap={SPACING.xs} style={{ flex: 1 }}>
-              <AppText variant="lg">{headline}</AppText>
-              <AppText variant="sm" color={COLORS.textSecondary}>{detail}</AppText>
-            </Col>
-          </Row>
-          <Divider />
-          <Row gap={SPACING.xs + 2}>
-            {STAGES.map(s => {
-              const on = depth >= s.stage;
-              return (
-                <Tile
-                  key={s.stage}
-                  style={{ flex: 1, alignItems: 'center', gap: SPACING.xs, backgroundColor: on ? '#e6f2ec' : COLORS.surfaceAlt }}
-                >
-                  <AppText variant="xsSemi" color={on ? '#1f6146' : COLORS.textLight}>
-                    STAGE {s.stage}
-                  </AppText>
-                  <Icon name={on ? 'check' : 'close'} size={16} color={on ? COLORS.healthy : COLORS.textLight} />
-                  <AppText variant="xs" color={on ? '#1f6146' : COLORS.textLight}>{s.label}</AppText>
-                </Tile>
-              );
-            })}
-          </Row>
-        </Card>
-      </Section>
+          </View>
 
-      <Section gap={SPACING.sm + 2}>
-        <SectionHeader title="Models" meta={`${models.length} declared`} />
-        {models.length === 0 ? (
-          <Card>
-            <Col gap={SPACING.xs}>
-              <AppText variant="smSemi">No models declared</AppText>
-              <AppText variant="xs" color={COLORS.textSecondary}>
-                manifest.json lists no models, so no detection stage can run. Browsing, climate and
-                the assistant still work.
-              </AppText>
-            </Col>
-          </Card>
-        ) : (
-          <Col gap={SPACING.sm}>
-            {models.map(model => (
-              <Card key={model.id} style={{ gap: SPACING.sm, opacity: model.state === 'ready' ? 1 : 0.78 }}>
-                <Row gap={SPACING.sm}>
-                  <AppText variant="xsSemi" color={COLORS.textLight}>S{model.stage}</AppText>
-                  <AppText variant="smSemi" style={{ flex: 1 }}>{model.id}</AppText>
-                  <Chip label={STATE_LABEL[model.state]} dotColor={STATE_DOT[model.state]} />
-                </Row>
-                {model.state === 'ready' ? (
-                  <>
-                    <Divider />
-                    <Row gap={SPACING.xs + 2} wrap>
-                      {model.source ? <Chip label={model.source} tone="outline" /> : null}
-                      {model.version ? <Chip label={`v${model.version}`} tone="outline" /> : null}
-                      {model.verified ? (
-                        <Chip label="checksum verified" icon="check" tone="outline" />
-                      ) : (
-                        <Chip label="not verified" tone="warning" />
-                      )}
-                    </Row>
-                  </>
-                ) : null}
-                {model.note ? (
-                  <>
-                    <Divider />
-                    <AppText variant="xs" color={COLORS.textSecondary}>{model.note}</AppText>
-                  </>
-                ) : null}
-              </Card>
-            ))}
-          </Col>
-        )}
-      </Section>
+          {/* Stage 2 */}
+          <View style={[styles.stageRow, styles.stageBorderBottom]}>
+            <View style={styles.stageContent}>
+              <Text style={styles.stageTitle}>Stage 2: Variety Classifier</Text>
+              <Text style={styles.stageSub}>Carabao/Pico, Lakatan/Saba, Red Lady</Text>
+            </View>
+            <StatusBadge
+              variant={stage2Ready ? 'healthy' : 'offline'}
+              label={stage2Ready ? (isFil ? 'Handa' : 'Ready') : (isFil ? 'Walang Weights' : 'No Weights')}
+            />
+          </View>
 
-      <Section gap={SPACING.sm + 2}>
-        <Button label="Import a model file" icon="plus" variant="secondary" onPress={props.onImportModel} />
-        <Tile>
-          <Row gap={SPACING.sm} align="flex-start">
-            <Icon name="info" size={16} color={COLORS.textSecondary} />
-            <AppText variant="xs" color={COLORS.textSecondary} style={{ flex: 1 }}>
-              Imported files load from device storage, which is unreliable on some Android builds.
-              If loading fails the bundled model is used instead.
-            </AppText>
-          </Row>
-        </Tile>
-        <AppText variant="xs" color={COLORS.textLight} center>
-          manifest_version {manifestVersion} · classes from ml/classes.json
-        </AppText>
-      </Section>
-    </>
+          {/* Stage 3 */}
+          <View style={styles.stageRow}>
+            <View style={styles.stageContent}>
+              <Text style={styles.stageTitle}>Stage 3: Disease & Lesion Segmentation</Text>
+              <Text style={styles.stageSub}>Anthracnose, Sigatoka, Ringspot</Text>
+            </View>
+            <StatusBadge
+              variant={stage3Ready ? 'healthy' : 'offline'}
+              label={stage3Ready ? (isFil ? 'Handa' : 'Ready') : (isFil ? 'Walang Weights' : 'No Weights')}
+            />
+          </View>
+        </View>
+      </FrostedCard>
+
+      {/* 1:1 Prototype Bottom CTA */}
+      <BtnForestFull
+        label={`← ${isFil ? 'Bumalik sa Account & Settings' : 'Back to Account & Settings'}`}
+        onPress={onBack}
+        accessibilityLabel={`← ${isFil ? 'Bumalik sa Account & Settings' : 'Back to Account & Settings'}`}
+      />
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: '#f2f6f3',
+  },
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#f2f6f3',
+    paddingTop: 14,
+    paddingHorizontal: 15,
+    paddingBottom: 20,
+    gap: 14,
+  },
+  backBtn: {
+    minHeight: 48,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  disclosureHeader: {
+    fontSize: 13,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    color: '#b45309',
+    marginBottom: 4,
+  },
+  disclosureText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: FONTS.regular,
+    color: '#64748b',
+  },
+  pipelineTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    fontFamily: FONTS.extraBold,
+    color: '#154d2e',
+    marginBottom: 10,
+  },
+  stageList: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  stageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  stageBorderBottom: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    paddingBottom: 8,
+  },
+  stageContent: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  stageTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    fontFamily: FONTS.bold,
+    color: '#1e293b',
+  },
+  stageSub: {
+    fontSize: 11,
+    lineHeight: 15,
+    fontFamily: FONTS.regular,
+    color: '#64748b',
+    marginTop: 2,
+  },
+});

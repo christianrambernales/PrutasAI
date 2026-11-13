@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "updatedAt": 1790059715650,
+  "nodeCount": 2,
+  "nodes": {
+    "task-260920-9o6": {
+      "id": "task-260920-9o6",
+      "category": "tasks",
+      "confidence": 0.7000000000000002,
+      "accessCount": 4,
+      "createdAt": 1789877500594
+    },
+    "insight-1789878216279-rv09": {
+      "id": "insight-1789878216279-rv09",
+      "category": "insights",
+      "confidence": 0.7000000000000002,
+      "accessCount": 4,
+      "createdAt": 1789878216279
+    }
+  },
+  "edges": [],
+  "pageRanks": {
+    "task-260920-9o6": 0.5,
+    "insight-1789878216279-rv09": 0.5
+  }
+}

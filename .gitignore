@@ -23,6 +23,7 @@ node_modules/
 app/assets/models/
 app/src/core/ml/bundledModels.ts
 app/src/core/ml/manifest.json
+app/src/core/ml/verifiedModels.json
 app/src/core/db/seed.sql
 app/src/core/types/knowledge.ts
 ml/classes.json
@@ -41,6 +42,7 @@ api/node_modules/
 # Agent/workflow scratch (was local-only in .git/info/exclude)
 .superpowers/
 .agent/
+.planning/
 
 # Claude Code runtime state (settings.local.json covered above)
 **/.claude/scheduled_tasks.lock

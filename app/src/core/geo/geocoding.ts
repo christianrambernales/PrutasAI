@@ -29,6 +29,26 @@ export function roundCoordinate(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+/**
+ * Last-line privacy boundary for values entering persistence.
+ * Search/device flows already produce this shape, but restored legacy values
+ * and direct repository callers must not be able to retain precise data.
+ */
+export function normalizeCoarseLocation<T extends Coordinates & { label: string }>(value: T): T {
+  const labelParts = value.label
+    .split(',')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return {
+    ...value,
+    label: labelParts.join(', '),
+    latitude: roundCoordinate(value.latitude),
+    longitude: roundCoordinate(value.longitude),
+  };
+}
+
 function label(name: string, region: string): string {
   return region ? `${name}, ${region}` : name;
 }

@@ -27,12 +27,25 @@ beforeEach(() => {
   seedSyncMode();
 });
 
-function render(element: React.ReactElement): ReactTestRenderer {
-  let tree!: ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(element);
+let currentTree: ReactTestRenderer | null = null;
+
+afterEach(async () => {
+  if (currentTree) {
+    act(() => {
+      currentTree?.unmount();
+    });
+    currentTree = null;
+  }
+  await act(async () => {
+    await Promise.resolve();
   });
-  return tree;
+});
+
+function render(element: React.ReactElement): ReactTestRenderer {
+  act(() => {
+    currentTree = renderer.create(element);
+  });
+  return currentTree!;
 }
 
 function screenText(tree: ReactTestRenderer): string {
@@ -41,7 +54,7 @@ function screenText(tree: ReactTestRenderer): string {
 
 // --- the systemic guard -----------------------------------------------------
 
-test.each(['Home', 'Climate', 'Chat', 'History'])(
+test.each(['Home', 'Climate', 'Assistant', 'History'])(
   'every control on the %s tab has a press handler',
   tab => {
     const tree = render(<AppNavigator />);
@@ -68,7 +81,7 @@ test('every control has an accessibility label or visible text', () => {
 
 test('typing a question and sending it adds the question to the transcript', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   typeInto(tree, 'Ask about', 'What varieties of mango are there?');
   press(tree, 'Send');
@@ -78,7 +91,7 @@ test('typing a question and sending it adds the question to the transcript', () 
 
 test('sending a question produces an answer', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   const before = screenText(tree);
   typeInto(tree, 'Ask about', 'What varieties of mango are there?');
@@ -92,7 +105,7 @@ test('sending a question produces an answer', () => {
 
 test('sending clears the input so the question is not sent twice', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   typeInto(tree, 'Ask about', 'What varieties of mango are there?');
   press(tree, 'Send');
@@ -106,7 +119,7 @@ test('sending clears the input so the question is not sent twice', () => {
 
 test('an empty message is not sent', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   const before = screenText(tree);
   typeInto(tree, 'Ask about', '   ');
@@ -115,34 +128,34 @@ test('an empty message is not sent', () => {
   expect(screenText(tree)).toBe(before);
 });
 
-test('tapping a suggestion asks it', () => {
+test('asking a disease remedy question produces a grounded reply', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
-  const suggestion = 'Anthracnose remedy';
-  press(tree, suggestion);
+  const question = 'Anthracnose remedy';
+  typeInto(tree, 'Ask ', question);
+  press(tree, 'Send');
 
-  // The suggestion becomes a user turn, so it now appears twice: chip + bubble.
-  const occurrences = screenText(tree).split(suggestion).length - 1;
-  expect(occurrences).toBeGreaterThan(1);
+  expect(screenText(tree)).toContain(question);
+  expect(screenText(tree)).toContain('Anthracnose');
 });
 
 // --- conversation sidebar ----------------------------------------------------
 
-test('the menu icon opens the sidebar showing the conversation just started', () => {
+test('the Conversations action opens the sidebar showing the conversation just started', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   // A fresh conversation is only a row in the database once its first
   // message is sent — this is what proves the sidebar's list keeps up with
   // that without an app restart, not just that it opens.
   const question = 'What varieties of mango are there?';
-  typeInto(tree, 'Ask about', question);
+  typeInto(tree, 'Ask ', question);
   press(tree, 'Send');
 
   // Already once, from the sent bubble in the transcript.
   const beforeMenu = screenText(tree).split(question).length - 1;
-  press(tree, 'menu');
+  press(tree, 'Conversations');
   const afterMenu = screenText(tree).split(question).length - 1;
 
   // A second occurrence, from the sidebar row titled after that question.
@@ -158,15 +171,15 @@ test('the menu icon opens the sidebar showing the conversation just started', ()
  */
 test('a reply in an older conversation moves it back to the top of the sidebar', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Chat');
+  press(tree, 'Assistant');
 
   const older = 'What varieties of mango are there?';
-  typeInto(tree, 'Ask about', older);
+  typeInto(tree, 'Ask ', older);
   press(tree, 'Send');
 
-  press(tree, 'menu');
+  press(tree, 'Conversations');
   press(tree, 'New conversation');
-  typeInto(tree, 'Ask about', 'What varieties of banana are there?');
+  typeInto(tree, 'Ask ', 'What varieties of banana are there?');
   press(tree, 'Send');
 
   const titles = () =>
@@ -177,52 +190,51 @@ test('a reply in an older conversation moves it back to the top of the sidebar',
   expect(titles()[0]).toContain('banana');
 
   // Reopen the older conversation and add a turn to it.
-  press(tree, 'menu');
+  press(tree, 'Conversations');
   press(tree, older);
-  typeInto(tree, 'Ask about', 'What varieties of papaya are there?');
+  typeInto(tree, 'Ask ', 'What varieties of papaya are there?');
   press(tree, 'Send');
 
   expect(titles()[0]).toContain('mango');
 });
 
-// --- settings ---------------------------------------------------------------
+// --- account & settings -----------------------------------------------------
 
-test('the location toggle flips when pressed', () => {
+test('opening Crop Location from Account opens the location picker', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Settings');
+  press(tree, 'Account');
+  press(tree, 'Crop Location');
 
-  const before = findPressable(tree, 'Use my location').props.accessibilityState?.checked;
-  press(tree, 'Use my location');
-  const after = findPressable(tree, 'Use my location').props.accessibilityState?.checked;
-
-  expect(after).toBe(!before);
+  const content = screenText(tree);
+  expect(content).toContain('Select Location');
+  expect(content).toContain('Davao City, Davao del Sur');
 });
 
-test('switching the language to Filipino selects it', () => {
+test('switching the language to Filipino on Account updates the label and app copy', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Settings');
+  press(tree, 'Account');
 
-  press(tree, 'FIL');
+  press(tree, 'Language, English');
 
-  expect(findPressable(tree, 'FIL').props.accessibilityState?.selected).toBe(true);
+  expect(screenText(tree)).toContain('Filipino');
+  expect(screenText(tree)).toContain('Account at Mga Setting');
 });
 
-test('the AI assistant toggle flips when pressed', () => {
+test('the Account tab exposes offline/account sync mode selection', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Settings');
+  press(tree, 'Account');
 
-  const before = findPressable(tree, 'AI assistant').props.accessibilityState?.checked;
-  press(tree, 'AI assistant');
-  const after = findPressable(tree, 'AI assistant').props.accessibilityState?.checked;
-
-  expect(after).toBe(!before);
+  press(tree, 'Use account sync');
+  expect(screenText(tree)).toContain('Sync Metadata');
+  press(tree, 'Use offline');
+  expect(screenText(tree)).toContain('Local Offline Only');
 });
 
 // --- history ----------------------------------------------------------------
 
 test('choosing a history filter selects it', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'History');
+  press(tree, 'View History');
 
   press(tree, 'Diseased');
 
@@ -232,7 +244,7 @@ test('choosing a history filter selects it', () => {
 test('a history filter narrows the list', () => {
   seedStoredScans();
   const tree = render(<AppNavigator />);
-  press(tree, 'History');
+  press(tree, 'View History');
 
   const before = screenText(tree);
   expect(before).toContain('Banana · Lakatan');
@@ -251,11 +263,12 @@ test('a history filter narrows the list', () => {
 
 test('capturing does not fabricate a diagnosis while no model is installed', async () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Scan a fruit');
+  press(tree, 'Camera');
   await pressAsync(tree, 'Take photo');
 
   const content = screenText(tree);
-  expect(content).toContain('Detection model not installed');
+  expect(content).toContain('Disease Diagnosis: No Model Weights');
+  expect(content).toContain('Photo retained in local SQLite repository');
   // The preview verdict must never reach a screen that claims a detection.
   expect(content).not.toContain('Anthracnose');
   expect(content).not.toContain('0.96');
@@ -265,10 +278,12 @@ test('capturing does not fabricate a diagnosis while no model is installed', asy
 test('opening two different scans shows two different results', () => {
   seedStoredScans();
   const tree = render(<AppNavigator />);
+  press(tree, 'View History');
 
   press(tree, 'Banana · Lakatan');
   const first = screenText(tree);
-  press(tree, 'Go back');
+  press(tree, 'Home');
+  press(tree, 'View History');
 
   press(tree, 'Mango · Carabao');
   const second = screenText(tree);
@@ -281,14 +296,15 @@ test('opening two different scans shows two different results', () => {
 test('opening a stored scan reports what was stored and nothing more', () => {
   seedStoredScans();
   const tree = render(<AppNavigator />);
+  press(tree, 'View History');
 
   press(tree, 'Banana · Lakatan');
   const content = screenText(tree);
 
   // The same honest state a fresh capture shows: the row carries a photo and a
   // time, and no model has ever run over it.
-  expect(content).toContain('Detection model not installed');
-  expect(content).toContain('No disease model');
+  expect(content).toContain('Disease Diagnosis: No Model Weights');
+  expect(content).toContain('Record ID: Banana · Lakatan');
   // A stored confidence is not a diagnosis and must never be shown as one.
   expect(content).not.toContain('Anthracnose');
   expect(content).not.toContain('0.96');
@@ -298,38 +314,45 @@ test('opening a stored scan reports what was stored and nothing more', () => {
 
 test('a captured photo is in history afterwards', async () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'History');
-  expect(screenText(tree)).toContain('No scans yet');
+  press(tree, 'View History');
+  expect(screenText(tree)).toContain('Carabao Mango');
 
-  press(tree, 'Scan a fruit');
+  press(tree, 'Home');
+  press(tree, 'Camera');
   await pressAsync(tree, 'Take photo');
 
-  press(tree, 'History');
+  press(tree, 'Home');
+  press(tree, 'View History');
   const content = screenText(tree);
   // Stored, and stored honestly — the row claims no fruit, because none was
   // identified.
   expect(content).toContain('Unidentified');
-  expect(content).toContain('Not identified — no model installed');
-  expect(content).not.toContain('No scans yet');
+  expect(content).toContain('Not identified because no approved model is installed.');
+  expect(content).not.toContain('Carabao Mango');
 });
 
 // --- navigation affordances -------------------------------------------------
 
-test('a variety row opens that variety', () => {
+test('switching crop tabs on variety info changes the displayed crop', () => {
   const tree = render(<AppNavigator />);
   press(tree, 'Mango');
 
   const before = screenText(tree);
-  press(tree, 'Carabao');
+  press(tree, '🍌 Banana');
 
-  expect(screenText(tree)).not.toBe(before);
+  const after = screenText(tree);
+  expect(after).not.toBe(before);
+  expect(after).toContain('Lakatan');
 });
 
-test('the model status screen is reachable and its import control is live', () => {
+test('the model status screen is reachable and truthfully discloses no model weights', () => {
   const tree = render(<AppNavigator />);
-  press(tree, 'Settings');
-  press(tree, 'Detection models');
+  press(tree, 'Account');
+  press(tree, 'AI Model Registry');
 
-  expect(screenText(tree)).toContain('No models declared');
-  expect(typeof findPressable(tree, 'Import a model file').props.onPress).toBe('function');
+  expect(screenText(tree)).toContain('Thesis Phase Disclosure');
+  expect(screenText(tree)).toContain('No Weights');
+  expect(screenText(tree)).toContain('Pipeline Stages');
+  expect(screenText(tree)).not.toContain('Import a model file');
+  expect(screenText(tree)).not.toContain('bundled model is used instead');
 });

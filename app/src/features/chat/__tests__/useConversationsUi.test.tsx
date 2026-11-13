@@ -15,10 +15,10 @@ const CHAT = {
   openConversation: jest.fn(),
 };
 
-function mount(bumpData: () => void = jest.fn()) {
+function mount(bumpData: () => void = jest.fn(), scope?: { activeAccountId: string | null }) {
   let value!: ReturnType<typeof useConversationsUi>;
   function Host() {
-    value = useConversationsUi({ db, chat: CHAT as never, dataVersion: 0, bumpData });
+    value = useConversationsUi({ db, chat: CHAT as never, dataVersion: 0, bumpData, scope });
     return null;
   }
   act(() => { renderer.create(<Host />); });
